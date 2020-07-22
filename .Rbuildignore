@@ -4,3 +4,4 @@ sandbox
 ^\.Rproj\.user$
 ^.*\.Rproj$
 codeblock.txt
+^\.github$
