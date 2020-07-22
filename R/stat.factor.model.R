@@ -1,7 +1,7 @@
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -514,7 +514,7 @@ extractCoskewness <- function(model, ...){
   # Factor moments
   # f.centered <- center(f)
   # factorM3 <- M3.MM(f.centered)
-  factorM3 <- PerformanceAnalytics:::M3.MM(f)
+  factorM3 <- PerformanceAnalytics::M3.MM(f)
   
   # Compute covariance estimate
   if(k == 1){
@@ -562,7 +562,7 @@ extractCokurtosis <- function(model, ...){
   factorM2 <- cov(f)
   # f.centered <- center(f)
   # factorM4 <- M4.MM(f.centered)
-  factorM4 <- PerformanceAnalytics:::M4.MM(f)
+  factorM4 <- PerformanceAnalytics::M4.MM(f)
   
   # Compute covariance estimate
   if(k == 1){

@@ -16,8 +16,8 @@ applyFUN <- function(R, weights, FUN="mean", arguments){
     momentargs <- list()
     momentargs$mu <- matrix(as.vector(apply(R, 2, "mean")), ncol = 1)
     momentargs$sigma <- cov(R)
-    momentargs$m3 <- PerformanceAnalytics:::M3.MM(R)
-    momentargs$m4 <- PerformanceAnalytics:::M4.MM(R)
+    momentargs$m3 <- PerformanceAnalytics::M3.MM(R)
+    momentargs$m4 <- PerformanceAnalytics::M4.MM(R)
     return(momentargs)
   }
   
@@ -156,9 +156,9 @@ scatterFUN <- function(R, FUN, arguments=NULL){
 }
 
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING

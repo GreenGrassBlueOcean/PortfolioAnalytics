@@ -1,7 +1,7 @@
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -90,7 +90,8 @@ chart.Weights.RP <- function(object, ..., neighbors = NULL, main="Weights", las 
 
 #' @rdname chart.Weights
 #' @method chart.Weights optimize.portfolio.random
-#' @S3method chart.Weights optimize.portfolio.random
+# #' @S3method chart.Weights optimize.portfolio.random
+#' @export
 chart.Weights.optimize.portfolio.random <- chart.Weights.RP
 
 chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', risk.col='ES', chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL){
@@ -131,12 +132,12 @@ chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', r
     wts_index <- grep("w.", columnnames)
     wts <- xtract[, wts_index]
     if(is.na(return.column)){
-      tmpret <- applyFUN(R=R, weights=wts, FUN=return.col)
+      tmpret <- applyFUN(R=R, weights=wts, FUN=return.col, arguments = NULL)
       xtract <- cbind(tmpret, xtract)
       colnames(xtract)[which(colnames(xtract) == "tmpret")] <- return.col
     }
     if(is.na(risk.column)){
-      tmprisk <- applyFUN(R=R, weights=wts, FUN=risk.col)
+      tmprisk <- applyFUN(R=R, weights=wts, FUN=risk.col, arguments = NULL)
       xtract <- cbind(tmprisk, xtract)
       colnames(xtract)[which(colnames(xtract) == "tmprisk")] <- risk.col
     }
@@ -225,7 +226,7 @@ chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', r
     result.slot<-'objective_measures'
   }
   objcols<-unlist(object[[result.slot]])
-  names(objcols)<-PortfolioAnalytics:::name.replace(names(objcols))
+  names(objcols)<-name.replace(names(objcols))
   return.column = pmatch(return.col,names(objcols))
   if(is.na(return.column)) {
     return.col = paste(return.col,return.col,sep='.')
@@ -243,8 +244,8 @@ chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', r
     risk.col <- gsub("\\..*", "", risk.col)
     # warning(return.col,' or ', risk.col, ' do  not match extractStats output of $objective_measures slot')
     opt_weights <- object$weights
-    ret <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=return.col))
-    risk <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=risk.col))
+    ret <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=return.col, arguments = NULL))
+    risk <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=risk.col, arguments = NULL))
     points(risk, ret, col="blue", pch=16) #optimal
     text(x=risk, y=ret, labels="Optimal",col="blue", pos=4, cex=0.8)
   } else {
@@ -258,7 +259,8 @@ chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', r
 
 #' @rdname chart.RiskReward
 #' @method chart.RiskReward optimize.portfolio.random
-#' @S3method chart.RiskReward optimize.portfolio.random
+# #' @S3method chart.RiskReward optimize.portfolio.random
+#' @export
 chart.RiskReward.optimize.portfolio.random <- chart.Scatter.RP
 
 
@@ -277,7 +279,8 @@ charts.RP <- function(RP, risk.col, return.col, chart.assets=FALSE, neighbors=NU
 
 #' @rdname plot
 #' @method plot optimize.portfolio.random
-#' @S3method plot optimize.portfolio.random
+# #' @S3method plot optimize.portfolio.random
+#' @export
 plot.optimize.portfolio.random <- function(x, ..., return.col='mean', risk.col='ES',  chart.assets=FALSE, neighbors=NULL, xlim=NULL, ylim=NULL, main='optimized portfolio plot') {
     charts.RP(RP=x, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...)
 }
@@ -285,7 +288,8 @@ plot.optimize.portfolio.random <- function(x, ..., return.col='mean', risk.col='
 
 #' @rdname plot
 #' @method plot optimize.portfolio
-#' @S3method plot optimize.portfolio
+# #' @S3method plot optimize.portfolio
+#' @export
 plot.optimize.portfolio <- function(x, ...,  return.col='mean', risk.col='ES',  chart.assets=FALSE, neighbors=NULL, xlim=NULL, ylim=NULL, main='optimized portfolio plot') {
     charts.RP(RP=x, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...)
 }

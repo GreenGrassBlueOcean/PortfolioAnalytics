@@ -1,22 +1,30 @@
 Package: PortfolioAnalytics
 Type: Package
-Title: Portfolio Analysis, including Numerical Methods for Optimization
+Title: Portfolio Analysis, Including Numerical Methods for Optimization
     of Portfolios
-Version: 0.9.0
-Date: $Date$
-Author: Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
-Contributors: R. Douglas Martin, Guy Yollin, Hezky Varon
+Authors@R: c(
+    person(given=c("Brian","G."),family="Peterson",role=c("cre","aut","cph"),
+    email="brian@braverock.com") ,
+    person(given="Peter",family="Carl",role=c("aut","cph"),
+    email="peter@braverock.com") ,
+    person(given="Kris",family="Boudt",role=c("ctb","cph")) ,
+    person(given="Ross",family="Bennett",role=c("ctb","cph")) ,
+    person(given="Hezky",family="Varon",role="ctb") ,
+    person(given="Guy",family="Yollin",role="ctb") ,
+    person(given="R. Douglas",family="Martin",role="ctb") )
+Version: 1.1.0
+Date: 2018-05-17
 Maintainer: Brian G. Peterson <brian@braverock.com>
 Description: Portfolio optimization and analysis routines and graphics.
 Depends:
-    R (>= 2.14.0),
+    R (>= 3.3.0),
     zoo,
-    xts (>= 0.8),
-    PerformanceAnalytics (>= 1.1.0)
+    xts (>= 0.10-1),
+    foreach,
+    PerformanceAnalytics (>= 1.5.1)
 Suggests:
     quantmod,
-    DEoptim(>= 2.2.1),
-    foreach,
+    DEoptim (>= 2.2.1),
     iterators,
     fGarch,
     Rglpk,
@@ -25,45 +33,19 @@ Suggests:
     ROI.plugin.glpk (>= 0.0.2),
     ROI.plugin.quadprog (>= 0.0.2),
     ROI.plugin.symphony (>= 0.0.2),
-    ROI.plugin.cplex (>= 0.0.2),
     pso,
     GenSA,
     corpcor,
-    testthat
-License: GPL
-Copyright: (c) 2004-2014
-Collate:
-    'charts.DE.R'
-    'charts.RP.R'
-    'constrained_objective.R'
-    'constraints.R'
-    'constraints_ROI.R'
-    'extract.efficient.frontier.R'
-    'extractstats.R'
-    'generics.R'
-    'moment.functions.R'
-    'objective.R'
-    'optimize.portfolio.R'
-    'random_portfolios.R'
-    'trailingFUN.R'
-    'objectiveFUN.R'
-    'portfolio.R'
-    'constraintsFUN.R'
-    'constraint_fn_map.R'
-    'optFUN.R'
-    'charts.ROI.R'
-    'applyFUN.R'
-    'charts.PSO.R'
-    'charts.GenSA.R'
-    'chart.Weights.R'
-    'chart.RiskReward.R'
-    'charts.efficient.frontier.R'
-    'charts.risk.R'
-    'charts.groups.R'
-    'charts.multiple.R'
-    'utility.combine.R'
-    'equal.weight.R'
-    'inverse.volatility.weight.R'
-    'utils.R'
-    'chart.concentration.R'
-    'stat.factor.model.R'
+    testthat,
+    nloptr (>= 1.0.0),
+    MASS,
+    robustbase,
+    tinytex
+Imports:
+    methods,
+    doParallel
+License: GPL-2 | GPL-3
+URL: https://github.com/braverock/PortfolioAnalytics
+Copyright: (c) 2004-2018
+RoxygenNote: 7.1.0
+Encoding: UTF-8

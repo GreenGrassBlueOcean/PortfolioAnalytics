@@ -16,9 +16,9 @@
 #' @param control list of solver control parameters
 #' @author Ross Bennett
 gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_groups, solver="quadprog", control=NULL){
-  stopifnot("package:ROI" %in% search() || require("ROI", quietly=TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI", quietly=TRUE))
   plugin <- paste0("ROI.plugin.", solver)
-  stopifnot(paste0("package:", plugin) %in% search() || require(plugin, quietly=TRUE, character.only=TRUE))
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
   
   # Check for cleaned returns in moments
   if(!is.null(moments$cleanR)) R <- moments$cleanR
@@ -62,7 +62,7 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
   lb <- constraints$min
   ub <- constraints$max
   
-  bnds <- V_bound(li=seq.int(1L, N), lb=as.numeric(lb),
+  bnds <- ROI::V_bound(li=seq.int(1L, N), lb=as.numeric(lb),
                   ui=seq.int(1L, N), ub=as.numeric(ub))
   
   # Include group constraints
@@ -102,7 +102,7 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
   # Set up the quadratic objective
   if(!is.null(lambda_hhi)){
     if(length(lambda_hhi) == 1 & is.null(conc_groups)){
-      ROI_objective <- Q_objective(Q=2*lambda*(moments$var + lambda_hhi * diag(N)), L=-moments$mean) # ROI
+      ROI_objective <- ROI::Q_objective(Q=2*lambda*(moments$var + lambda_hhi * diag(N)), L=-moments$mean) # ROI
       #Dmat <- 2*lambda*(moments$var + lambda_hhi * diag(N)) # solve.QP
       #dvec <- moments$mean # solve.QP
     } else if(!is.null(conc_groups)){
@@ -118,20 +118,20 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
         }
         hhi_mat <- hhi_mat + lambda_hhi[i] * tmpI
       }
-      ROI_objective <- Q_objective(Q=2*lambda*(moments$var + hhi_mat), L=-moments$mean) # ROI
+      ROI_objective <- ROI::Q_objective(Q=2*lambda*(moments$var + hhi_mat), L=-moments$mean) # ROI
       #Dmat <- 2 * lambda * (moments$var + hhi_mat) # solve.QP
       #dvec <- moments$mean # solve.QP
     }
   } else {
-    ROI_objective <- Q_objective(Q=2*lambda*moments$var, L=-moments$mean) # ROI
+    ROI_objective <- ROI::Q_objective(Q=2*lambda*moments$var, L=-moments$mean) # ROI
     #Dmat <- 2 * lambda * moments$var # solve.QP
     #dvec <- moments$mean # solve.QP
   }
   # set up the optimization problem and solve
-  opt.prob <- OP(objective=ROI_objective, 
-                       constraints=L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                       constraints=ROI::L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
                  bounds=bnds)
-  result <- try(ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
   
   # result <- try(solve.QP(Dmat=Dmat, dvec=dvec, Amat=t(Amat), bvec=rhs.vec, meq=meq), silent=TRUE)
   if(inherits(x=result, "try-error")) stop(paste("No solution found:", result))
@@ -178,9 +178,9 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
 #' @param control list of solver control parameters
 #' @author Ross Bennett
 maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=NULL){
-  stopifnot("package:ROI" %in% search() || require("ROI",quietly = TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI",quietly = TRUE))
   plugin <- paste0("ROI.plugin.", solver)
-  stopifnot(paste0("package:", plugin) %in% search() || require(plugin, quietly=TRUE, character.only=TRUE))
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
   
   # Check for cleaned returns in moments
   if(!is.null(moments$cleanR)) R <- moments$cleanR
@@ -196,7 +196,7 @@ maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=N
     ub[is.infinite(ub)] <- max(abs(c(constraints$min_sum, constraints$max_sum)))
     lb[is.infinite(lb)] <- 0
   }
-  bnds <- V_bound(li=seq.int(1L, N), lb=as.numeric(lb),
+  bnds <- ROI::V_bound(li=seq.int(1L, N), lb=as.numeric(lb),
                   ui=seq.int(1L, N), ub=as.numeric(ub))
   
   # set up initial A matrix for leverage constraints
@@ -234,14 +234,14 @@ maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=N
   }
   
   # set up the linear objective
-  ROI_objective <- L_objective(L=-moments$mean)
+  ROI_objective <- ROI::L_objective(L=-moments$mean)
   # objL <- -moments$mean
   
   # set up the optimization problem and solve
-  opt.prob <- OP(objective=ROI_objective, 
-                 constraints=L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                 constraints=ROI::L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
                  bounds=bnds)
-  roi.result <- try(ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
   if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
   
   # roi.result <- Rglpk_solve_LP(obj=objL, mat=Amat, dir=dir.vec, rhs=rhs.vec, bounds=bnds)
@@ -286,9 +286,9 @@ maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=N
 #' @param control list of solver control parameters
 #' @author Ross Bennett
 maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", control=NULL){
-  stopifnot("package:ROI" %in% search() || require("ROI",quietly = TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI",quietly = TRUE))
   plugin <- paste0("ROI.plugin.", solver)
-  stopifnot(paste0("package:", plugin) %in% search() || require(plugin, quietly=TRUE, character.only=TRUE))
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
   
   # Check for cleaned returns in moments
   if(!is.null(moments$cleanR)) R <- moments$cleanR
@@ -356,7 +356,7 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
   
   # Add the factor exposures to Amat, dir, and rhs
   if(!is.null(constraints$B)){
-    t.B <- t(B)
+    t.B <- t(constraints$B)
     zeros <- matrix(data=0, nrow=nrow(t.B), ncol=ncol(t.B))
     Amat <- rbind(Amat, cbind(t.B, zeros), cbind(-t.B, zeros))
     dir <- c(dir, rep(">=", 2 * nrow(t.B)))
@@ -364,7 +364,7 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
   }
   
   # Only seems to work if I do not specify bounds
-  # bnds <- V_bound(li=seq.int(1L, 2*m), lb=c(as.numeric(constraints$min), rep(0, m)),
+  # bnds <- ROI::V_Bound(li=seq.int(1L, 2*m), lb=c(as.numeric(constraints$min), rep(0, m)),
   #                 ui=seq.int(1L, 2*m), ub=c(as.numeric(constraints$max), rep(1, m)))
   bnds <- NULL
   
@@ -372,13 +372,13 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
   types <- c(rep("C", N), rep("B", N))
   
   # Set up the linear objective to maximize mean return
-  ROI_objective <- L_objective(L=c(-moments$mean, rep(0, N)))
+  ROI_objective <- ROI::L_objective(L=c(-moments$mean, rep(0, N)))
   
   # Set up the optimization problem and solve
-  opt.prob <- OP(objective=ROI_objective, 
-                 constraints=L_constraint(L=Amat, dir=dir, rhs=rhs),
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                 constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs),
                  bounds=bnds, types=types)
-  roi.result <- try(ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
   if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
   
   # Weights
@@ -412,9 +412,9 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
 #' @param control list of solver control parameters
 #' @author Ross Bennett
 etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", control=NULL){
-  stopifnot("package:ROI" %in% search() || require("ROI",quietly = TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI",quietly = TRUE))
   plugin <- paste0("ROI.plugin.", solver)
-  stopifnot(paste0("package:", plugin) %in% search() || require(plugin, quietly=TRUE, character.only=TRUE))
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
   
   # Check for cleaned returns in moments
   if(!is.null(moments$cleanR)) R <- moments$cleanR
@@ -424,7 +424,7 @@ etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", contr
   # Applying box constraints
   LB <- c(as.numeric(constraints$min), rep(0, T), -1)
   UB <- c(as.numeric(constraints$max), rep(Inf, T), 1)
-  bnds <- V_bound(li=seq.int(1L, N+T+1), lb=LB,
+  bnds <- ROI::V_bound(li=seq.int(1L, N+T+1), lb=LB,
                   ui=seq.int(1L, N+T+1), ub=UB)
   
   # Add this check if mean is not an objective and return is a constraints
@@ -463,11 +463,11 @@ etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", contr
     rhs.vec <- c(rhs.vec, constraints$lower, -constraints$upper)
   }
   
-  ROI_objective <- L_objective(c(rep(0,N), rep(1/(alpha*T),T), 1))
-  opt.prob <- OP(objective=ROI_objective, 
-                       constraints=L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
+  ROI_objective <- ROI::L_objective(c(rep(0,N), rep(1/(alpha*T),T), 1))
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                       constraints=ROI::L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
                        bounds=bnds)
-  roi.result <- try(ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
   if(inherits(x=roi.result, "try-error")) stop(paste("No solution found:", roi.result))
   
   weights <- roi.result$solution[1:N]
@@ -512,9 +512,9 @@ etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", contr
 #' @param control list of solver control parameters
 #' @author Ross Bennett
 etl_milp_opt <- function(R, constraints, moments, target, alpha, solver="glpk", control=NULL){
-  stopifnot("package:ROI" %in% search() || require("ROI",quietly = TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI",quietly = TRUE))
   plugin <- paste0("ROI.plugin.", solver)
-  stopifnot(paste0("package:", plugin) %in% search() || require(plugin, quietly=TRUE, character.only=TRUE))
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
   
   # Check for cleaned returns in moments
   if(!is.null(moments$cleanR)) R <- moments$cleanR
@@ -606,19 +606,19 @@ etl_milp_opt <- function(R, constraints, moments, target, alpha, solver="glpk", 
   }
   
   # Linear objective vector
-  ROI_objective <- L_objective(c( rep(0, m), 1, rep(1/n, n) / alpha, 0, rep(0, m)))
+  ROI_objective <- ROI::L_objective(c( rep(0, m), 1, rep(1/n, n) / alpha, 0, rep(0, m)))
   
   # Set up the types vector with continuous and binary variables
   types <- c( rep("C", m), "C", rep("C", n), "C", rep("B", m))
   
-  bnds <- V_bound( li = 1L:(m + n + 2 + m), lb = c(LB, -1, rep(0, n), 1, rep(0, m)),
+  bnds <- ROI::V_bound( li = 1L:(m + n + 2 + m), lb = c(LB, -1, rep(0, n), 1, rep(0, m)),
                    ui = 1L:(m + n + 2 + m), ub = c(UB, 1, rep(Inf, n), 1, rep(1, m)))
   
   # Set up the optimization problem and solve  
-  opt.prob <- OP(objective=ROI_objective, 
-                 constraints=L_constraint(L=tmpAmat, dir=dir, rhs=rhs),
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                 constraints=ROI::L_constraint(L=tmpAmat, dir=dir, rhs=rhs),
                  bounds=bnds, types=types)
-  roi.result <- try(ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
   if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
   
   # The Rglpk solvers status returns an an integer with status information
@@ -672,10 +672,10 @@ etl_milp_opt <- function(R, constraints, moments, target, alpha, solver="glpk", 
 #' @author Ross Bennett
 gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, solver="quadprog", control=NULL){
   # function for minimum variance or max quadratic utility problems
-  stopifnot("package:corpcor" %in% search() || require("corpcor",quietly = TRUE))
-  stopifnot("package:ROI" %in% search() || require("ROI", quietly = TRUE))
+  stopifnot("package:corpcor" %in% search() || requireNamespace("corpcor",quietly = TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI", quietly = TRUE))
   plugin <- paste0("ROI.plugin.", solver)
-  stopifnot(paste0("package:", plugin) %in% search() || require(plugin, quietly=TRUE, character.only=TRUE))
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
   
   # Check for cleaned returns in moments
   if(!is.null(moments$cleanR)) R <- moments$cleanR
@@ -776,13 +776,13 @@ gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, s
   rhs <- rhs[!is.infinite(rhs)]
   dir <- dir[!is.infinite(rhs)]
   
-  ROI_objective <- Q_objective(Q=make.positive.definite(2*lambda*V), 
+  ROI_objective <- ROI::Q_objective(Q=corpcor::make.positive.definite(2*lambda*V), 
                                L=rep(-tmp_means, 3))
   
-  opt.prob <- OP(objective=ROI_objective, 
-                 constraints=L_constraint(L=Amat, dir=dir, rhs=rhs))
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                 constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs))
   
-  roi.result <- try(ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
   if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
   
   wts <- roi.result$solution
@@ -832,17 +832,21 @@ gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, s
 gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, solver="quadprog", control=NULL){
   # function for minimum variance or max quadratic utility problems
   # modifying ProportionalCostOpt function from MPO package
-  stopifnot("package:corpcor" %in% search() || require("corpcor", quietly = TRUE))
-  stopifnot("package:ROI" %in% search() || require("ROI", quietly = TRUE))
+  stopifnot("package:corpcor" %in% search() || requireNamespace("corpcor", quietly = TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI", quietly = TRUE))
   plugin <- paste0("ROI.plugin.", solver)
-  stopifnot(paste0("package:", plugin) %in% search() || require(plugin, quietly=TRUE, character.only=TRUE))
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
   
   # Check for cleaned returns in moments
   if(!is.null(moments$cleanR)) R <- moments$cleanR
   
+  # proportional transaction costs
+  ptc <- constraints$ptc
+  
   # Modify the returns matrix. This is done because there are 3 sets of
   # variables 1) w.initial, 2) w.buy, and 3) w.sell
-  returns <- cbind(R, R, R)
+  R0 <- matrix(0, ncol=ncol(R), nrow=nrow(R))
+  returns <- cbind(R, R0, R0)
   V <- cov(returns)
   
   # number of assets
@@ -851,13 +855,7 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
   # initial weights for solver
   if(is.null(init_weights)) init_weights <- rep(1/ N, N)
   
-  # Amat for initial weights
-  Amat <- cbind(diag(N), matrix(0, nrow=N, ncol=N*2))
-  rhs <- init_weights
-  dir <- rep("==", N)
-  meq <- N
-  
-  # check for a target return constraint
+  # Check for a target return constraint
   if(!is.na(target)) {
     # If var is the only objective specified, then moments$mean won't be calculated
     if(all(moments$mean==0)){
@@ -865,24 +863,46 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
     } else {
       tmp_means <- moments$mean
     }
-    Amat <- rbind(Amat, rep((1+tmp_means), 3))
-    dir <- c(dir, "==")
-    rhs <- c(rhs, (1+target))
-    meq <- N + 1
+  } else {
+    tmp_means <- rep(0, N)
+    target <- 0
   }
+  Amat <- c(tmp_means, rep(0, 2 * N))
+  dir <- "=="
+  rhs <- 1 + target
+  meq <- 1
   
-  # Amat for positive weights for w.buy and w.sell
-  weights.positive <- rbind(matrix(0,ncol=2*N,nrow=N),diag(2*N))
-  temp.index <- (N*3-N+1):(N*3)
-  weights.positive[temp.index,] <- -1*weights.positive[temp.index,]
-  Amat <- rbind(Amat, t(weights.positive))
-  rhs <- c(rhs, rep(0, 2*N))
+  # separate the weights into w, w^+, and w^-
+  # w - w^+ + w^- = 0
+  Amat <- rbind(Amat, cbind(diag(N), -diag(N), diag(N)))
+  rhs <- c(rhs, init_weights)
+  dir <- c(dir, rep("==", N))
+  meq <- N + 1
   
-  # Amat for full investment constraint
-  ptc <- constraints$ptc
-  Amat <- rbind(Amat, rbind(c(rep(1, N), (1+ptc), (1-ptc)), -c(rep(1, N), (1+ptc), (1-ptc))))
-  rhs <- c(rhs, constraints$min_sum, -constraints$max_sum)
-  dir <- c(dir, ">=", ">=")
+  # w+ >= 0
+  Amat <- rbind(Amat, cbind(diag(0, N), diag(N), diag(0, N)))
+  rhs <- c(rhs, rep(0, N))
+  dir <- c(dir, rep(">=", N))
+  
+  # w- >= 0
+  Amat <- rbind(Amat, cbind(diag(0, N), diag(0, N), diag(N)))
+  rhs <- c(rhs, rep(0, N))
+  dir <- c(dir, rep(">=", N))
+  
+  # 1^T w + tcb^T w^+ + tcs^T w^- >= min_sum
+  Amat <- rbind(Amat, c(rep(1, N), ptc, ptc))
+  rhs <- c(rhs, constraints$min_sum)
+  dir <- c(dir, ">=")
+  
+  # 1^T w + tcb^T w^+ + tcs^T w^- <= max_sum
+  Amat <- rbind(Amat, c(rep(-1, N), -ptc, -ptc))
+  rhs <- c(rhs, -constraints$max_sum)
+  dir <- c(dir, ">=")
+  
+  # -(1 + tcb)^T w^+ + (1 - tcs)^T w^- >= 0
+  Amat <- rbind(Amat, c(rep(0, N), -(1 + ptc), (1 - ptc)))
+  rhs <- c(rhs, 0)
+  dir <- c(dir, ">=")
   
   # Amat for lower box constraints
   Amat <- rbind(Amat, cbind(diag(N), diag(N), diag(N)))
@@ -917,27 +937,176 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
     dir <- c(dir, rep(">=", 2 * nrow(t.B)))
     rhs <- c(rhs, constraints$lower, -constraints$upper)
   }
+  d <- c(-tmp_means, rep(0, 2 * N))
   
-  d <- rep(-moments$mean, 3)
+  # Remove the rows of Amat and elements of rhs where rhs is Inf or -Inf
+  Amat <- Amat[!is.infinite(rhs), ]
+  rhs <- rhs[!is.infinite(rhs)]
+  dir <- dir[!is.infinite(rhs)]
+  
+  ROI_objective <- ROI::Q_objective(Q=corpcor::make.positive.definite(2*lambda*V), L=d)
+  
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                 constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs))
+  roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
+  
+  wts <- roi.result$solution
+  weights <- wts[1:N]
+  names(weights) <- colnames(R)
+  out <- list()
+  out$weights <- weights
+  out$out <- roi.result$objval
+  obj_vals <- list()
+  # Calculate the objective values here so that we can use the moments$mean
+  # and moments$var that might be passed in by the user.
+  if(!all(moments$mean == 0)){
+    port.mean <- as.numeric(sum(weights * moments$mean))
+    names(port.mean) <- "mean"
+    obj_vals[["mean"]] <- port.mean
+    # faster and more efficient way to compute t(w) %*% Sigma %*% w
+    port.sd <- sqrt(sum(crossprod(weights, moments$var) * weights))
+    names(port.sd) <- "StdDev"
+    obj_vals[["StdDev"]] <- port.sd
+  } else {
+    # faster and more efficient way to compute t(w) %*% Sigma %*% w
+    port.sd <- sqrt(sum(crossprod(weights, moments$var) * weights))
+    names(port.sd) <- "StdDev"
+    obj_vals[["StdDev"]] <- port.sd
+  }
+  out$obj_vals <- obj_vals
+  return(out)
+}
+
+##### minimize variance or maximize quadratic utility with leverage constraints #####
+#' GMV/QU QP Optimization with Turnover Constraint
+#' 
+#' This function is called by optimize.portfolio to solve minimum variance or 
+#' maximum quadratic utility problems with a leverage constraint
+#' 
+#' @param R xts object of asset returns
+#' @param constraints object of constraints in the portfolio object extracted with \code{get_constraints}
+#' @param moments object of moments computed based on objective functions
+#' @param lambda risk_aversion parameter
+#' @param target target return value
+#' @param solver solver to use
+#' @param control list of solver control parameters
+#' @author Ross Bennett
+gmv_opt_leverage <- function(R, constraints, moments, lambda, target, solver="quadprog", control=NULL){
+  # function for minimum variance or max quadratic utility problems
+  stopifnot("package:corpcor" %in% search() || requireNamespace("corpcor",quietly = TRUE))
+  stopifnot("package:ROI" %in% search() || requireNamespace("ROI", quietly = TRUE))
+  plugin <- paste0("ROI.plugin.", solver)
+  stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
+  
+  # Check for cleaned returns in moments
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
+  
+  # Modify the returns matrix. This is done because there are 3 sets of
+  # variables 1) w.initial, 2) w.buy, and 3) w.sell
+  R0 <- matrix(0, ncol=ncol(R), nrow=nrow(R))
+  returns <- cbind(R, R0, R0)
+  V <- cov(returns)
+  
+  # number of assets
+  N <- ncol(R)
+  
+  # check for a target return constraint
+  if(!is.na(target)) {
+    # If var is the only objective specified, then moments$mean won't be calculated
+    if(all(moments$mean==0)){
+      tmp_means <- colMeans(R)
+    } else {
+      tmp_means <- moments$mean
+    }
+  } else {
+    tmp_means <- rep(0, N)
+    target <- 0
+  }
+  Amat <- c(tmp_means, rep(0, 2*N))
+  dir <- "=="
+  rhs <- target
+  # meq <- N + 1
+  
+  # separate the weights into w, w+, and w-
+  # w - w+ + w- = 0
+  Amat <- rbind(Amat, cbind(diag(N), -1*diag(N), diag(N)))
+  rhs <- c(rhs, rep(0, N))
+  dir <- c(dir, rep("==", N))
+  
+  # Amat for leverage constraints
+  Amat <- rbind(Amat, c(rep(0, N), rep(-1, N), rep(-1, N)))
+  rhs <- c(rhs, -constraints$leverage)
+  dir <- c(dir, ">=")
+  
+  # Amat for positive weights
+  Amat <- rbind(Amat, cbind(matrix(0, nrow=N, ncol=N), diag(N), matrix(0, nrow=N, ncol=N)))
+  rhs <- c(rhs, rep(0, N))
+  dir <- c(dir, rep(">=", N))
+  
+  # Amat for negative weights
+  Amat <- rbind(Amat, cbind(matrix(0, nrow=N, ncol=2*N), diag(N)))
+  rhs <- c(rhs, rep(0, N))
+  dir <- c(dir, rep(">=", N))
+  
+  # Amat for full investment constraint
+  Amat <- rbind(Amat, rbind(c(rep(1, N), rep(0,2*N)), 
+                            c(rep(-1, N), rep(0,2*N))))
+  rhs <- c(rhs, constraints$min_sum, -constraints$max_sum)
+  dir <- c(dir, ">=", ">=")
+  
+  # Amat for lower box constraints
+  Amat <- rbind(Amat, cbind(diag(N), diag(0, N), diag(0, N)))
+  rhs <- c(rhs, constraints$min)
+  dir <- c(dir, rep(">=", N))
+  
+  # Amat for upper box constraints
+  Amat <- rbind(Amat, cbind(-diag(N), diag(0, N), diag(0, N)))
+  rhs <- c(rhs, -constraints$max)
+  dir <- c(dir, rep(">=", N))
+  
+  # include group constraints
+  if(try(!is.null(constraints$groups), silent=TRUE)){
+    n.groups <- length(constraints$groups)
+    Amat.group <- matrix(0, nrow=n.groups, ncol=N)
+    zeros <- matrix(0, nrow=n.groups, ncol=N)
+    for(i in 1:n.groups){
+      Amat.group[i, constraints$groups[[i]]] <- 1
+    }
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
+    Amat <- rbind(Amat, cbind(Amat.group, zeros, zeros))
+    Amat <- rbind(Amat, cbind(-Amat.group, zeros, zeros))
+    dir <- c(dir, rep(">=", (n.groups + n.groups)))
+    rhs <- c(rhs, constraints$cLO, -constraints$cUP)
+  }
+  
+  # Add the factor exposures to Amat, dir, and rhs
+  if(!is.null(constraints$B)){
+    t.B <- t(constraints$B)
+    zeros <- matrix(0, nrow=nrow(t.B), ncol=ncol(t.B))
+    Amat <- rbind(Amat, cbind(t.B, zeros, zeros))
+    Amat <- rbind(Amat, cbind(-t.B, zeros, zeros))
+    dir <- c(dir, rep(">=", 2 * nrow(t.B)))
+    rhs <- c(rhs, constraints$lower, -constraints$upper)
+  }
   
   # Remove the rows of Amat and elements of rhs.vec where rhs is Inf or -Inf
   Amat <- Amat[!is.infinite(rhs), ]
   rhs <- rhs[!is.infinite(rhs)]
   dir <- dir[!is.infinite(rhs)]
   
-  ROI_objective <- Q_objective(Q=make.positive.definite(2*lambda*V), 
-                               L=rep(-moments$mean, 3))
+  ROI_objective <- ROI::Q_objective(Q=corpcor::make.positive.definite(2*lambda*V), 
+                               L=rep(-tmp_means, 3))
   
-  opt.prob <- OP(objective=ROI_objective, 
-                 constraints=L_constraint(L=Amat, dir=dir, rhs=rhs))
-  roi.result <- try(ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
+  opt.prob <- ROI::OP(objective=ROI_objective, 
+                 constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs))
+  
+  roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
   if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
   
   wts <- roi.result$solution
-  w.buy <- roi.result$solution[(N+1):(2*N)]
-  w.sell <- roi.result$solution[(2*N+1):(3*N)]
-  w.total <- init_weights + w.buy + w.sell
-  wts.final <- wts[(1:N)] + wts[(1+N):(2*N)] + wts[(2*N+1):(3*N)]
+  wts.final <- wts[1:N]
   
   weights <- wts.final
   names(weights) <- colnames(R)
@@ -1177,13 +1346,13 @@ max_sr_opt <- function(R, constraints, moments, lambda_hhi, conc_groups, solver,
   
   # Find the maximum return
   max_ret <- maxret_opt(R=R, moments=moments, constraints=constraints, 
-                        target=NA, solver=solver, control=control)
+                        target=NA, solver="glpk", control=control)
   max_mean <- as.numeric(-max_ret$out)
   
   # Find the minimum return
   tmp_moments$mean <- -1 * moments$mean
   min_ret <- maxret_opt(R=R, moments=tmp_moments, constraints=constraints, 
-                        target=NA, solver=solver, control=control)
+                        target=NA, solver="glpk", control=control)
   min_mean <- as.numeric(min_ret$out)
   
   # use optimize() to find the target return value that maximizes sharpe ratio
@@ -1281,9 +1450,9 @@ max_sr_opt <- function(R, constraints, moments, lambda_hhi, conc_groups, solver,
 
 
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING

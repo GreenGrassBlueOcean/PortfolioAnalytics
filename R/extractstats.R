@@ -1,7 +1,7 @@
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -81,7 +81,7 @@ extractStats <- function (object, prefix=NULL, ...){
 }
 
 #' @method extractStats optimize.portfolio.DEoptim
-#' @S3method extractStats optimize.portfolio.DEoptim
+# #' @S3method extractStats optimize.portfolio.DEoptim
 #' @export 
 extractStats.optimize.portfolio.DEoptim <- function(object, prefix=NULL, ...) {
   if(!inherits(object, "optimize.portfolio.DEoptim")) stop("object must be of class optimize.portfolio.DEoptim")
@@ -115,7 +115,7 @@ extractStats.optimize.portfolio.DEoptim <- function(object, prefix=NULL, ...) {
 }
 
 #' @method extractStats optimize.portfolio.ROI
-#' @S3method extractStats optimize.portfolio.ROI
+# #' @S3method extractStats optimize.portfolio.ROI
 #' @export 
 extractStats.optimize.portfolio.ROI <- function(object, prefix=NULL, ...) {
   if(!inherits(object, "optimize.portfolio.ROI")) stop("object must be of class optimize.portfolio.ROI")
@@ -132,7 +132,7 @@ extractStats.optimize.portfolio.ROI <- function(object, prefix=NULL, ...) {
 }
 
 #' @method extractStats optimize.portfolio.pso
-#' @S3method extractStats optimize.portfolio.pso
+# #' @S3method extractStats optimize.portfolio.pso
 #' @export 
 extractStats.optimize.portfolio.pso <- function(object, prefix=NULL, ...){
   if(!inherits(object, "optimize.portfolio.pso")) stop("object must be of class optimize.portfolio.pso")
@@ -152,8 +152,8 @@ extractStats.optimize.portfolio.pso <- function(object, prefix=NULL, ...){
       # might violate your constraints, so you'd need to renormalize them after optimizing
       # we'll create functions for that so the user is less likely to mess it up.
       
-      ##' NOTE: need to normalize in the optimization wrapper too before we return, since we've normalized in here
-      ##' In Kris' original function, this was manifested as a full investment constraint
+      # NOTE: need to normalize in the optimization wrapper too before we return, since we've normalized in here
+      # In Kris' original function, this was manifested as a full investment constraint
       if(!is.null(constraints$max_sum) & constraints$max_sum != Inf ) {
         max_sum=constraints$max_sum
         if(sum(weights)>max_sum) { weights<-(max_sum/sum(weights))*weights } # normalize to max_sum
@@ -190,8 +190,9 @@ extractStats.optimize.portfolio.pso <- function(object, prefix=NULL, ...){
   tmpout <- c(object$out, tmpout)
   
   # run constrained_objective on the weights to get the objective measures in a matrix
-  stopifnot("package:foreach" %in% search() || suppressMessages(require("foreach",quietly = TRUE)))
-  obj <- foreach(i=1:nrow(psoweights), .inorder=TRUE, .combine=rbind, .errorhandling='remove') %dopar% {
+  stopifnot("package:foreach" %in% search() || suppressMessages(requireNamespace("foreach",quietly = TRUE)))
+  i <- 1
+  obj <- foreach::foreach(i=1:nrow(psoweights), .inorder=TRUE, .combine=rbind, .errorhandling='remove') %dopar% {
     unlist(constrained_objective(w=psoweights[i,], R=R, portfolio=portfolio, trace=TRUE)$objective_measures)
   }
   objnames <- name.replace(colnames(obj))
@@ -202,7 +203,7 @@ extractStats.optimize.portfolio.pso <- function(object, prefix=NULL, ...){
 }
 
 #' @method extractStats optimize.portfolio.GenSA
-#' @S3method extractStats optimize.portfolio.GenSA
+# #' @S3method extractStats optimize.portfolio.GenSA
 #' @export 
 extractStats.optimize.portfolio.GenSA <- function(object, prefix=NULL, ...) {
   if(!inherits(object, "optimize.portfolio.GenSA")) stop("object must be of class optimize.portfolio.GenSA")
@@ -220,7 +221,7 @@ extractStats.optimize.portfolio.GenSA <- function(object, prefix=NULL, ...) {
 }
 
 #' @method extractStats optimize.portfolio.invol
-#' @S3method extractStats optimize.portfolio.invol
+# #' @S3method extractStats optimize.portfolio.invol
 #' @export 
 extractStats.optimize.portfolio.invol <- function(object, prefix=NULL, ...) {
   if(!inherits(object, "optimize.portfolio.invol")) stop("object must be of class optimize.portfolio.invol")
@@ -235,7 +236,7 @@ extractStats.optimize.portfolio.invol <- function(object, prefix=NULL, ...) {
 }
 
 #' @method extractStats optimize.portfolio.eqwt
-#' @S3method extractStats optimize.portfolio.eqwt
+# #' @S3method extractStats optimize.portfolio.eqwt
 #' @export 
 extractStats.optimize.portfolio.eqwt <- function(object, prefix=NULL, ...) {
   if(!inherits(object, "optimize.portfolio.eqwt")) stop("object must be of class optimize.portfolio.eqwt")
@@ -250,12 +251,12 @@ extractStats.optimize.portfolio.eqwt <- function(object, prefix=NULL, ...) {
 }
 
 #' @method extractStats optimize.portfolio.rebalancing
-#' @S3method extractStats optimize.portfolio.rebalancing
+# #' @S3method extractStats optimize.portfolio.rebalancing
 #' @export 
 extractStats.optimize.portfolio.rebalancing <- function(object, prefix=NULL, ...) {
   if(!inherits(object, "optimize.portfolio.rebalancing")) stop("object must be of class optimize.portfolio.rebalancing")
   
-  if(inherits(opt.rebal$portfolio, "regime.portfolios")){
+  if(inherits(object$portfolio, "regime.portfolios")){
     return(extractStatsRegime(object, prefix=prefix))
   } else {
     return(lapply(object$opt_rebal, extractStats, ...))
@@ -294,7 +295,7 @@ extractStatsRegime <- function(object, prefix=NULL){
 }
 
 #' @method extractStats optimize.portfolio.parallel
-#' @S3method extractStats optimize.portfolio.parallel
+# #' @S3method extractStats optimize.portfolio.parallel
 #' @export
 extractStats.optimize.portfolio.parallel <- function(object,prefix=NULL,...) {
     resultlist<-object
@@ -310,7 +311,7 @@ extractStats.optimize.portfolio.parallel <- function(object,prefix=NULL,...) {
 }
 
 #' @method extractStats optimize.portfolio.random
-#' @S3method extractStats optimize.portfolio.random
+# #' @S3method extractStats optimize.portfolio.random
 #' @export
 extractStats.optimize.portfolio.random <- function(object, prefix=NULL, ...){
 # This just flattens the $random_portfolio_objective_results part of the object
@@ -343,7 +344,7 @@ extractStats.optimize.portfolio.random <- function(object, prefix=NULL, ...){
 }
 
 #' @method extractStats opt.list
-#' @S3method extractStats opt.list
+# #' @S3method extractStats opt.list
 #' @export
 extractStats.opt.list <- function(object, ...){
   # get the stats of each optimization in a list
@@ -356,7 +357,7 @@ extractStats.opt.list <- function(object, ...){
 }
 
 #' @method extractStats opt.rebal.list
-#' @S3method extractStats opt.rebal.list
+# #' @S3method extractStats opt.rebal.list
 #' @export
 extractStats.opt.rebal.list <- function(object, ...){
   # get the stats of each optimization in a list
@@ -380,11 +381,11 @@ extractStats.opt.rebal.list <- function(object, ...){
 #' @seealso \code{\link{optimize.portfolio}}, \code{\link{optimize.portfolio.rebalancing}}
 #' @export
 extractWeights <- function (object, ...){
-  UseMethod('extractWeights')
+  UseMethod('extractWeights', object = object)
 }
 
 #' @method extractWeights optimize.portfolio
-#' @S3method extractWeights optimize.portfolio
+# #' @S3method extractWeights optimize.portfolio
 #' @export
 extractWeights.optimize.portfolio <- function(object, ...){
   if(!inherits(object, "optimize.portfolio")){
@@ -394,7 +395,7 @@ extractWeights.optimize.portfolio <- function(object, ...){
 }
 
 #' @method extractWeights optimize.portfolio.rebalancing
-#' @S3method extractWeights optimize.portfolio.rebalancing
+# #' @S3method extractWeights optimize.portfolio.rebalancing
 #' @export
 extractWeights.optimize.portfolio.rebalancing <- function(object, ...){
   if(!inherits(object, "optimize.portfolio.rebalancing")){
@@ -411,19 +412,19 @@ extractWeights.optimize.portfolio.rebalancing <- function(object, ...){
 
   colnames(result) = names(unlist(rebal_object[[1]]$weights))
   rownames(result) = names(rebal_object)
-  result = as.xts(result)
+  result = as.xts(result, dateFormat="Date")
   return(result)
 }
 
 #' @method extractWeights summary.optimize.portfolio.rebalancing
-#' @S3method extractWeights summary.optimize.portfolio.rebalancing
+# #' @S3method extractWeights summary.optimize.portfolio.rebalancing
 #' @export
 extractWeights.summary.optimize.portfolio.rebalancing <- function(object, ...){
   object$weights
 }
 
 #' @method extractWeights opt.list
-#' @S3method extractWeights opt.list
+# #' @S3method extractWeights opt.list
 #' @export
 extractWeights.opt.list <- function(object, ...){
   # get the optimal weights of each optimization in a list
@@ -453,7 +454,7 @@ extractWeights.opt.list <- function(object, ...){
 }
 
 #' @method extractWeights opt.rebal.list
-#' @S3method extractWeights opt.rebal.list
+# #' @S3method extractWeights opt.rebal.list
 #' @export
 extractWeights.opt.rebal.list <- function(object, ...){
   # get the optimal weights of each optimization in a list
@@ -478,11 +479,12 @@ extractWeights.opt.rebal.list <- function(object, ...){
 #' @author Ross Bennett
 #' @export
 extractObjectiveMeasures <- function(object){
-  UseMethod("extractObjectiveMeasures")
+  UseMethod("extractObjectiveMeasures", object = object)
 }
 
 #' @method extractObjectiveMeasures optimize.portfolio
-#' @S3method extractObjectiveMeasures optimize.portfolio
+# #' @S3method extractObjectiveMeasures optimize.portfolio
+#' @export
 extractObjectiveMeasures.optimize.portfolio <- function(object){
   if(!inherits(object, "optimize.portfolio")) stop("object must be of class 'optimize.portfolio'")
   # objective measures returned as $objective_measures for all other solvers
@@ -491,7 +493,8 @@ extractObjectiveMeasures.optimize.portfolio <- function(object){
 }
 
 #' @method extractObjectiveMeasures optimize.portfolio.rebalancing
-#' @S3method extractObjectiveMeasures optimize.portfolio.rebalancing
+# #' @S3method extractObjectiveMeasures optimize.portfolio.rebalancing
+#' @export
 extractObjectiveMeasures.optimize.portfolio.rebalancing <- function(object){
   if(!inherits(object, "optimize.portfolio.rebalancing")) stop("object must be of class 'optimize.portfolio.rebalancing'")
   
@@ -543,7 +546,7 @@ extractObjRegime <- function(object){
     # rbind the objective measures and convert to an xts object
     #obj <- xts(do.call(rbind, tmp), as.Date(names(tmp.idx)))
     obj <- do.call(rbind, tmp)
-    colnames(obj) <- PortfolioAnalytics:::name.replace(colnames(obj))
+    colnames(obj) <- name.replace(colnames(obj))
     obj <- xts(obj, as.Date(names(tmp.idx)))
     # insert the objective measures into the list
     out.list[[unique.regimes[i]]] <- obj
@@ -552,13 +555,15 @@ extractObjRegime <- function(object){
 }
 
 #' @method extractObjectiveMeasures summary.optimize.portfolio.rebalancing
-#' @S3method extractObjectiveMeasures summary.optimize.portfolio.rebalancing
+# #' @S3method extractObjectiveMeasures summary.optimize.portfolio.rebalancing
+#' @export
 extractObjectiveMeasures.summary.optimize.portfolio.rebalancing <- function(object){
   object$objective_measures
 }
 
 #' @method extractObjectiveMeasures opt.list
-#' @S3method extractObjectiveMeasures opt.list
+# #' @S3method extractObjectiveMeasures opt.list
+#' @export
 extractObjectiveMeasures.opt.list <- function(object){
   # The idea is that these portfolios opt.list may have different objectives.
   # Need a function to evaluate *all* objective measures for each portfolio.
@@ -589,7 +594,7 @@ extractObjectiveMeasures.opt.list <- function(object){
     # Get the objective_measures from each element
     for(i in 1:length(object)){
       tmp <- unlist(object[[i]]$objective_measures)
-      names(tmp) <- PortfolioAnalytics:::name.replace(names(tmp))
+      names(tmp) <- name.replace(names(tmp))
       obj_list[[opt.names[i]]] <- tmp
     }
     obj_names <- unique(unlist(lapply(obj_list, names)))
@@ -650,7 +655,7 @@ extractObjectiveMeasures.opt.list <- function(object){
       tmp.R <- object[[i]]$R
       tmp.portf <- object[[i]]$portfolio
       tmp <- unlist(constrained_objective(w=tmp.weights, R=tmp.R, portfolio=tmp.portf, trace=TRUE)$objective_measures)
-      names(tmp) <- PortfolioAnalytics:::name.replace(names(tmp))
+      names(tmp) <- name.replace(names(tmp))
       out[[opt.names[i]]] <- tmp
     }
     out <- do.call(rbind, out)
@@ -659,7 +664,7 @@ extractObjectiveMeasures.opt.list <- function(object){
 }
 
 #' @method extractObjectiveMeasures opt.rebal.list
-#' @S3method extractObjectiveMeasures opt.rebal.list
+# #' @S3method extractObjectiveMeasures opt.rebal.list
 #' @export
 extractObjectiveMeasures.opt.rebal.list <- function(object, ...){
   # get the optimal weights of each optimization in a list

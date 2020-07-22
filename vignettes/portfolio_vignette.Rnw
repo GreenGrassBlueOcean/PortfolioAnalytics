@@ -1,6 +1,5 @@
 \documentclass[a4paper]{article}
 \usepackage[OT1]{fontenc}
-\usepackage{Sweave}
 \usepackage{Rd}
 \usepackage{amsmath}
 \usepackage{hyperref}
@@ -87,9 +86,9 @@ print.default(pspec)
 \section{Adding Constraints to the Portfolio Object}
 Adding constraints to the portfolio object is done with \code{add.constraint}. The \code{add.constraint} function is the main interface for adding and/or updating constraints to the portfolio object. This function allows the user to specify the portfolio to add the constraints to, the type of constraints, arguments for the constraint, and whether or not to enable the constraint (\code{enabled=TRUE} is the default). If updating an existing constraint, the indexnum argument can be specified.
 
-\subsection{Leverage Constraint}
+\subsection{Sum of Weights Constraint}
 
-The \code{leverage} constraint specifies the constraint on the sum of the weights. Aliases for the \code{leverage} constraint type include \code{weight\_sum}, \code{weight}, and \code{leverage}. Here we add a constraint that the weights must sum to 1, or the full investment constraint.
+The \code{weight\_sum} constraint specifies the constraint on the sum of the weights. Aliases for the \code{weight\_sum} constraint type include \code{weight} and \code{leverage}. Here we add a constraint that the weights must sum to 1, or the full investment constraint.
 <<tidy=FALSE>>=
 # Add the full investment constraint that specifies the weights must sum to 1.
 pspec <- add.constraint(portfolio=pspec, 
@@ -198,7 +197,7 @@ The print method for the portfolio object shows a concise view of the portfolio 
 print(pspec)
 @
 
-The \code{summary} function gives a more detailed view of the constraints.
+The summary method gives a more detailed view of the constraints.
 <<>>=
 summary(pspec)
 @
@@ -317,7 +316,7 @@ summary(pspec)
 The PortfolioAnalytics package currently supports random portfolios, DEoptim, pso, GenSA, and ROI as back ends. Note that some of the QP/LP problems are solved directly with Rglpk and quadprog. The solver can be specified with the \code{optimize\_method} argument in \code{optimize.portfolio} and \code{optimize.portfolio.rebalancing}.
 
 \subsection{DEoptim}
-PortfolioAnalytics uses the \code{DEoptim} function from the R package \verb"DEoptim". Differential evolution is a stochastic global optimization algorithm. See \code{?DEoptim} and the references contained therein for more information. See also \href{http://cran.r-project.org/web/packages/DEoptim/vignettes/DEoptimPortfolioOptimization.pdf}{Large scale portfolio optimization with DEoptim}.
+PortfolioAnalytics uses the \code{DEoptim} function from the R package \verb"DEoptim". Differential evolution is a stochastic global optimization algorithm. See \code{?DEoptim} and the references contained therein for more information. See also \href{https://cran.r-project.org/web/packages/DEoptim/vignettes/DEoptimPortfolioOptimization.pdf}{Large scale portfolio optimization with DEoptim}.
 \subsection{Random Portfolios}
 PortfolioAnalytics has three methods to generate random portfolios.
 \begin{enumerate}
@@ -621,6 +620,7 @@ print(opt_eq_meanETL)
 
 Chart the optimal weights and optimal portfolio in risk-return space.
 <<fig.cap="mean-ETL with ETL Equal Risk Contribution", fig.align='center', fig.width=5, fig.height=8, tidy=FALSE>>=
+plot.new()
 plot(opt_eq_meanETL, risk.col="ETL", return.col="mean", 
      main="Risk Budget mean-ETL Optimization",
      xlim=c(0,0.12), ylim=c(0.005,0.009))
@@ -657,6 +657,7 @@ chart.Weights(opt_combine, plot.type="bar", legend.loc="topleft", ylim=c(0, 1))
 
 Chart the optimal portfolios of each optimization in risk-return space.
 <<fig.cap="Optimal Portfolios in Risk-Return Space", fig.height=4, fig.width=6, fig.align='center', tidy=FALSE>>=
+plot.new()
 chart.RiskReward(opt_combine, risk.col="ETL", return.col="mean", 
                  main="ETL Optimization Comparison", xlim=c(0.018, 0.024),
                  ylim=c(0.005, 0.008))

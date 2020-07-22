@@ -75,7 +75,8 @@ chart.Weights.GenSA <- function(object, ..., neighbors = NULL, main="Weights", l
 
 #' @rdname chart.Weights
 #' @method chart.Weights optimize.portfolio.GenSA
-#' @S3method chart.Weights optimize.portfolio.GenSA
+# #' @S3method chart.Weights optimize.portfolio.GenSA
+#' @export
 chart.Weights.optimize.portfolio.GenSA <- chart.Weights.GenSA
 
 chart.Scatter.GenSA <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color="darkgray", cex.axis=0.8, ylim=NULL, xlim=NULL, rp=FALSE){
@@ -144,7 +145,8 @@ chart.Scatter.GenSA <- function(object, ..., neighbors=NULL, return.col="mean", 
 
 #' @rdname chart.RiskReward
 #' @method chart.RiskReward optimize.portfolio.GenSA
-#' @S3method chart.RiskReward optimize.portfolio.GenSA
+# #' @S3method chart.RiskReward optimize.portfolio.GenSA
+#' @export
 chart.RiskReward.optimize.portfolio.GenSA <- chart.Scatter.GenSA
 
 
@@ -162,16 +164,17 @@ charts.GenSA <- function(GenSA, rp=FALSE, return.col="mean", risk.col="ES", char
 
 #' @rdname plot
 #' @method plot optimize.portfolio.GenSA
-#' @S3method plot optimize.portfolio.GenSA
+# #' @S3method plot optimize.portfolio.GenSA
+#' @export
 plot.optimize.portfolio.GenSA <- function(x, ..., rp=FALSE, return.col="mean", risk.col="ES", chart.assets=FALSE, cex.axis=0.8, element.color="darkgray", neighbors=NULL, main="GenSA.Portfolios", xlim=NULL, ylim=NULL){
   charts.GenSA(GenSA=x, rp=rp, return.col=return.col, risk.col=risk.col, chart.assets=chart.assets, cex.axis=cex.axis, element.color=element.color, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...=...)
 }
 
 
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING

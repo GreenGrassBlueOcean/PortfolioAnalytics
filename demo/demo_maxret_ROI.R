@@ -7,6 +7,7 @@ library(ROI)
 require(ROI.plugin.glpk)
 require(ROI.plugin.quadprog)
 
+foreach::registerDoSEQ()
 
 data(edhec)
 ret <- edhec[, 1:4]

@@ -1,7 +1,7 @@
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -31,10 +31,10 @@ extract.efficient.frontier <- function (object=NULL, match.col='ES', from=NULL, 
   columnnames=colnames(xtract)
   # optimal portfolio stats from xtract
   opt <- xtract[which.min(xtract[, "out"]),]
-  #if("package:multicore" %in% search() || require("multicore",quietly = TRUE)){
+  #if("package:multicore" %in% search() || requireNamespace("multicore",quietly = TRUE)){
   #    mclapply
   #}
-  stopifnot("package:foreach" %in% search() || require("foreach",quietly = TRUE))
+  stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
   #    rtc = pmatch(return.col,columnnames)
   #    if(is.na(rtc)) {
   #        rtc = pmatch(paste(return.col,return.col,sep='.'),columnnames)
@@ -60,7 +60,8 @@ extract.efficient.frontier <- function (object=NULL, match.col='ES', from=NULL, 
   }
   
   set<-cbind(quantmod::Lag(set,1),as.matrix(set))[-1,]
-  result <- foreach(i=1:nrow(set),.inorder=TRUE, .combine=rbind, .errorhandling='remove') %do% {
+  i <- 1
+  result <- foreach::foreach(i=1:nrow(set),.inorder=TRUE, .combine=rbind, .errorhandling='remove') %do% {
     tmp<-xtract[which(xtract[,mtc]>=set[i,1] & xtract[,mtc]<set[i,2]),]
     #tmp<-tmp[which.min(tmp[,'out']),]
     tmp<-tmp[which.max(tmp[,'mean']),]
@@ -169,12 +170,13 @@ meanvar.efficient.frontier <- function(portfolio, R, n.portfolios=25, risk_avers
   portfolio <- add.constraint(portfolio=portfolio, type="return", return_target=minret, enabled=FALSE)
   ret_constr_idx <- which(unlist(lapply(portfolio$constraints, function(x) inherits(x, "return_constraint"))))
   
-  stopifnot("package:foreach" %in% search() || require("foreach",quietly = TRUE))
-  stopifnot("package:iterators" %in% search() || require("iterators",quietly = TRUE))
+  stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
+  stopifnot("package:iterators" %in% search() || requireNamespace("iterators",quietly = TRUE))
   if(!is.null(risk_aversion)){
     # Enable the return objective so we are doing quadratic utility
     portfolio$objectives[[mean_idx]]$enabled <- TRUE
-    out <- foreach(lambda=iter(risk_aversion), .inorder=TRUE, .combine=rbind, .errorhandling='remove', .packages='PortfolioAnalytics') %dopar% {
+    lambda <- risk_aversion[1]
+    out <- foreach::foreach(lambda=iterators::iter(risk_aversion), .inorder=TRUE, .combine=rbind, .errorhandling='remove', .packages='PortfolioAnalytics') %dopar% {
       portfolio$objectives[[var_idx]]$risk_aversion <- lambda
       extractStats(optimize.portfolio(R=R, portfolio=portfolio, optimize_method="ROI", ...=...))
     }
@@ -183,7 +185,8 @@ meanvar.efficient.frontier <- function(portfolio, R, n.portfolios=25, risk_avers
   } else {
     # Enable the return constraint
     portfolio$constraints[[ret_constr_idx]]$enabled <- TRUE
-    out <- foreach(ret=iter(ret_seq), .inorder=TRUE, .combine=rbind, .errorhandling='remove', .packages='PortfolioAnalytics') %dopar% {
+    ret <- ret_seq[1]
+    out <- foreach::foreach(ret=iterators::iter(ret_seq), .inorder=TRUE, .combine=rbind, .errorhandling='remove', .packages='PortfolioAnalytics') %dopar% {
       portfolio$constraints[[ret_constr_idx]]$return_target <- ret
       opt <- optimize.portfolio(R=R, portfolio=portfolio, optimize_method="ROI", ...=...)
       c(sum(extractWeights(opt) * mean_ret), extractStats(opt))
@@ -268,9 +271,10 @@ meanetl.efficient.frontier <- function(portfolio, R, n.portfolios=25, ...){
   #     portfolio$objectives[[mean_idx]]$target <- ret_seq[i]
   #     out[i, ] <- extractStats(optimize.portfolio(R=R, portfolio=portfolio, optimize_method="ROI"))
   #   }
-  stopifnot("package:foreach" %in% search() || require("foreach",quietly = TRUE))
-  stopifnot("package:iterators" %in% search() || require("iterators",quietly = TRUE))
-  out <- foreach(ret=iter(ret_seq), .inorder=TRUE, .combine=rbind, .errorhandling='remove', .packages='PortfolioAnalytics') %dopar% {
+  stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
+  stopifnot("package:iterators" %in% search() || requireNamespace("iterators",quietly = TRUE))
+  ret <- ret_seq[1]
+  out <- foreach::foreach(ret=iterators::iter(ret_seq), .inorder=TRUE, .combine=rbind, .errorhandling='remove', .packages='PortfolioAnalytics') %dopar% {
     portfolio$objectives[[mean_idx]]$target <- ret
     extractStats(optimize.portfolio(R=R, portfolio=portfolio, optimize_method="ROI", ef=TRUE, ...=...))
   }

@@ -1,7 +1,7 @@
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -156,8 +156,12 @@ regime.portfolios <- function(regime, portfolios){
       stop("The assets in each portfolio must be identical")
     }
   }
-  
+  # get the unique asset names of each portfolio
+  # asset names matter in hierarchical optimization
+  asset.names <- unique(unlist(lapply(portfolios, function(x) names(x$assets))))
+  assets <- rep(1 / length(asset.names), length(asset.names))
+  names(assets) <- asset.names
   # structure and return
-  return(structure(list(regime=regime, portfolio.list=portfolios), 
+  return(structure(list(regime=regime, portfolio.list=portfolios, assets=assets), 
                    class=c("regime.portfolios", "portfolio")))
 }

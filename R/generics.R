@@ -1,7 +1,7 @@
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -21,7 +21,8 @@
 #' @author Ross Bennett
 #' @rdname print.optimize.portfolio.rebalancing
 #' @method print optimize.portfolio.rebalancing
-#' @S3method print optimize.portfolio.rebalancing
+# #' @S3method print optimize.portfolio.rebalancing
+#' @export
 print.optimize.portfolio.rebalancing <- function(x, ..., digits=4){
   cat(rep("*", 50) ,"\n", sep="")
   cat("PortfolioAnalytics Optimization with Rebalancing\n")
@@ -98,7 +99,8 @@ summary.optimize.portfolio.rebalancing <- function(object, ...) {
 #' @seealso \code{\link{summary.optimize.portfolio.rebalancing}}
 #' @author Ross Bennett
 #' @method print summary.optimize.portfolio.rebalancing
-#' @S3method print summary.optimize.portfolio.rebalancing
+# #' @S3method print summary.optimize.portfolio.rebalancing
+#' @export
 print.summary.optimize.portfolio.rebalancing <- function(x, ..., digits=4){
   cat(rep("*", 50) ,"\n", sep="")
   cat("PortfolioAnalytics Optimization with Rebalancing\n")
@@ -147,7 +149,8 @@ print.summary.optimize.portfolio.rebalancing <- function(x, ..., digits=4){
 #' @seealso \code{\link{portfolio.spec}}
 #' @author Ross Bennett
 #' @method print portfolio
-#' @S3method print portfolio
+# #' @S3method print portfolio
+#' @export
 print.portfolio <- function(x, ...){
   if(!is.portfolio(x)) stop("object passed in is not of class 'portfolio'")
   
@@ -156,12 +159,12 @@ print.portfolio <- function(x, ...){
   cat(rep("*", 50) ,"\n", sep="")
   
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), 
-      "\n", sep = "")
+      "\n\n", sep = "")
   
   # Assets
-  cat("\nAssets\n")
+  #cat("\nAssets\n")
   nassets <- length(x$assets)
-  cat("Number of assets:", nassets, "\n\n")
+  cat("Number of assets:", nassets, "\n")
   cat("Asset Names\n")
   print(head(names(x$assets), 10))
   if(nassets > 10){
@@ -184,9 +187,9 @@ print.portfolio <- function(x, ...){
   }
   
   # Constraints
-  cat("\nConstraints\n")
   nconstraints <- length(x$constraints)
   if(nconstraints > 0){
+    cat("\nConstraints\n")
     # logical vector of enabled constraints
     enabled.constraints <- which(sapply(x$constraints, function(x) x$enabled))
     n.enabled.constraints <- ifelse(length(enabled.constraints) > 0, length(enabled.constraints), 0)
@@ -196,8 +199,8 @@ print.portfolio <- function(x, ...){
   }
   # character vector of constraint types
   names.constraints <- sapply(x$constraints, function(x) x$type)
-  cat("Number of constraints:", nconstraints, "\n")
-  cat("Number of enabled constraints:", n.enabled.constraints, "\n")
+  #cat("Number of constraints:", nconstraints, "\n")
+  #cat("Number of enabled constraints:", n.enabled.constraints, "\n")
   if(length(enabled.constraints) > 0){
     cat("Enabled constraint types\n")
     constraints <- x$constraints
@@ -224,8 +227,9 @@ print.portfolio <- function(x, ...){
       }
     }
   }
-  cat("Number of disabled constraints:", nconstraints - n.enabled.constraints, "\n")
+  
   if((nconstraints - n.enabled.constraints) > 0){
+    #cat("Number of disabled constraints:", nconstraints - n.enabled.constraints, "\n")
     cat("Disabled constraint types\n")
     constraints <- x$constraints
     nconstraints <- length(constraints)
@@ -253,9 +257,9 @@ print.portfolio <- function(x, ...){
   }
   
   # Objectives
-  cat("\nObjectives\n")
   nobjectives <- length(x$objectives)
   if(nobjectives > 0){
+    cat("\nObjectives:\n")
     # logical vector of enabled objectives
     enabled.objectives <- which(sapply(x$objectives, function(x) x$enabled))
     n.enabled.objectives <- ifelse(length(enabled.objectives) > 0, length(enabled.objectives), 0)
@@ -265,17 +269,18 @@ print.portfolio <- function(x, ...){
   }
   # character vector of objective names
   names.objectives <- sapply(x$objectives, function(x) x$name)
-  cat("Number of objectives:", nobjectives, "\n")
-  cat("Number of enabled objectives:", n.enabled.objectives, "\n")
+  #cat("Number of objectives:", nobjectives, "\n")
+  #cat("Number of enabled objectives:", n.enabled.objectives, "\n")
   if(n.enabled.objectives > 0){
     cat("Enabled objective names\n")
     for(name in names.objectives[enabled.objectives]) {
       cat("\t\t-", name, "\n")
     }
   }
-  cat("Number of disabled objectives:", nobjectives - n.enabled.objectives, "\n")
+  
   if((nobjectives - n.enabled.objectives) > 0){
-    cat("Disabled objective types\n")
+    #cat("Number of disabled objectives:", nobjectives - n.enabled.objectives, "\n")
+    cat("Disabled objective names\n")
     for(name in setdiff(names.objectives, names.objectives[enabled.objectives])) {
       cat("\t\t-", name, "\n")
     }
@@ -296,45 +301,45 @@ print.portfolio <- function(x, ...){
 summary.portfolio <- function(object, ...){
   if(!is.portfolio(object)) stop("object passed in is not of class 'portfolio'")
   
-  cat(rep("*", 50) ,"\n", sep="")
-  cat("PortfolioAnalytics Portfolio Specification Summary", "\n")
-  cat(rep("*", 50) ,"\n", sep="")
+  out <- list()
   
-  cat("Assets and Initial Weights:\n")
-  print(object$assets)
-  cat("\n")
+  out$category_labels <- object$category_labels
+  out$weight_seq <- object$weight_seq
+  out$assets <- object$assets
   
-  if(!is.null(object$category_labels)) {
-    cat("Category Labels:\n")
-    print(object$category_labels)
-  }
-  
-  if(!is.null(object$weight_seq)) {
-    cat("weight_seq:\n")
-    print(summary(object$weight_seq))
-  }
-  
-  cat("Constraints:\n\n")
-  for(constraint in object$constraints){
-    if(constraint$enabled) {
-      cat(rep("*", 40), "\n", sep="")
-      cat(constraint$type, "constraint\n")
-      cat(rep("*", 40), "\n", sep="")
-      print(constraint)
-      cat("\n\n")
+  # constraints
+  out$enabled_constraints <- list()
+  out$disabled_constraints <- list()
+  constraints <- object$constraints
+  if(length(constraints) >= 1){
+    for(i in 1:length(constraints)){
+      if(constraints[[i]]$enabled){
+        tmp <- length(out$enabled_constraints)
+        out$enabled_constraints[[tmp+1]] <- constraints[[i]]
+      } else {
+        tmp <- length(out$disabled_constraints)
+        out$disabled_constraints[[tmp+1]] <- constraints[[i]]
+      }
     }
   }
   
-  cat("Objectives:\n\n")
-  for(objective in object$objectives){
-    if(objective$enabled) {
-      cat(rep("*", 40), "\n", sep="")
-      cat(class(objective)[1], "\n")
-      cat(rep("*", 40), "\n", sep="")
-      print(objective)
-      cat("\n\n")
+  # objectives
+  out$enabled_objectives <- list()
+  out$disabled_objectives <- list()
+  objectives <- object$objectives
+  if(length(objectives) >= 1){
+    for(i in 1:length(objectives)){
+      if(objectives[[i]]$enabled){
+        tmp <- length(out$enabled_objectives)
+        out$enabled_objectives[[tmp+1]] <- objectives[[i]]
+      } else {
+        tmp <- length(out$disabled_objectives)
+        out$disabled_objectives[[tmp+1]] <- objectives[[i]]
+      }
     }
   }
+  class(out) <- "summary.portfolio"
+  return(out)
 }
 
 #' print method for constraint objects
@@ -343,7 +348,8 @@ summary.portfolio <- function(object, ...){
 #' @param \dots any other passthru parameters
 #' @author Ross Bennett
 #' @method print constraint
-#' @S3method print constraint
+# #' @S3method print constraint
+#' @export
 print.constraint <- function(x, ...){
   print.default(x, ...)
 }
@@ -359,7 +365,8 @@ print.constraint <- function(x, ...){
 #' @author Ross Bennett
 #' @rdname print.optimize.portfolio
 #' @method print optimize.portfolio.ROI
-#' @S3method print optimize.portfolio.ROI
+# #' @S3method print optimize.portfolio.ROI
+#' @export
 print.optimize.portfolio.ROI <- function(x, ..., digits=4){
   cat(rep("*", 35) ,"\n", sep="")
   cat("PortfolioAnalytics Optimization\n")
@@ -400,7 +407,8 @@ print.optimize.portfolio.ROI <- function(x, ..., digits=4){
 
 #' @rdname print.optimize.portfolio
 #' @method print optimize.portfolio.random
-#' @S3method print optimize.portfolio.random
+# #' @S3method print optimize.portfolio.random
+#' @export
 print.optimize.portfolio.random <- function(x, ..., digits=4){
   cat(rep("*", 35) ,"\n", sep="")
   cat("PortfolioAnalytics Optimization\n")
@@ -441,7 +449,8 @@ print.optimize.portfolio.random <- function(x, ..., digits=4){
 
 #' @rdname print.optimize.portfolio
 #' @method print optimize.portfolio.DEoptim
-#' @S3method print optimize.portfolio.DEoptim
+# #' @S3method print optimize.portfolio.DEoptim
+#' @export
 print.optimize.portfolio.DEoptim <- function(x, ..., digits=4){
   cat(rep("*", 35) ,"\n", sep="")
   cat("PortfolioAnalytics Optimization\n")
@@ -482,7 +491,8 @@ print.optimize.portfolio.DEoptim <- function(x, ..., digits=4){
 
 #' @rdname print.optimize.portfolio
 #' @method print optimize.portfolio.GenSA
-#' @S3method print optimize.portfolio.GenSA
+# #' @S3method print optimize.portfolio.GenSA
+#' @export
 print.optimize.portfolio.GenSA <- function(x, ..., digits=4){
   cat(rep("*", 35) ,"\n", sep="")
   cat("PortfolioAnalytics Optimization\n")
@@ -523,7 +533,8 @@ print.optimize.portfolio.GenSA <- function(x, ..., digits=4){
 
 #' @rdname print.optimize.portfolio
 #' @method print optimize.portfolio.pso
-#' @S3method print optimize.portfolio.pso
+# #' @S3method print optimize.portfolio.pso
+#' @export
 print.optimize.portfolio.pso <- function(x, ..., digits=4){
   cat(rep("*", 35) ,"\n", sep="")
   cat("PortfolioAnalytics Optimization\n")
@@ -570,7 +581,8 @@ print.optimize.portfolio.pso <- function(x, ..., digits=4){
 #' @seealso \code{\link{summary.optimize.portfolio}}
 #' @author Ross Bennett
 #' @method print summary.optimize.portfolio
-#' @S3method print summary.optimize.portfolio
+# #' @S3method print summary.optimize.portfolio
+#' @export
 print.summary.optimize.portfolio <- function(x, ...){
   
   cat(rep("*", 50) ,"\n", sep="")
@@ -772,7 +784,8 @@ print.summary.optimize.portfolio <- function(x, ...){
 #' @seealso \code{\link{optimize.portfolio}}
 #' @author Ross Bennett
 #' @method summary optimize.portfolio
-#' @S3method summary optimize.portfolio
+# #' @S3method summary optimize.portfolio
+#' @export
 summary.optimize.portfolio <- function(object, ...){
   
   out <- list()
@@ -903,7 +916,8 @@ summary.optimize.portfolio <- function(object, ...){
 #' @seealso \code{\link{create.EfficientFrontier}}
 #' @author Ross Bennett
 #' @method print efficient.frontier
-#' @S3method print efficient.frontier
+# #' @S3method print efficient.frontier
+#' @export
 print.efficient.frontier <- function(x, ...){
   if(!inherits(x, "efficient.frontier")) stop("object passed in is not of class 'efficient.frontier'")
   
@@ -963,7 +977,7 @@ summary.efficient.frontier <- function(object, ..., digits=3){
 }
 
 #' @method print portfolio.list
-#' @S3method print portfolio.list
+# #' @S3method print portfolio.list
 #' @export
 print.portfolio.list <- function(x, ...){
   for(i in 1:length(x)){
@@ -973,7 +987,7 @@ print.portfolio.list <- function(x, ...){
 }
 
 #' @method print opt.list
-#' @S3method print opt.list
+# #' @S3method print opt.list
 #' @export
 print.opt.list <- function(x, ...){
   for(i in 1:length(x)){
@@ -983,7 +997,7 @@ print.opt.list <- function(x, ...){
 }
 
 #' @method print opt.rebal.list
-#' @S3method print opt.rebal.list
+# #' @S3method print opt.rebal.list
 #' @export
 print.opt.rebal.list <- function(x, ...){
   for(i in 1:length(x)){
@@ -993,7 +1007,7 @@ print.opt.rebal.list <- function(x, ...){
 }
 
 #' @method print regime.portfolios
-#' @S3method print regime.portfolios
+# #' @S3method print regime.portfolios
 #' @export
 print.regime.portfolios <- function(x, ...){
   
@@ -1008,4 +1022,50 @@ print.regime.portfolios <- function(x, ...){
     cat("Regime ", i, " Portfolio", "\n", sep="")
     print(portf[[i]])
   }
+}
+
+#' @method summary optimize.portfolio.parallel
+# #' @S3method summary optimize.portfolio.parallel
+#' @export
+summary.optimize.portfolio.parallel <- function(object, ...){
+  out <- list()
+  out$call <- object$call
+  out$elapsed_time <- object$elapsed_time
+  out$n_optimizations <- length(object$optimizations)
+  xx <- lapply(object$optimizations, function(x) {
+    tmp <- extractStats(x)
+    out <- tmp[which.min(tmp[,"out"]),]
+    out})
+  stats <- do.call(rbind, xx)
+  out$stats <- stats
+  out$obj_val <- stats[,"out"]
+  class(out) <- "summary.optimize.portfolio.parallel"
+  return(out)
+}
+
+#' @method print optimize.portfolio.parallel
+# #' @S3method print optimize.portfolio.parallel
+#' @export
+print.optimize.portfolio.parallel <- function(x, ..., probs = c(0.025, 0.975)){
+  cat(rep("*", 35) ,"\n", sep="")
+  cat("PortfolioAnalytics Optimization\n")
+  cat(rep("*", 35) ,"\n", sep="")
+  
+  cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), 
+      "\n\n", sep = "")
+  
+  # call the summary method
+  xx <- summary(x)
+  
+  cat("Number of Optimizations:\n")
+  print(xx$n_optimizations)
+  
+  cat("Objective Value Estimate:\n")
+  print(mean(xx$obj_val))
+  
+  cat("Objective Value Estimate Percentiles:\n")
+  print(quantile(xx$obj_val, probs = probs))
+  
+  cat("Elapsed Time:\n")
+  print(xx$elapsed_time)
 }

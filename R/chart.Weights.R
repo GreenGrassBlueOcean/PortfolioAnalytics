@@ -31,7 +31,7 @@
 #' @name chart.Weights
 #' @export
 chart.Weights <- function(object, ...){
-  UseMethod("chart.Weights")
+  UseMethod("chart.Weights", object = object)
 }
 
 barplotWeights <- function(object, ..., main="Weights", las=3, xlab=NULL, cex.lab=1, element.color="darkgray", cex.axis=0.8, legend.loc="topright", cex.legend=0.8, colorset=NULL){
@@ -97,7 +97,8 @@ barplotWeights <- function(object, ..., main="Weights", las=3, xlab=NULL, cex.la
 
 #' @rdname chart.Weights
 #' @method chart.Weights optimize.portfolio.rebalancing
-#' @S3method chart.Weights optimize.portfolio.rebalancing
+# #' @S3method chart.Weights optimize.portfolio.rebalancing
+#' @export
 chart.Weights.optimize.portfolio.rebalancing <- function(object, ..., main="Weights"){
   rebal.weights <- extractWeights(object)
   chart.StackedBar(w=rebal.weights, main=main, ...)
@@ -105,9 +106,9 @@ chart.Weights.optimize.portfolio.rebalancing <- function(object, ..., main="Weig
 
 
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING

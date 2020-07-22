@@ -1,4 +1,3 @@
-%!TEX root = ../39.tex
 
 \documentclass[12pt,letterpaper,english]{article}
 \pagestyle{plain} \setlength{\textheight}{21cm}
@@ -70,6 +69,7 @@
 % \VignetteIndexEntry{Design Thoughts of the PortfolioAnalytics Package}
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 \vspace{-2cm}
 %\baselineskip=20pt
 \renewcommand{\baselinestretch}{1}

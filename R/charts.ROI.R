@@ -18,7 +18,8 @@ chart.Weights.ROI <- function(object, ..., neighbors = NULL, main="Weights", las
       minmargin = 5
     if(main=="") topmargin=1 else topmargin=4
     if(las > 1) {# set the bottom border to accommodate labels
-      bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
+      # bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
+      bottommargin <- 10
       if(bottommargin > 10 ) {
         bottommargin<-10
         columnnames<-substr(columnnames,1,19)
@@ -75,7 +76,8 @@ chart.Weights.ROI <- function(object, ..., neighbors = NULL, main="Weights", las
 
 #' @rdname chart.Weights
 #' @method chart.Weights optimize.portfolio.ROI
-#' @S3method chart.Weights optimize.portfolio.ROI
+# #' @S3method chart.Weights optimize.portfolio.ROI
+#' @export
 chart.Weights.optimize.portfolio.ROI <- chart.Weights.ROI
 
 
@@ -146,7 +148,8 @@ chart.Scatter.ROI <- function(object, ..., neighbors=NULL, return.col="mean", ri
 
 #' @rdname chart.RiskReward
 #' @method chart.RiskReward optimize.portfolio.ROI
-#' @S3method chart.RiskReward optimize.portfolio.ROI
+# #' @S3method chart.RiskReward optimize.portfolio.ROI
+#' @export
 chart.RiskReward.optimize.portfolio.ROI <- chart.Scatter.ROI
 
 
@@ -163,16 +166,17 @@ charts.ROI <- function(ROI, rp=FALSE, risk.col="ES", return.col="mean", chart.as
 
 #' @rdname plot
 #' @method plot optimize.portfolio.ROI
-#' @S3method plot optimize.portfolio.ROI
+# #' @S3method plot optimize.portfolio.ROI
+#' @export
 plot.optimize.portfolio.ROI <- function(x, ..., rp=FALSE, risk.col="ES", return.col="mean", chart.assets=FALSE, element.color="darkgray", neighbors=NULL, main="ROI.Portfolios", xlim=NULL, ylim=NULL){
   charts.ROI(ROI=x, rp=rp, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, main=main, xlim=xlim, ylim=ylim, ...)
 }
 
 
 ###############################################################################
-# R (http://r-project.org/) Numeric Methods for Optimization of Portfolios
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2014 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
