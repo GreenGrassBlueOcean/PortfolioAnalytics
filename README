@@ -1,7 +1,5 @@
- <!-- badges: start -->
-  [![R build status](https://github.com/R-Finance/PortfolioAnalytics/workflows/R-CMD-check/badge.svg)](https://github.com/R-Finance/PortfolioAnalytics/actions)
-  <!-- badges: end -->
-
+[![R build status](https://github.com/R-Finance/PortfolioAnalytics/workflows/R-CMD-check/badge.svg)](https://github.com/R-Finance/PortfolioAnalytics/actions)
+ 
 This is code under heavy development!  
 
 Please contribute with bug fixes, comments, and testing scripts 
