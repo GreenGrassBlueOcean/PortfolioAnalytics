@@ -59,7 +59,7 @@ p2 <- EntropyProg(p, t(V2), b2, Aeq, beq)$p_
 p_ <- cbind(p, p1, p2) %*% c(0.35 , 0.25 , 0.4)
 
 #' Generate random portfolios for use in the optimization.
-rp <- random_portfolios(init.portf, 10000)
+rp <- random_portfolios(init.portf, 20000)
 
 #' Run the optimization using first and second moments estimated from 
 #' Meucci's Fully Flexible Views framework.
