@@ -35,12 +35,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
+	
       - uses: r-lib/actions/setup-r@master
         with:
           r-version: ${{ matrix.config.r }}
 
       - uses: r-lib/actions/setup-pandoc@master
+      - uses: r-lib/actions/setup-tinytex@v1
+
 
       - name: Query dependencies
         run: |
