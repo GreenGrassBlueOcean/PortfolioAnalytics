@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2020.7.22)  22 JUL 2020 21:12
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2020.7.22)  23 JUL 2020 16:26
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -29,7 +29,7 @@ File: size10.clo 2019/12/20 v1.4l Standard LaTeX file (size option)
 (c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/fontenc.
 sty
 Package: fontenc 2020/02/11 v2.0o Standard LaTeX package
-) (c:/Program Files/R/R-3.6.3/share/texmf/tex/latex/Rd.sty
+) (c:/Program Files/R/R-4.0.2/share/texmf/tex/latex/Rd.sty
 Package: Rd 
 
 (c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/ifthen.s
@@ -370,7 +370,7 @@ LaTeX Font Info:    Trying to load font information for T1+lmr on input line 11
 
 (c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
-)) (c:/Program Files/R/R-3.6.3/share/texmf/tex/latex/Sweave.sty
+)) (c:/Program Files/R/R-4.0.2/share/texmf/tex/latex/Sweave.sty
 Package: Sweave 
 
 (c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/graphics/grap
@@ -412,27 +412,189 @@ Package: fancyvrb 2020/05/03 v3.6 verbatim text (tvz,hv)
 sty
 Package: fontenc 2020/02/11 v2.0o Standard LaTeX package
 )
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/ae/ae.sty
+Package: ae 2001/02/12 1.3 Almost European Computer Modern
 
-! LaTeX Error: File `ae.sty' not found.
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/fontenc.
+sty
+Package: fontenc 2020/02/11 v2.0o Standard LaTeX package
+)))
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/l3backend/l3b
+ackend-pdfmode.def
+File: l3backend-pdfmode.def 2020-06-29 L3 backend support: PDF mode
+\l__kernel_color_stack_int=\count273
+\l__pdf_internal_box=\box52
+) (./custom_moments_objectives.aux)
+\openout1 = `custom_moments_objectives.aux'.
 
-Type X to quit or <RETURN> to proceed,
-or enter new name. (Default extension: sty)
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Trying to load font information for T1+aer on input line 40
+.
 
-Enter file name: 
-! Emergency stop.
-<read *> 
-         
-l.30 \ifthenelse
-                {\boolean{Sweave@inconsolata}}{%^^M
-*** (cannot \read from terminal in nonstop modes)
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/ae/t1aer.fd
+File: t1aer.fd 1997/11/16 Font definitions for T1/aer.
+)
+\AtBeginShipoutBox=\box53
+Package hyperref Info: Link coloring OFF on input line 40.
 
- 
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/hyperref/name
+ref.sty
+Package: nameref 2019/09/16 v2.46 Cross-referencing by name of section
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/oberdiek/refc
+ount.sty
+Package: refcount 2016/05/16 v3.5 Data extraction from label references (HO)
+)
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/generic/gettitlestr
+ing/gettitlestring.sty
+Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
+)
+\c@section@level=\count274
+)
+LaTeX Info: Redefining \ref on input line 40.
+LaTeX Info: Redefining \pageref on input line 40.
+LaTeX Info: Redefining \nameref on input line 40.
+ (./custom_moments_objectives.out)
+(./custom_moments_objectives.out)
+\@outlinefile=\write4
+\openout4 = `custom_moments_objectives.out'.
+
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/epstopdf-pkg/
+epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/latexconfig/e
+pstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+)) (./custom_moments_objectives-concordance.tex)
+LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 4
+7.
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/ot1lmr.fd
+File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 4
+7.
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omllmm.fd
+File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
+47.
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omslmsy.fd
+File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
+47.
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omxlmex.fd
+File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <12> on input line 47.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <8> on input line 47.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <6> on input line 47.
+ (./custom_moments_objectives.toc
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10> on input line 2.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <7> on input line 2.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <5> on input line 2.
+)
+\tf@toc=\write5
+\openout5 = `custom_moments_objectives.toc'.
+
+LaTeX Font Info:    Trying to load font information for T1+aett on input line 5
+9.
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/ae/t1aett.fd
+File: t1aett.fd 1997/11/16 Font definitions for T1/aett.
+) [1
+
+{c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/updmap/
+pdftex.map}] [2] [3]
+LaTeX Font Info:    Trying to load font information for T1+aess on input line 1
+98.
+
+(c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/ae/t1aess.fd
+File: t1aess.fd 1997/11/16 Font definitions for T1/aess.
+) [4]
+LaTeX Font Info:    Trying to load font information for TS1+aer on input line 2
+14.
+ (c:/Program Files/R/R-4.0.2/share/texmf/tex/latex/ts1aer.fd
+File: ts1aer.fd 
+)
+LaTeX Font Info:    Font shape `TS1/aer/m/n' in size <10> not available
+(Font)              Font shape `TS1/cmr/m/n' tried instead on input line 214.
+ [5] [6]
+[7] (./custom_moments_objectives.bbl [8])
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 365.
+ [9]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 365.
+ (./custom_moments_objectives.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 365.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 365.
+Package rerunfilecheck Info: File `custom_moments_objectives.out' has not chang
+ed.
+(rerunfilecheck)             Checksum: 6243415446486FB604E8B1BD8405E0FB;348.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 365.
+ ) 
 Here is how much of TeX's memory you used:
- 6429 strings out of 482854
- 96027 string characters out of 5954815
- 357972 words of memory out of 5000000
- 21682 multiletter control sequences out of 15000+600000
- 538078 words of font info for 30 fonts, out of 8000000 for 9000
+ 7206 strings out of 482854
+ 111134 string characters out of 5954815
+ 367530 words of memory out of 5000000
+ 22288 multiletter control sequences out of 15000+600000
+ 593949 words of font info for 116 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 44i,0n,37p,242b,79s stack positions out of 5000i,500n,10000p,200000b,80000s
-!  ==> Fatal error occurred, no output PDF file produced!
+ 44i,6n,37p,980b,490s stack positions out of 5000i,500n,10000p,200000b,80000s
+{c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm
+-rm.enc}{c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips
+/lm/lm-mathsy.enc}{c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts
+/enc/dvips/lm/lm-mathit.enc} <c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf
+-var/fonts/pk/ljfour/jknappen/ec/tcrm1000.600pk><c:/Users/LaurensVdb/AppData/Ro
+aming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmb10.pfb><c:/Users/Lau
+rensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10
+.pfb><c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public
+/amsfonts/cm/cmr12.pfb><c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/
+fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/Users/LaurensVdb/AppData/Roaming/T
+inyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb><c:/Users/LaurensVdb/
+AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsltt10.pfb>
+<c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmss10.pfb><c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/font
+s/type1/public/amsfonts/cm/cmti10.pfb><c:/Users/LaurensVdb/AppData/Roaming/Tiny
+TeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb><c:/Users/LaurensVdb/A
+ppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb><c:/Users/La
+urensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi7.pfb><c:
+/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr1
+0.pfb><c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/publi
+c/lm/lmr7.pfb><c:/Users/LaurensVdb/AppData/Roaming/TinyTeX/texmf-dist/fonts/typ
+e1/public/lm/lmsy10.pfb>
+Output written on custom_moments_objectives.pdf (9 pages, 185015 bytes).
+PDF statistics:
+ 165 PDF objects out of 1000 (max. 8388607)
+ 136 compressed objects within 2 object streams
+ 21 named destinations out of 1000 (max. 500000)
+ 53 words of extra memory for PDF output out of 10000 (max. 10000000)
+

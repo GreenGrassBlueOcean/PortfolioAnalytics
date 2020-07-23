@@ -140,6 +140,6 @@ CRRA_test <- CRRA(R = ret, weights = Equalweights, lambda = 5, sigma = Moments$s
 
 CRRA_expected <- structure(-0.000853543786499519, .Dim = c(1L, 1L))
 
-expect_equal(CRRA_test,CRRA_expected )
+expect_equal(CRRA_test,CRRA_expected)
 
 })

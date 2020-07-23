@@ -59,6 +59,7 @@ Load the necessary packages.
 \begin{Sinput}
 > library(PortfolioAnalytics)
 > library(DEoptim)
+> foreach::registerDoSEQ()
 \end{Sinput}
 \end{Schunk}
 
@@ -165,11 +166,11 @@ optimize.portfolio(R = R, portfolio = SD.portf, optimize_method = "ROI",
 
 Optimal Weights:
     CA   CTAG     DS     EM 
-0.6598 0.1441 0.1961 0.0000 
+0.8637 0.1363 0.0000 0.0000 
 
 Objective Measure:
   StdDev 
-0.008646 
+0.008371 
 \end{Soutput}
 \end{Schunk}
 
@@ -181,15 +182,15 @@ Here we extract the weights and compute the portfolio standard deviation to veri
 > sqrt(t(weights) %*% sigma %*% weights)
 \end{Sinput}
 \begin{Soutput}
-           [,1]
-[1,] 0.00864599
+            [,1]
+[1,] 0.008370893
 \end{Soutput}
 \begin{Sinput}
 > extractObjectiveMeasures(opt.sd)$StdDev
 \end{Sinput}
 \begin{Soutput}
-    StdDev 
-0.00864599 
+     StdDev 
+0.008370893 
 \end{Soutput}
 \end{Schunk}
 
@@ -246,7 +247,7 @@ Now we can run the optimization to estimate a solution to our optimization probl
 \end{Sinput}
 \begin{Soutput}
 [1] "Parallell workers = 1"
-[1] 0.676 0.170 0.130 0.024
+[1] 0.712 0.246 0.010 0.032
 \end{Soutput}
 \begin{Sinput}
 > opt.pasd
@@ -262,11 +263,11 @@ optimize.portfolio(R = R, portfolio = pasd.portf, optimize_method = "DEoptim",
 
 Optimal Weights:
    CA  CTAG    DS    EM 
-0.676 0.170 0.130 0.024 
+0.712 0.246 0.010 0.032 
 
 Objective Measures:
    pasd 
-0.03058 
+0.03123 
 \end{Soutput}
 \end{Schunk}
 
@@ -333,7 +334,7 @@ Finally, we set up the portfolio and run the optimization using our custom momen
 \end{Sinput}
 \begin{Soutput}
 [1] "Parallell workers = 1"
-[1] 0.184 0.352 0.396 0.058
+[1] 0.348 0.338 0.260 0.050
 \end{Soutput}
 \begin{Sinput}
 > opt.crra
@@ -349,11 +350,11 @@ optimize.portfolio(R = R, portfolio = crra.portf, optimize_method = "DEoptim",
 
 Optimal Weights:
    CA  CTAG    DS    EM 
-0.184 0.352 0.396 0.058 
+0.348 0.338 0.260 0.050 
 
 Objective Measures:
-     CRRA 
--0.001084 
+      CRRA 
+-0.0008936 
 \end{Soutput}
 \end{Schunk}
 

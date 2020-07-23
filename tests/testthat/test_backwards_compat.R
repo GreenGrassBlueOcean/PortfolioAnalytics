@@ -82,8 +82,12 @@ test_that("ROI updated portfolio object",
           { expect_true(inherits(optroiv1$portfolio, "portfolio.spec")) })
 
 test_that("ROI returns optimal weights equal to c(0, 0, 0.46, 0.55)", 
-          { expect_equal(as.numeric(extractWeights(optroiv1)), c(0, 0, 0.46, 0.55)) })
+          { expect_equal(extractWeights(optroiv1)
+                        , c( `Convertible Arbitrage` = 0, `CTA Global` = 0
+                           , `Distressed Securities` = 0.46, `Emerging Markets` = 0.55)) 
+            })
 
-test_that("ROI returns an objective measure mean=0.008193842", 
-          { expect_equal(as.numeric(extractObjectiveMeasures(optroiv1)$mean), 0.008193842) })
+test_that("ROI returns an objective measure mean=0.006515076 ", 
+          { expect_equal( round(as.numeric(extractObjectiveMeasures(optroiv1)$mean), digits = 4)
+                        , round( 0.008193842 , digits = 4 )) })
 

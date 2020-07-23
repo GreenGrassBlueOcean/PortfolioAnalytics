@@ -57,6 +57,7 @@ Load the necessary packages.
 <<>>=
 library(PortfolioAnalytics)
 library(DEoptim)
+foreach::registerDoSEQ()
 @
 
 \subsection{Data}
