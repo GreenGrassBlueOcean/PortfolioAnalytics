@@ -5,4 +5,3 @@
 \contentsline {subsection}{\numberline {3.1}Modularize Constraints}{4}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Creating a mapping function}{5}{subsection.3.2}%
 \contentsline {subsection}{\numberline {3.3}Penalty Functions }{6}{subsection.3.3}%
-\contentsline {section}{\numberline {4}Bibliography}{6}{section.4}%
