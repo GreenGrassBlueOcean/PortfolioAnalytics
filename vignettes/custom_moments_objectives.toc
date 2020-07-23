@@ -1,6 +1,0 @@
-\contentsline {section}{\numberline {1}Getting Started}{1}{section.1}%
-\contentsline {subsection}{\numberline {1.1}Load Packages}{1}{subsection.1.1}%
-\contentsline {subsection}{\numberline {1.2}Data}{1}{subsection.1.2}%
-\contentsline {section}{\numberline {2}Setting the Portfolio Moments}{2}{section.2}%
-\contentsline {section}{\numberline {3}Custom Moment Functions}{3}{section.3}%
-\contentsline {section}{\numberline {4}Custom Objective Functions}{5}{section.4}%
