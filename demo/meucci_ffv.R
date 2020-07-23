@@ -69,7 +69,10 @@ opt.meucci <- optimize.portfolio(R,
                                  rp=rp, 
                                  trace=TRUE,
                                  method="meucci", 
-                                 posterior_p=p_)
+                                 posterior_p=p_, 
+                                
+                                 
+                                 )
 
 
 # Run the optimization using sample estimates for first and second moments.

@@ -39,8 +39,7 @@ Suggests:
     testthat,
     nloptr (>= 1.0.0),
     MASS,
-    robustbase,
-    tinytex
+    robustbase
 Imports:
     methods,
     doParallel
