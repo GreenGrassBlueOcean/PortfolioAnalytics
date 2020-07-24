@@ -20,8 +20,8 @@ test_that("minES.lo.ROI contains ES as an objective",
 test_that("minES.lo.ROI ES objective p=0.9", 
           { expect_equal(minES.lo.ROI$portfolio$objectives[[1]]$arguments$p, 0.9) })
 
-test_that("minES.lo.ROI objective measure ES = 0.01013571", 
-          { expect_equal(extractObjectiveMeasures(minES.lo.ROI)$ES, 0.01013571, tolerance=1e-6) })
+test_that("minES.lo.ROI objective measure ES = 0.00922252", 
+          { expect_equal(extractObjectiveMeasures(minES.lo.ROI)$ES, 0.00922252, tolerance=1e-6) })
 
 test_that("minES.lo.ROI min box constraints are not violated", 
           { expect_true(all(extractWeights(minES.lo.ROI) >= minES.lo.ROI$portfolio$constraints[[2]]$min)) })
@@ -38,8 +38,8 @@ test_that("minES.box.ROI contains ES as an objective",
 test_that("minES.box.ROI ES objective p=0.9", 
           { expect_equal(minES.box.ROI$portfolio$objectives[[1]]$arguments$p, 0.9) })
 
-test_that("minES.box.ROI objective measure ES = 0.01477709", 
-          { expect_equal(as.numeric(extractObjectiveMeasures(minES.box.ROI)$ES), 0.01477709, tolerance=1e-6) })
+test_that("minES.box.ROI objective measure ES = 0.01361499", 
+          { expect_equal(as.numeric(extractObjectiveMeasures(minES.box.ROI)$ES), 0.01361499, tolerance=1e-6) })
 
 test_that("minES.box.ROI min box constraints are not violated", 
           { expect_true(all(extractWeights(minES.box.ROI) >= minES.box.ROI$portfolio$constraints[[2]]$min)) })
