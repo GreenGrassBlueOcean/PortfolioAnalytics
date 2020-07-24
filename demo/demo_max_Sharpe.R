@@ -31,9 +31,11 @@ init.portf
 #' optimize_method="ROI" is to maximize quadratic utility. If we want to maximize
 #' Sharpe Ratio, we need to pass in maxSR=TRUE to optimize.portfolio.
 
-maxSR.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf, 
-                                   optimize_method="ROI", 
-                                   maxSR=TRUE, trace=TRUE
+maxSR.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf
+                                   , optimize_method="ROI"
+                                   , maxSR=TRUE
+                                   , trace=TRUE
+                                   , search_size = 2000
                                    )
 maxSR.lo.ROI
 
@@ -52,7 +54,7 @@ init.portf <- add.constraint(init.portf, type = "weight_sum", min_sum=0.99, max_
 # Use random portfolios to run the optimization.
 maxSR.lo.RP <- optimize.portfolio(R=R, portfolio=init.portf, 
                                   optimize_method="random",
-                                  search_size=5000,
+                                  search_size=2000,
                                   trace=TRUE)
 maxSR.lo.RP
 chart.RiskReward(maxSR.lo.RP, risk.col="StdDev", return.col="mean")
@@ -60,7 +62,7 @@ chart.RiskReward(maxSR.lo.RP, risk.col="StdDev", return.col="mean")
 # Use DEoptim to run the optimization.
 maxSR.lo.DE <- optimize.portfolio(R=R, portfolio=init.portf, 
                                   optimize_method="DEoptim",
-                                  search_size=5000,
+                                  search_size=2000,
                                   trace=TRUE)
 maxSR.lo.DE
 chart.RiskReward(maxSR.lo.DE, risk.col="StdDev", return.col="mean")
