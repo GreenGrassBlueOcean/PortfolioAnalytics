@@ -22,11 +22,11 @@ test_that("init.portf contains StdDev as an objective",
 ##### maxSR.lo.ROI #####
 context("maxSR.lo.ROI")
 
-test_that("maxSR.lo.ROI objective measure mean = 0.005845738", 
-          { expect_equal(round(as.numeric(extractObjectiveMeasures(maxSR.lo.ROI)$mean), digits = 4) , round(0.005845738,digits = 4)  , tolerance=1e-6) })
+test_that("maxSR.lo.ROI objective measure mean = 0.004371236", 
+          { expect_equal(round(as.numeric(extractObjectiveMeasures(maxSR.lo.ROI)$mean), digits = 4) , round(0.004371236,digits = 4)  , tolerance=1e-6) })
 
-test_that("maxSR.lo.ROI objective measure StdDev = 0.01262847", 
-          { expect_equal(round(as.numeric(extractObjectiveMeasures(maxSR.lo.ROI)$StdDev),digits = 4), round(0.01262847, digits = 4) , tolerance=1e-6) })
+test_that("maxSR.lo.ROI objective measure StdDev = 0.007596482", 
+          { expect_equal(round(as.numeric(extractObjectiveMeasures(maxSR.lo.ROI)$StdDev),digits = 4), round(0.007596482, digits = 4) , tolerance=1e-6) })
 
 ##### maxSR.lo.RP #####
 context("maxSR.lo.RP")

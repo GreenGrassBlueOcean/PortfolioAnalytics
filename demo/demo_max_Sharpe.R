@@ -16,6 +16,7 @@ funds <- colnames(R)
 #' Construct initial portfolio with basic constraints.
 init.portf <- portfolio.spec(assets=funds)
 init.portf <- add.constraint(portfolio=init.portf, type="full_investment")
+init.portf <- add.constraint(init.portf, type = "weight_sum", min_sum=0.99, max_sum=1.01)
 init.portf <- add.constraint(portfolio=init.portf, type="long_only")
 init.portf <- add.objective(portfolio=init.portf, type="return", name="mean")
 init.portf <- add.objective(portfolio=init.portf, type="risk", name="StdDev")
@@ -32,7 +33,8 @@ init.portf
 
 maxSR.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf, 
                                    optimize_method="ROI", 
-                                   maxSR=TRUE, trace=TRUE)
+                                   maxSR=TRUE, trace=TRUE
+                                   )
 maxSR.lo.ROI
 
 #' Although the maximum Sharpe Ratio objective can be solved quickly and accurately
@@ -43,13 +45,14 @@ maxSR.lo.ROI
 
 #' For random portfolios and DEoptim, the leverage constraints should be 
 #' relaxed slightly.
-init.portf$constraints[[1]]$min_sum=0.99
-init.portf$constraints[[1]]$max_sum=1.01
+#' 
+init.portf <- add.constraint(init.portf, type = "weight_sum", min_sum=0.99, max_sum=1.01)
+
 
 # Use random portfolios to run the optimization.
 maxSR.lo.RP <- optimize.portfolio(R=R, portfolio=init.portf, 
                                   optimize_method="random",
-                                  search_size=2000,
+                                  search_size=5000,
                                   trace=TRUE)
 maxSR.lo.RP
 chart.RiskReward(maxSR.lo.RP, risk.col="StdDev", return.col="mean")
@@ -57,7 +60,7 @@ chart.RiskReward(maxSR.lo.RP, risk.col="StdDev", return.col="mean")
 # Use DEoptim to run the optimization.
 maxSR.lo.DE <- optimize.portfolio(R=R, portfolio=init.portf, 
                                   optimize_method="DEoptim",
-                                  search_size=2000,
+                                  search_size=5000,
                                   trace=TRUE)
 maxSR.lo.DE
 chart.RiskReward(maxSR.lo.DE, risk.col="StdDev", return.col="mean")
