@@ -23,11 +23,11 @@ test_that("init.portf contains ES as an objective with p=0.925",
 ##### maxSR.lo.ROI #####
 context("maxSTARR.lo.ROI")
 
-test_that("maxSTARR.lo.ROI objective measure mean = 0.006744392", 
-          { expect_equal(as.numeric(extractObjectiveMeasures(maxSTARR.lo.ROI)$mean), 0.006744392, tolerance=1e-6) })
+test_that("maxSTARR.lo.ROI objective measure mean = 0.004803075", 
+          { expect_equal(as.numeric(extractObjectiveMeasures(maxSTARR.lo.ROI)$mean), 0.004803075, tolerance=1e-6) })
 
-test_that("maxSTARR.lo.ROI objective measure ES = 0.0141148", 
-          { expect_equal(as.numeric(extractObjectiveMeasures(maxSTARR.lo.ROI)$ES), 0.0141148, tolerance=1e-6) })
+test_that("maxSTARR.lo.ROI objective measure ES = 0.01304417", 
+          { expect_equal(as.numeric(extractObjectiveMeasures(maxSTARR.lo.ROI)$ES), 0.01304417, tolerance=1e-6) })
 
 ##### maxSTARR.lo.RP #####
 context("maxSTARR.lo.RP")

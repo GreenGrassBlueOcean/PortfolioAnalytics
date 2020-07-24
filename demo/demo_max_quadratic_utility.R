@@ -38,10 +38,11 @@ plot(maxQU.lo.ROI, risk.col="StdDev",
 #' A risk aversion parameter that is very small, will effectively make the term
 #' that penalizes risk zero and approximates the maximum return. Note that the
 #' risk_aversion parameter must be non-zero.
-init.portf$objectives[[2]]$risk_aversion <- 1e-6
+init.portf$objectives[[2]]$risk_aversion <- 1e-5
 
-maxQU.maxret.ROI <- optimize.portfolio(R=R, portfolio=init.portf, 
-                                       optimize_method="ROI", trace=TRUE)
+maxQU.maxret.ROI <- optimize.portfolio(R=R, portfolio=init.portf
+                                      , optimize_method="ROI"
+                                      , trace=TRUE)
 maxQU.maxret.ROI
 
 plot(maxQU.maxret.ROI, risk.col="StdDev", 

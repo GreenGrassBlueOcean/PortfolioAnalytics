@@ -38,12 +38,13 @@ cUP <- group_constr$cUP
 ##### ROI Optimization #####
 context("demo_group_constraints optimization")
 
-test_that("minStdDev.ROI weights equal c(4.593895e-03, 2.540430e-01, -1.387779e-17, 4.595703e-02, 6.954061e-01)", 
-          { expect_equal(as.numeric(extractWeights(minStdDev.ROI)), c(4.593895e-03, 2.540430e-01, -1.387779e-17, 4.595703e-02, 6.954061e-01),
+test_that("minStdDev.ROI weights are consistent" , 
+          { expect_equal( extractWeights(minStdDev.ROI)
+                        , c(CA = 0.00364497129911795, CTAG = 0.244500476584107, DS = 0, EM = 0.0554995234158926, EQM = 0.696355028700882),
                          tolerance=1e-6) })
 
-test_that("minStdDev.ROI objective measure StdDev = 0.01042408", 
-          { expect_equal(as.numeric(extractObjectiveMeasures(minStdDev.ROI)$StdDev), 0.01042408,
+test_that("minStdDev.ROI objective measure StdDev = 0.009511407", 
+          { expect_equal(as.numeric(extractObjectiveMeasures(minStdDev.ROI)$StdDev), 0.009511407,
                          tolerance=1e-6) })
 
 weights.ROI <- extractWeights(minStdDev.ROI)

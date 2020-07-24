@@ -22,12 +22,12 @@ test_that("colnames(meanvar.ef$frontier) are consistent",
 
 test_that("first row of meanvar.ef$frontier is consistent", 
           { expect_equal( round(meanvar.ef$frontier[1,],digits = 4)
-                        , c(mean = 0.0067, StdDev = 0.0133, out = 2e-04, w.CA = 0.15, w.CTAG = 0.15, w.DS = 0.15, w.EM = 0.15, w.EQM = 0.39)
+                        , c(mean = 0.0051, StdDev = 0.0117, out = 1e-04, w.CA = 0.15, w.CTAG = 0.15, w.DS = 0.15, w.EM = 0.15, w.EQM = 0.39)
                         , tolerance=1e-6) })
 
 test_that("last row of meanvar.ef$frontier is consistent", 
           { expect_equal( round(meanvar.ef$frontier[25,], digits = 4)
-                        , c(mean = 0.0074, StdDev = 0.0209, out = 4e-04, w.CA = 0.15, w.CTAG = 0.15, w.DS = 0.16, w.EM = 0.4, w.EQM = 0.15)
+                        , c(mean = 0.0058, StdDev = 0.0142, out = 2e-04, w.CA = 0.15, w.CTAG = 0.15, w.DS = 0.41, w.EM = 0.15, w.EQM = 0.15)
                         , tolerance=1e-6) })
 
 context("mean-etl efficient frontier")
@@ -40,14 +40,14 @@ test_that("colnames(meanetl.ef$frontier) are consistent",
 
 test_that("first row of meanetl.ef$frontier is consistent", 
           { expect_equal( round(meanetl.ef$frontier[1,], digits = 4)
-                        , c(mean = 0.0068, ES = 0.0263, out = 0.0263, w.CA = 0.15, w.CTAG = 0.39, w.DS = 0.15, w.EM = 0.15, w.EQM = 0.15)
+                        , c(mean = 0.005, ES = 0.0244, out = 0.0244, w.CA = 0.15, w.CTAG = 0.3604, w.DS = 0.15, w.EM = 0.15, w.EQM = 0.1796)
                         , tolerance=1e-6
                         )
             })
 
 test_that("last row of meanetl.ef$frontier is consistent", 
           { expect_equal( round(meanetl.ef$frontier[25,], digits = 4)
-                        , c(mean = 0.0074, ES = 0.0468, out = 0.0468, w.CA = 0.15, w.CTAG = 0.15, w.DS = 0.16, w.EM = 0.4, w.EQM = 0.15)
+                        , c(mean = 0.0058, ES = 0.0305, out = 0.0305, w.CA = 0.15, w.CTAG = 0.15, w.DS = 0.41, w.EM = 0.15, w.EQM = 0.15)
                         , tolerance=1e-6
                         ) 
             })
