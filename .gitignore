@@ -2,6 +2,12 @@
 .Rhistory
 .Rapp.history
 
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+
 # Session Data files
 .RData
 
