@@ -76,7 +76,7 @@ test_that("Long Only: PortfolioAnalytics and quadprog solution weights are equal
 })
 
 test_that("Long Only: PortfolioAnalytics bounds are respected", {
-  expect_true(all(weights >= lb) & all(weights <= ub))
+  expect_true(all(weights >= lb - 1e-6) & all(weights <= ub + 1e-6))
 })
 
 test_that("Long Only: quadprog bounds are respected", {
@@ -112,11 +112,11 @@ test_that("Box: PortfolioAnalytics and quadprog solution weights are equal", {
 })
 
 test_that("Box: PortfolioAnalytics bounds are respected", {
-  expect_true(all(weights >= lb) & all(weights <= ub))
+  expect_true(all(weights >= lb - 1e-6) & all(weights <= ub + 1e-6))
 })
 
 test_that("Box: quadoprog bounds are respected", {
-  expect_true(all(opt.qp$solution >= lb) & all(opt.qp$solution <= ub))
+  expect_true(all(opt.qp$solution >= lb - 1e-6) & all(opt.qp$solution <= ub + 1e-6))
 })
 
 test_that("Box: PortfolioAnalytics and quadprog solution objective values are equal", {
