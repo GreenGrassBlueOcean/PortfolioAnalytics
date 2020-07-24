@@ -10,6 +10,8 @@
 #' Load the package and data
 library(PortfolioAnalytics)
 
+set.seed(123)
+
 data(edhec)
 R <- edhec[, 1:5]
 colnames(R) <- c("CA", "CTAG", "DS", "EM", "EQM")
