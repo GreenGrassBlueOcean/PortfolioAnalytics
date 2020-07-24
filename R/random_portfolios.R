@@ -427,8 +427,15 @@ random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=1
   if(hasArg(fev)) fev=match.call(expand.dots=TRUE)$fev else fev=0:5
   if(hasArg(normalize)) normalize=match.call(expand.dots=TRUE)$normalize else normalize=TRUE
   
-  rcl <- parallel::makeCluster(0.25*(parallel::detectCores()))
-  doParallel::registerDoParallel(rcl)
+  
+  if(parallel::detectCores() >= 4 ){ 
+    rcl <- parallel::makeCluster(0.25*(parallel::detectCores()))
+    doParallel::registerDoParallel(rcl)
+  } else{ 
+    foreach::registerDoSEQ()
+    rcl <- NULL
+  }
+    
   workers <- foreach::getDoParWorkers()
   print(paste0("Parallell workers = ", workers))
   
@@ -461,8 +468,10 @@ random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=1
     rp <- rp[which(check==TRUE),]
   }
   
-  parallel::stopCluster(rcl)
-  foreach::registerDoSEQ()
+  if (!is.null(rcl)){
+    parallel::stopCluster(rcl)
+    foreach::registerDoSEQ()
+  }
   
   return(rp)
 }
