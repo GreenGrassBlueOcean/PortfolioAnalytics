@@ -4,6 +4,7 @@ require(testthat)
 require(PortfolioAnalytics)
 
 ##### Source Demo Script #####
+set.seed(123)
 
 test_that("demo_max_Sharpe.R runs without error", {
   
