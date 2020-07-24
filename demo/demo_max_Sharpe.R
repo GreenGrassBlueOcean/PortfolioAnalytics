@@ -31,13 +31,13 @@ init.portf
 #' optimize_method="ROI" is to maximize quadratic utility. If we want to maximize
 #' Sharpe Ratio, we need to pass in maxSR=TRUE to optimize.portfolio.
 
-maxSR.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf
-                                   , optimize_method="ROI"
-                                   , maxSR=TRUE
-                                   , trace=TRUE
-                                   , search_size = 2000
-                                   )
-maxSR.lo.ROI
+# maxSR.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf
+#                                    , optimize_method="ROI"
+#                                    , maxSR=TRUE
+#                                    , trace=TRUE
+#                                    , search_size = 2000
+#                                    )
+# maxSR.lo.ROI
 
 #' Although the maximum Sharpe Ratio objective can be solved quickly and accurately
 #' with optimize_method="ROI", it is also possible to solve this optimization
