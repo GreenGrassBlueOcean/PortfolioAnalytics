@@ -50,19 +50,21 @@ extractGroups(minStdDev.ROI)
 
 #' The leverage constraints should be relaxed slightly for random portfolios 
 #' and DEoptim.
-init.portf$constraints[[1]]$min_sum=0.99
-init.portf$constraints[[1]]$max_sum=1.01
+# init.portf$constraints[[1]]$min_sum=0.99
+# init.portf$constraints[[1]]$max_sum=1.01
+
+init.portf <- add.constraint(init.portf, type = "weight_sum", min_sum=0.99, max_sum=1.01)
 
 #' Run the optimization with random portfolios as the optimization backend.
 #' By construction, the random portfolios will be generated to satisfy the
 #' group constraint.
 minStdDev.RP <- optimize.portfolio(R=R, portfolio=init.portf, 
-                                   optimize_method="random", search_size=2000)
+                                   optimize_method="random", search_size=5000)
 minStdDev.RP
 extractGroups(minStdDev.RP)
 
 #' Run the optimization with DEoptim as the optimization backend.
 minStdDev.DE <- optimize.portfolio(R=R, portfolio=init.portf, 
-                                   optimize_method="DEoptim", search_size=2000)
+                                   optimize_method="DEoptim", search_size=5000)
 minStdDev.DE
 extractGroups(minStdDev.DE)
