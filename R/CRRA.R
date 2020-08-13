@@ -39,8 +39,8 @@ CRRA <- function(R, weights, lambda, sigma, m3, m4){
 #' @param ... passthrough to downastream methods
 #'
 #' @return list ovbject containing  mu, sigma, m3, m4 
-#' @export 
 #' @importFrom PerformanceAnalytics M3.MM M4.MM
+#' @export 
 #'
 #' @examples
 #' data("edhec")
@@ -54,4 +54,26 @@ crra.moments <- function(R, ...){
   out$m3 <- PerformanceAnalytics::M3.MM(R)
   out$m4 <- PerformanceAnalytics::M4.MM(R)
   out
+}
+
+
+
+
+#' Objective function for  to compute annualized standard deviation for MONTHLY data 
+#'
+#' @param R list of monthlu returns
+#' @param weights character vector of weights
+#' @param sigma cov(R)
+#' @param N Number of months default 36
+#'
+#' @return matrix with objective value
+#' @export
+#'
+#' @examples
+#' data("edhec")
+#' pasd(R = edhec, weights = rep(1/ncol(edhec), times = 13 ), stats::cov(edhec), N = 36  )
+pasd <- function(R, weights, sigma, N=36){
+  R <- tail(R, N)
+  tmp.sd <- sqrt(as.numeric(t(weights) %*% sigma %*% weights))
+  return(sqrt(12) * tmp.sd)
 }
