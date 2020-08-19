@@ -426,11 +426,12 @@ randomize_portfolio <- randomize_portfolio_v2 <- function (portfolio, max_permut
 random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=100, rp_method="sample", eliminate=TRUE, ...){
   if(hasArg(fev)) fev=match.call(expand.dots=TRUE)$fev else fev=0:5
   if(hasArg(normalize)) normalize=match.call(expand.dots=TRUE)$normalize else normalize = TRUE
-  if(hasArg(Multicore)) normalize=match.call(expand.dots=TRUE)$Multicore else Multicore = NULL
+  if(hasArg(Multicore)) Multicore=match.call(expand.dots=TRUE)$Multicore else Multicore = NULL
   
   
   if(!is.null(Multicore) ){ 
-    rcl <- parallel::makeCluster(ceiling(0.25*(parallel::detectCores())))
+    NCores <- max(2,ceiling(0.25*(parallel::detectCores())))
+    rcl <- parallel::makeCluster(NCores)
     doParallel::registerDoParallel(rcl)
   } else{ 
     foreach::registerDoSEQ()
