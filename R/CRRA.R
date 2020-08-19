@@ -12,6 +12,7 @@
 #'
 #' @return a CRRA minimization value
 #' @export
+#' @importFrom utils tail
 #'
 #' @examples
 #' data("edhec")
