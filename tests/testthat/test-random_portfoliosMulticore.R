@@ -4,6 +4,7 @@ require(PortfolioAnalytics)
 
 context("random portfolios sample method")
 
+
 data(edhec)
 ret <- edhec[, 1:4]
 funds <- colnames(ret)
@@ -15,6 +16,8 @@ init.portf <- add.constraint(init.portf, type="box",
                              min=-0.3, max=0.65)
 
 # generate portfolios to satisfy weight_sum and box constraints
+
+
 rp1 <- random_portfolios(init.portf, 1000, eliminate=FALSE, Multicore = FALSE)
 test_that("we have created at least 1 feasible portfolio to satisfy weight_sum and box constraints", {
   expect_true(any(apply(rp1, 1, PortfolioAnalytics:::check_constraints, portfolio=init.portf)))
