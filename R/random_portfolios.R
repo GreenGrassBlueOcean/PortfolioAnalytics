@@ -430,7 +430,7 @@ random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=1
     
     
   if(Multicore){ 
-    NCores <- max(2,ceiling(0.25*(parallel::detectCores())))
+    NCores <- max(2,ceiling(0.5*(parallel::detectCores())))
     rcl <- parallel::makeCluster(NCores)
     doParallel::registerDoParallel(rcl)
   } else{ 
