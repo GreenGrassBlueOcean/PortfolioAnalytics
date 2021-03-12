@@ -158,3 +158,21 @@ CRRA_expected <- structure(-0.00064838062787029, .Dim = c(1L, 1L))
 expect_equal(CRRA_test,CRRA_expected, tolerance = 1e-8)
 
 })
+
+
+
+test_that("crra objective function satisfies testcase",{
+  
+  Moments2 <- crra.RobustMoments(R = ret, k = 3)
+  Equalweights <- rep(1/ncol(ret), ncol(ret))
+  CRRA_test <- CRRA(R = ret, weights = Equalweights, lambda = 5, sigma = Moments2$sigma, m3 = Moments2$m3, m4 = Moments2$m4)
+  
+  CRRA_expected <- structure(-0.00065818044236162, .Dim = c(1L, 1L))
+  
+  expect_equal(CRRA_test,CRRA_expected, tolerance = 1e-8)
+  
+})
+
+
+
+

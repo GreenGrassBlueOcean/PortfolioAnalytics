@@ -57,6 +57,31 @@ crra.moments <- function(R, ...){
   out
 }
 
+#' # Custom moments fucntion for use in optimize portfolio
+#' supplies moments to CRRA objective function use Boudt's statistical.factor.model function for fitting moments
+#'
+#' @param R an xts, vector, matrix, data frame, timeSeries or zoo object of asset returns
+#' @param ... passthrough to downastream methods
+#' @param k number of factors to use, defaults to one
+#'
+#' @return list ovbject containing  mu, sigma, m3, m4 
+#' @export 
+#'
+#' @examples
+#' data("edhec")
+#' Moments <- crra.RobustMoments(edhec)
+crra.RobustMoments <- function(R, k=1, ...){
+  fit <- statistical.factor.model(R=R, k=k)
+  out <- list()
+  
+  out$mu <- colMeans(R) #, matrix(rep(0, ncol(R)),ncol=1)
+  out$sigma <- extractCovariance(fit) 
+  out$m3 <- extractCoskewness(fit)
+  out$m4 <- extractCokurtosis(fit)
+  out
+}
+
+
 
 
 
