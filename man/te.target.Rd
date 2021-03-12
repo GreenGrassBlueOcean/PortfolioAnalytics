@@ -23,7 +23,7 @@ te.target(R, Rb, weights, min.te = 0.02, max.te = 0.05, scale = 12)
 \item{scale}{a numeric value how many rows there are per year/period.}
 }
 \value{
-
+a tracking error minimization value
 }
 \description{
 Define a custom objective function for penalized tracking error

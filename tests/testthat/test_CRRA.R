@@ -161,7 +161,7 @@ expect_equal(CRRA_test,CRRA_expected, tolerance = 1e-8)
 
 
 
-test_that("crra objective function satisfies testcase",{
+test_that("crra crra.RobustMoments function satisfies testcase",{
   
   Moments2 <- crra.RobustMoments(R = ret, k = 3)
   Equalweights <- rep(1/ncol(ret), ncol(ret))
