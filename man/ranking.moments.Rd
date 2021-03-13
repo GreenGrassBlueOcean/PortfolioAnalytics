@@ -25,6 +25,6 @@ The moment function assumes that the assets with the highest return will continu
 }
 \examples{
 data("edhec")
-AC_Moments <- ranking.moments(edhec,n=3, method  = "ac")
-meucci_Moments <- ranking.moments(edhec,n=3, method  = "meucci")
+AC_Moments <- ranking.moments(edhec[,1:4],n=3, method  = "ac")
+meucci_Moments <- ranking.moments(edhec[,1:4],n=3, method  = "meucci")
 }

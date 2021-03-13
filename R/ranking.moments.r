@@ -14,8 +14,8 @@
 #'
 #' @examples
 #' data("edhec")
-#' AC_Moments <- ranking.moments(edhec,n=3, method  = "ac")
-#' meucci_Moments <- ranking.moments(edhec,n=3, method  = "meucci")
+#' AC_Moments <- ranking.moments(edhec[,1:4],n=3, method  = "ac")
+#' meucci_Moments <- ranking.moments(edhec[,1:4],n=3, method  = "meucci")
 ranking.moments <- function(R, n=1, method=c("meucci", "ac")){
   method <- match.arg(method)
   tmpR <- apply(tail(R, n), 2, function(x) prod(1 + x) - 1)
