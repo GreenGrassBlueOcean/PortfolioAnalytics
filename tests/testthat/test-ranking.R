@@ -74,7 +74,7 @@ test_that("ranking.moments works", {
        "Merger Arbitrage", "Relative Value", "Short Selling", "Funds of Funds"
   ))))
   
-  expect_equal(AC_Moments, AC_Moments_Correct)
+  expect_equal(AC_Moments, AC_Moments_Correct, tolerance = 1e-6)
   
   
   
@@ -158,7 +158,7 @@ test_that("ranking.moments works", {
                                                          ))))
   
   
-  expect_equal(meucci_Moments, meucci_Moments_correct)
+  expect_equal(meucci_Moments, meucci_Moments_correct, tolerance = 1e-6)
   
   
 })
