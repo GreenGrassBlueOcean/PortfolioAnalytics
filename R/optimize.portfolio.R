@@ -92,17 +92,21 @@ optimize.portfolio_v1 <- function(
   if(optimize_method=="DEoptim"){
     stopifnot("package:DEoptim" %in% search()  ||  requireNamespace("DEoptim",quietly = TRUE) )
     # DEoptim does 200 generations by default, so lets set the size of each generation to search_size/200)
-    if(hasArg(itermax)) itermax=match.call(expand.dots=TRUE)$itermax else itermax=N*50
+    if(hasArg(itermax) && !is.null(itermax)) {itermax=match.call(expand.dots=TRUE)$itermax} else {itermax=N*50}
     NP = round(search_size/itermax)
     if(NP<(N*10)) NP <- N*10
     if(NP>2000) NP=2000
-    if(!hasArg(itermax)) {
+    if(!hasArg(itermax) || is.null(itermax) ) {
         itermax<-round(search_size/NP)
         if(itermax<50) itermax=50 #set minimum number of generations
     }
+    message(paste0("DEoptim NP = ", NP))
+    message(paste0("DEoptim itermax = ", itermax))
     
     #check to see whether we need to disable foreach for parallel optimization, esp if called from inside foreach
-    if(hasArg(parallel)) parallel=match.call(expand.dots=TRUE)$parallel else parallel=TRUE
+    if(hasArg(parallel)){ parallel <- match.call(expand.dots=TRUE)$parallel
+                          parallel <- ifelse(test = is.null(parallel), yes = TRUE, no = parallel)
+                        } else {parallel <- TRUE} #&& !is.null(parallel)
     if(!isTRUE(parallel) && 'package:foreach' %in% search()){
         foreach::registerDoSEQ()
     }
@@ -115,37 +119,37 @@ optimize.portfolio_v1 <- function(
         DEcformals$NP <- NP
         DEcformals$itermax <- itermax
         DEcformals[pm] <- dotargs[pm > 0L]
-		if(!hasArg(strategy)) {
+		if(!hasArg(strategy) || is.null(strategy)) {
 		  # use DE/current-to-p-best/1
 		  strategy=6
       DEcformals$strategy=strategy
       }
-		if(!hasArg(reltol)) {
+		if(!hasArg(reltol)|| is.null(reltol)) {
 		  # 1/1000 of 1% change in objective is significant
 		  reltol=.000001
       DEcformals$reltol=reltol
       }
-		if(!hasArg(steptol)) {
+		if(!hasArg(steptol) || is.null(steptol) ) {
 		  # number of assets times 1.5 tries to improve
 		  steptol=round(N*1.5)
       DEcformals$steptol=steptol
       }
-		if(!hasArg(c)) {
+		if(!hasArg(c) || is.null(c) ) {
 		  # JADE mutation parameter, this could maybe use some adjustment
 		  tmp.c=.4
       DEcformals$c=tmp.c
       }
-        if(!hasArg(storepopfrom)) {
+        if(!hasArg(storepopfrom) || is.null(storepopfrom)) {
           storepopfrom=1
           DEcformals$storepopfrom=storepopfrom
         }
         if(isTRUE(parallel) && 'package:foreach' %in% search()){
-            if(!hasArg(parallelType)) {
+            if(!hasArg(parallelType) || !is.null(parallelType)  ) {
               #use all cores
               parallelType=2
               DEcformals$parallelType=parallelType
               }
-            if(!hasArg(packages)) {
+            if(!hasArg(packages) || is.null(packages)) {
               #use all packages
               packages <- names(sessionInfo()$otherPkgs)
               DEcformals$packages <- packages
@@ -157,7 +161,8 @@ optimize.portfolio_v1 <- function(
     
     if(isTRUE(trace)) { 
         #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
-        tmptrace=trace 
+        tmptrace=trace
+        browser()
         assign('.objectivestorage', list(), as.environment(.storage))
         trace=FALSE
     } 
@@ -468,6 +473,8 @@ optimize.portfolio_v1 <- function(
     return(out)
 }
 
+
+
 .onLoad <- function(lib, pkg) {
   if(!exists('.storage'))
     .storage <<- new.env()
@@ -629,12 +636,14 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   objectives=NULL,
   optimize_method=c("DEoptim","random","ROI","pso","GenSA"),
   search_size=20000,
-  trace=FALSE, ...,
+  trace=FALSE, 
+  ...,
   rp=NULL,
   momentFUN='set.portfolio.moments',
   message=FALSE
 )
 {
+  # browser()
   # This is the case where the user has passed in a list of portfolio objects
   # for the portfolio argument.
   # Loop through the portfolio list and recursively call optimize.portfolio
@@ -818,17 +827,19 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   if(optimize_method == "DEoptim"){
     stopifnot("package:DEoptim" %in% search()  ||  requireNamespace("DEoptim",quietly = TRUE))
     # DEoptim does 200 generations by default, so lets set the size of each generation to search_size/200)
-    if(hasArg(itermax)) itermax=match.call(expand.dots=TRUE)$itermax else itermax=N*50
+    if(hasArg(itermax) && !is.null(itermax)){ itermax=match.call(expand.dots=TRUE)$itermax} else {itermax=N*50}
     NP <- round(search_size/itermax)
     if(NP < (N * 10)) NP <- N * 10
-    if(NP > 2000) NP <- 2000
-    if(!hasArg(itermax)) {
+    if(NP >= 2000) NP <- 2000
+    if(!hasArg(itermax) || is.null(itermax) ) {
       itermax <- round(search_size / NP)
       if(itermax < 50) itermax <- 50 #set minimum number of generations
     }
     
     #check to see whether we need to disable foreach for parallel optimization, esp if called from inside foreach
-    if(hasArg(parallel)) parallel <- match.call(expand.dots=TRUE)$parallel else parallel <- TRUE
+    if(hasArg(parallel)){ parallel <- match.call(expand.dots=TRUE)$parallel
+                          parallel <- ifelse(test = is.null(parallel), yes = TRUE, no = parallel)
+                        } else {parallel <- TRUE} 
     if(!isTRUE(parallel) && 'package:foreach' %in% search()){
       foreach::registerDoSEQ()
     }
@@ -841,27 +852,27 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       DEcformals$NP <- NP
       DEcformals$itermax <- itermax
       DEcformals[pm] <- dotargs[pm > 0L]
-      if(!hasArg(strategy)) {
+      if(!hasArg(strategy) || is.null(strategy)  ) {
         # use DE/current-to-p-best/1
-        strategy=6
+        strategy=2 # used to be 6
         DEcformals$strategy=strategy
         }
-      if(!hasArg(reltol)) {
+      if(!hasArg(reltol) || is.null(reltol) ) {
         # 1/1000 of 1% change in objective is significant
         reltol=0.000001
         DEcformals$reltol=reltol
         } 
-      if(!hasArg(steptol)) {
+      if(!hasArg(steptol) || is.null(steptol) ) {
         # number of assets times 1.5 tries to improve
         steptol=round(N*1.5)
         DEcformals$steptol=steptol
         } 
-      if(!hasArg(c)) {
+      if(!hasArg(c) || is.null(c)) {
         # JADE mutation parameter, this could maybe use some adjustment
-        tmp.c=0.4
+        tmp.c=0.4  #used to be 0.4
         DEcformals$c=tmp.c
         }
-      if(!hasArg(storepopfrom)) {
+      if(!hasArg(storepopfrom) || is.null(storepopfrom)) {
         storepopfrom=1
         DEcformals$storepopfrom=storepopfrom
       }
@@ -871,7 +882,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
           parallelType=2
           DEcformals$parallelType=parallelType
           }
-        if(!hasArg(packages)) {
+        if(!hasArg(packages) || is.null(packages)) {
           #use all packages
           packages <- names(sessionInfo()$otherPkgs)
           DEcformals$packages <- packages
@@ -879,8 +890,10 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       }
       #TODO FIXME also check for a passed in controlDE list, including checking its class, and match formals
     }
-    if(hasArg(traceDE)) traceDE=match.call(expand.dots=TRUE)$traceDE else traceDE=TRUE
-    DEcformals$trace <- traceDE
+    if(hasArg(traceDE) ){traceDE <- match.call(expand.dots=TRUE)$traceDE
+                         traceDE <- ifelse(is.null(traceDE),yes = TRUE, no = traceDE )
+                        } else {traceDE <- TRUE} #& !is.null(traceDE)
+       DEcformals$trace <- traceDE
     if(isTRUE(trace)) { 
       #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
       tmptrace <- trace 
@@ -922,9 +935,9 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       DEcformals$initialpop <- seed
     } else{
       # Initial seed population is generated with random_portfolios function if rp is not passed in
-      if(hasArg(rp_method)) rp_method=match.call(expand.dots=TRUE)$rp_method else rp_method="sample"
+      if(hasArg(rp_method)){rp_method=match.call(expand.dots=TRUE)$rp_method} else {rp_method="sample"}
       # if(hasArg(eliminate)) eliminate=match.call(expand.dots=TRUE)$eliminate else eliminate=TRUE
-      if(hasArg(fev)) fev=match.call(expand.dots=TRUE)$fev else fev=0:5
+      if(hasArg(fev)){fev=match.call(expand.dots=TRUE)$fev} else {fev=0:5}
       rp <- random_portfolios(portfolio=portfolio, permutations=(NP+1), rp_method=rp_method, eliminate=FALSE, fev=fev)
       DEcformals$initialpop <- rp
     }

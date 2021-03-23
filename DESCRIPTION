@@ -39,7 +39,9 @@ Suggests:
     testthat,
     nloptr (>= 1.0.0),
     MASS,
-    robustbase
+    robustbase,
+    FRAPO,
+    Rsolnp
 Imports:
     methods,
     doParallel

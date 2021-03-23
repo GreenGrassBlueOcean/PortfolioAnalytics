@@ -6,6 +6,7 @@
 
 #' Load package and data.
 library(PortfolioAnalytics)
+.storage <<- new.env()
 data(edhec)
 R <- edhec[,1:6]
 colnames(R) <- c("CA", "CTAG", "DS", "EM", "EMN", "ED")
@@ -42,7 +43,7 @@ regime.port
 
 #' This optimization should result in out portfolio for regime 2.
 opt1 <- optimize.portfolio(R, regime.port, 
-                           optimize_method="random", 
+                           optimize_method="DEoptim", 
                            search_size=2000, 
                            trace=TRUE)
 opt1
@@ -58,7 +59,7 @@ opt2$regime
 
 #' Run optimization with rebalancing using our regime switching portfolio.
 opt.rebal <- optimize.portfolio.rebalancing(R, regime.port,
-                                            optimize_method="random", 
+                                            optimize_method="DEoptim", 
                                             rebalance_on="quarters", 
                                             training_period=130,
                                             search_size=2000, 
@@ -91,13 +92,13 @@ str(xt)
 #' returning a single xts object difficult/
 
 #' Extract the optimal weights at each rebalance date.
-chart.Weights(opt.rebal, colorset=bluemono)
+try(chart.Weights(opt.rebal, colorset=bluemono))
 
 #' Chart the risk contribution for regime 1
-chart.RiskBudget(opt.rebal, match.col="ES", risk.type="percentage", 
-                 regime=1, colorset=bluemono)
+try(chart.RiskBudget(opt.rebal, match.col="ES", risk.type="percentage", 
+                 regime=1, colorset=bluemono))
 
 #' Chart the risk contribution for regime 2
-chart.RiskBudget(opt.rebal, match.col="StdDev", risk.type="percentage", 
-                 regime=2, colorset=bluemono)
+try(chart.RiskBudget(opt.rebal, match.col="StdDev", risk.type="percentage", 
+                 regime=2, colorset=bluemono))
 

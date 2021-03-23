@@ -45,3 +45,4 @@ vignettes/*.pdf
 *.so
 src/PortfolioAnalytics.dll
 *.dll
+tests/testthat/test_dailydata.r

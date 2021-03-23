@@ -18,11 +18,11 @@ test_that("demo_return_target.R runs succesfully", {
 context("target return as an objective")
 
 test_that("ret.obj.portf contains mean as an objective", 
-          { expect_true(ret.obj.portf$objectives[[1]]$name == "mean")
+          { expect_true(ret.obj.portf$objectives[[2]]$name == "mean")
             })
 
 test_that("ret.obj.portf contains mean as an objective with target = 0.007", 
-          { expect_equal(ret.obj.portf$objectives[[1]]$target, 0.007) })
+          { expect_equal(ret.obj.portf$objectives[[2]]$target, 0.007) })
 
 # test_that("ret.obj.opt objective measure mean = 0.007", 
 #           { expect_equal(as.numeric(extractObjectiveMeasures(ret.obj.opt)$mean), 0.007, tolerance=0.0001) })

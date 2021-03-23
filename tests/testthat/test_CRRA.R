@@ -175,4 +175,18 @@ test_that("crra crra.RobustMoments function satisfies testcase",{
 
 
 
+test_that("CRRA returns different values for different value of Lambda",{
+  
+  data("edhec")
+  Moments <- crra.moments(edhec[,1:4])
+  Equalweights <- rep(1/ncol(edhec[,1:4]), ncol(edhec[,1:4]))
+  Lambda5 <- CRRA(R = edhec, weights = Equalweights, lambda = 5, sigma = Moments$sigma, m3 = Moments$m3, m4 = Moments$m4)
+  Lambda10 <- CRRA(R = edhec, weights = Equalweights, lambda = 10, sigma = Moments$sigma, m3 = Moments$m3, m4 = Moments$m4)
+  
+  expect_equal(Lambda5, structure(-0.00064838062787029, .Dim = c(1L, 1L)))
+  
+  expect_equal(Lambda10, structure(-0.00134066989795602, .Dim = c(1L, 1L)))
+})
+
+
 
