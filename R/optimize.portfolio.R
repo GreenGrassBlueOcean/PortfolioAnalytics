@@ -96,7 +96,7 @@ optimize.portfolio_v1 <- function(
     NP = round(search_size/itermax)
     if(NP<(N*10)) NP <- N*10
     if(NP>2000) NP=2000
-    if(!hasArg(itermax) || is.null(itermax) ) {
+    if(!hasArg(itermax) || is.na(itermax) ) {
         itermax<-round(search_size/NP)
         if(itermax<50) itermax=50 #set minimum number of generations
     }
@@ -105,8 +105,8 @@ optimize.portfolio_v1 <- function(
     
     #check to see whether we need to disable foreach for parallel optimization, esp if called from inside foreach
     if(hasArg(parallel)){ parallel <- match.call(expand.dots=TRUE)$parallel
-                          parallel <- ifelse(test = is.null(parallel), yes = TRUE, no = parallel)
-                        } else {parallel <- TRUE} #&& !is.null(parallel)
+                          parallel <- ifelse(test = is.na(parallel), yes = TRUE, no = parallel)
+                        } else {parallel <- TRUE} #&& !is.na(parallel)
     if(!isTRUE(parallel) && 'package:foreach' %in% search()){
         foreach::registerDoSEQ()
     }
@@ -119,37 +119,37 @@ optimize.portfolio_v1 <- function(
         DEcformals$NP <- NP
         DEcformals$itermax <- itermax
         DEcformals[pm] <- dotargs[pm > 0L]
-		if(!hasArg(strategy) || is.null(strategy)) {
+		if(!hasArg(strategy) || is.na(strategy)) {
 		  # use DE/current-to-p-best/1
 		  strategy=6
       DEcformals$strategy=strategy
       }
-		if(!hasArg(reltol)|| is.null(reltol)) {
+		if(!hasArg(reltol)|| is.na(reltol)) {
 		  # 1/1000 of 1% change in objective is significant
 		  reltol=.000001
       DEcformals$reltol=reltol
       }
-		if(!hasArg(steptol) || is.null(steptol) ) {
+		if(!hasArg(steptol) || is.na(steptol) ) {
 		  # number of assets times 1.5 tries to improve
 		  steptol=round(N*1.5)
       DEcformals$steptol=steptol
       }
-		if(!hasArg(c) || is.null(c) ) {
+		if(!hasArg(c) || is.na(c) ) {
 		  # JADE mutation parameter, this could maybe use some adjustment
 		  tmp.c=.4
       DEcformals$c=tmp.c
       }
-        if(!hasArg(storepopfrom) || is.null(storepopfrom)) {
+        if(!hasArg(storepopfrom) || is.na(storepopfrom)) {
           storepopfrom=1
           DEcformals$storepopfrom=storepopfrom
         }
         if(isTRUE(parallel) && 'package:foreach' %in% search()){
-            if(!hasArg(parallelType) || !is.null(parallelType)  ) {
+            if(!hasArg(parallelType) || !is.na(parallelType)  ) {
               #use all cores
               parallelType=2
               DEcformals$parallelType=parallelType
               }
-            if(!hasArg(packages) || is.null(packages)) {
+            if(!hasArg(packages) || is.na(packages)) {
               #use all packages
               packages <- names(sessionInfo()$otherPkgs)
               DEcformals$packages <- packages
@@ -831,14 +831,14 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
     NP <- round(search_size/itermax)
     if(NP < (N * 10)) NP <- N * 10
     if(NP >= 2000) NP <- 2000
-    if(!hasArg(itermax) || is.null(itermax) ) {
+    if(!hasArg(itermax) || is.na(itermax) ) {
       itermax <- round(search_size / NP)
       if(itermax < 50) itermax <- 50 #set minimum number of generations
     }
     
     #check to see whether we need to disable foreach for parallel optimization, esp if called from inside foreach
     if(hasArg(parallel)){ parallel <- match.call(expand.dots=TRUE)$parallel
-                          parallel <- ifelse(test = is.null(parallel), yes = TRUE, no = parallel)
+                          parallel <- ifelse(test = is.na(parallel), yes = TRUE, no = parallel)
                         } else {parallel <- TRUE} 
     if(!isTRUE(parallel) && 'package:foreach' %in% search()){
       foreach::registerDoSEQ()
@@ -852,27 +852,27 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       DEcformals$NP <- NP
       DEcformals$itermax <- itermax
       DEcformals[pm] <- dotargs[pm > 0L]
-      if(!hasArg(strategy) || is.null(strategy)  ) {
+      if(!hasArg(strategy) || is.na(strategy)  ) {
         # use DE/current-to-p-best/1
         strategy=2 # used to be 6
         DEcformals$strategy=strategy
         }
-      if(!hasArg(reltol) || is.null(reltol) ) {
+      if(!hasArg(reltol) || is.na(reltol) ) {
         # 1/1000 of 1% change in objective is significant
         reltol=0.000001
         DEcformals$reltol=reltol
         } 
-      if(!hasArg(steptol) || is.null(steptol) ) {
+      if(!hasArg(steptol) || is.na(steptol) ) {
         # number of assets times 1.5 tries to improve
         steptol=round(N*1.5)
         DEcformals$steptol=steptol
         } 
-      if(!hasArg(c) || is.null(c)) {
+      if(!hasArg(c) || is.na(c)) {
         # JADE mutation parameter, this could maybe use some adjustment
         tmp.c=0.4  #used to be 0.4
         DEcformals$c=tmp.c
         }
-      if(!hasArg(storepopfrom) || is.null(storepopfrom)) {
+      if(!hasArg(storepopfrom) || is.na(storepopfrom)) {
         storepopfrom=1
         DEcformals$storepopfrom=storepopfrom
       }
@@ -882,7 +882,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
           parallelType=2
           DEcformals$parallelType=parallelType
           }
-        if(!hasArg(packages) || is.null(packages)) {
+        if(!hasArg(packages) || is.na(packages)) {
           #use all packages
           packages <- names(sessionInfo()$otherPkgs)
           DEcformals$packages <- packages
@@ -891,7 +891,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       #TODO FIXME also check for a passed in controlDE list, including checking its class, and match formals
     }
     if(hasArg(traceDE) ){traceDE <- match.call(expand.dots=TRUE)$traceDE
-                         traceDE <- ifelse(is.null(traceDE),yes = TRUE, no = traceDE )
+                         traceDE <- ifelse(is.na(traceDE),yes = TRUE, no = traceDE )
                         } else {traceDE <- TRUE} #& !is.null(traceDE)
        DEcformals$trace <- traceDE
     if(isTRUE(trace)) { 
