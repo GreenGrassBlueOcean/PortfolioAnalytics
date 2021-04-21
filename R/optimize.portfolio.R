@@ -125,26 +125,26 @@ optimize.portfolio_v1 <- function(
 		  # use DE/current-to-p-best/1
 		  strategy=6
       DEcformals$strategy=strategy
-      }
+      } else {DEcformals$strategy = eval.parent(match.call(expand.dots = TRUE)$strategy)}
 		if(!hasArg(reltol)|| is.na(eval.parent(match.call(expand.dots = TRUE)$reltol))) {
 		  # 1/1000 of 1% change in objective is significant
 		  reltol=.000001
       DEcformals$reltol=reltol
-      }
+      } else {DEcformals$reltol = eval.parent(match.call(expand.dots = TRUE)$reltol)}
 		if(!hasArg(steptol) || is.na(eval.parent(match.call(expand.dots = TRUE)$steptol))) {
 		  # number of assets times 1.5 tries to improve
 		  steptol=round(N*1.5)
       DEcformals$steptol=steptol
-      }
+      } else {DEcformals$steptol = eval.parent(match.call(expand.dots = TRUE)$steptol)}
 		if(!hasArg(c) || is.na(eval.parent(match.call(expand.dots = TRUE)$c))) {
 		  # JADE mutation parameter, this could maybe use some adjustment
 		  tmp.c=.4
       DEcformals$c=tmp.c
-      }
+      } else {DEcformals$c = eval.parent(match.call(expand.dots = TRUE)$c)}
     if(!hasArg(storepopfrom) || is.na(eval.parent(match.call(expand.dots = TRUE)$storepopfrom))) {
           storepopfrom=1
           DEcformals$storepopfrom=storepopfrom
-    }
+    } else {DEcformals$storepopfrom = eval.parent(match.call(expand.dots = TRUE)$storepopfrom)}
     if(isTRUE(trace)) { 
         #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
         tmptrace=trace
@@ -882,31 +882,31 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
         # use DE/current-to-p-best/1
         strategy=2 # used to be 6
         DEcformals$strategy=strategy
-        }
+        } else {DEcformals$strategy = eval.parent(match.call(expand.dots = TRUE)$strategy)}
       if(!hasArg(reltol) || is.na(eval.parent(match.call(expand.dots = TRUE)$reltol)) ) {
         # 1/1000 of 1% change in objective is significant
         reltol=0.000001
         DEcformals$reltol=reltol
-        } 
+        } else {DEcformals$reltol = eval.parent(match.call(expand.dots = TRUE)$reltol)}
       if(!hasArg(steptol) || is.na(eval.parent(match.call(expand.dots = TRUE)$steptol))) {
         # number of assets times 1.5 tries to improve
         steptol=round(N*1.5)
         DEcformals$steptol=steptol
-        } 
+        } else {DEcformals$steptol = eval.parent(match.call(expand.dots = TRUE)$steptol)}
       if(!hasArg(c) || is.na(eval.parent(match.call(expand.dots = TRUE)$c))) {
         # JADE mutation parameter, this could maybe use some adjustment
         tmp.c=0.4  #used to be 0.4
         DEcformals$c=tmp.c
-        }
+        } else {DEcformals$c = eval.parent(match.call(expand.dots = TRUE)$c)}
       if(!hasArg(storepopfrom) ||is.na(eval.parent(match.call(expand.dots = TRUE)$storepopfrom))) {
         storepopfrom=1
         DEcformals$storepopfrom=storepopfrom
-      }
+      } else {DEcformals$storepopfrom = eval.parent(match.call(expand.dots = TRUE)$storepopfrom)}
       if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))){
         #use all packages
         packages <- names(sessionInfo()$otherPkgs)
         DEcformals$packages <- packages
-      }
+      } else {DEcformals$packages = eval.parent(match.call(expand.dots = TRUE)$packages)}
       #TODO FIXME also check for a passed in controlDE list, including checking its class, and match formals
       if(hasArg(traceDE) ){traceDE <- eval.parent(match.call(expand.dots=TRUE)$traceDE)
           traceDE <- ifelse(is.na(traceDE),yes = TRUE, no = traceDE )
