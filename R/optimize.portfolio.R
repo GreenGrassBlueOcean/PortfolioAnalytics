@@ -141,53 +141,70 @@ optimize.portfolio_v1 <- function(
 		  tmp.c=.4
       DEcformals$c=tmp.c
       }
-        if(!hasArg(storepopfrom) || is.na(eval.parent(match.call(expand.dots = TRUE)$storepopfrom))) {
+    if(!hasArg(storepopfrom) || is.na(eval.parent(match.call(expand.dots = TRUE)$storepopfrom))) {
           storepopfrom=1
           DEcformals$storepopfrom=storepopfrom
-        }
-        if(isTRUE(parallel) && 'package:foreach' %in% search()){
-            if(!hasArg(parallelType) || is.na(eval.parent(match.call(expand.dots = TRUE)$parallelType))) {
-              #use all cores
-              parallelType=2
-              DEcformals$parallelType=parallelType
-              }
+    }
+    if(isTRUE(trace)) { 
+        #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
+        tmptrace=trace
+        assign('.objectivestorage', list(), as.environment(.storage))
+        trace=FALSE
+    }
+    # get upper and lower weights parameters from constraints
+    upper = constraints$max
+    lower = constraints$min
+        
+    if(hasArg(rpseed)){ 
+        seed <- match.call(expand.dots=TRUE)$rpseed
+        DEcformals$initialpop <- seed
+        rpseed <- FALSE
+      } else {
+        rpseed <- TRUE
+      }
+    if(hasArg(rpseed) & isTRUE(rpseed)) {
+       # initial seed population is generated with random_portfolios function
+      if(hasArg(eps)) eps=match.call(expand.dots=TRUE)$eps else eps = 0.01
+        rpconstraint<-constraint(assets=length(lower), min_sum=constraints$min_sum-eps, max_sum=constraints$max_sum+eps, 
+                                 min=lower, max=upper, weight_seq=generatesequence())
+        rp <- random_portfolios_v1(rpconstraints=rpconstraint,permutations=NP)
+        DEcformals$initialpop=rp
+    }    
+    if(isTRUE(parallel) && 'package:foreach' %in% search()){
+      if(!hasArg(parallelType)) {
+        #Set Up Parallel computing cluster
+        parallelType=2
+        DEcformals$parallelType=parallelType
+        
+        if(parallelType == 2){
+          nC <- parallel::detectCores() 
+          
+          ## No performance improvement with more than 15 cores
+          rcl <- snow::makeSOCKcluster(max(nC,15))
+          
+          ## load any necessary packages in the cluster
+          snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
+                                         , require, character.only = TRUE))
+          
+          ## copy any necessary objects
+          #clusterExport(rcl, .formals)
+          
+          ## register foreach backend
+          doSNOW::registerDoSNOW(rcl) 
+        }}}
             if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))) {
               #use all packages
               packages <- names(sessionInfo()$otherPkgs)
               DEcformals$packages <- packages
               }
-        }
+        
 		 
         #TODO FIXME also check for a passed in controlDE list, including checking its class, and match formals
     }
     
-    if(isTRUE(trace)) { 
-        #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
-        tmptrace=trace
-        browser()
-        assign('.objectivestorage', list(), as.environment(.storage))
-        trace=FALSE
-    } 
+     
     
-    # get upper and lower weights parameters from constraints
-    upper = constraints$max
-    lower = constraints$min
-
-    if(hasArg(rpseed)){ 
-      seed <- match.call(expand.dots=TRUE)$rpseed
-      DEcformals$initialpop <- seed
-      rpseed <- FALSE
-    } else {
-      rpseed <- TRUE
-    }
-	if(hasArg(rpseed) & isTRUE(rpseed)) {
-	    # initial seed population is generated with random_portfolios function
-	    if(hasArg(eps)) eps=match.call(expand.dots=TRUE)$eps else eps = 0.01
-    	rpconstraint<-constraint(assets=length(lower), min_sum=constraints$min_sum-eps, max_sum=constraints$max_sum+eps, 
-             					min=lower, max=upper, weight_seq=generatesequence())
-    	rp <- random_portfolios_v1(rpconstraints=rpconstraint,permutations=NP)
-    	DEcformals$initialpop=rp
-    }
+  
     controlDE <- do.call(DEoptim::DEoptim.control,DEcformals)
 
     # minw = try(DEoptim( constrained_objective ,  lower = lower[1:N] , upper = upper[1:N] , control = controlDE, R=R, constraints=constraints, ...=...)) # add ,silent=TRUE here?
@@ -198,6 +215,11 @@ optimize.portfolio_v1 <- function(
     if(is.null(minw)){
         message(paste("Optimizer was unable to find a solution for target"))
         return (paste("Optimizer was unable to find a solution for target Error given ", ErrorM))
+    }
+    
+    if(identical(exists("rcl"),TRUE)){
+      #stop cluster if available
+      snow::stopCluster(rcl)
     }
     
     if(isTRUE(tmptrace)) trace <- tmptrace
@@ -880,40 +902,57 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
         storepopfrom=1
         DEcformals$storepopfrom=storepopfrom
       }
-      if(isTRUE(parallel) && 'package:foreach' %in% search()){
-        if(!hasArg(parallelType)) {
-          #use all cores
-          parallelType=2
-          DEcformals$parallelType=parallelType
-          }
-        if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))){
-          #use all packages
-          packages <- names(sessionInfo()$otherPkgs)
-          DEcformals$packages <- packages
-          }
+      if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))){
+        #use all packages
+        packages <- names(sessionInfo()$otherPkgs)
+        DEcformals$packages <- packages
       }
       #TODO FIXME also check for a passed in controlDE list, including checking its class, and match formals
-    }
-    if(hasArg(traceDE) ){traceDE <- eval.parent(match.call(expand.dots=TRUE)$traceDE)
-                         traceDE <- ifelse(is.na(traceDE),yes = TRUE, no = traceDE )
-                        } else {traceDE <- TRUE} #& !is.null(traceDE)
-       DEcformals$trace <- traceDE
-    if(isTRUE(trace)) { 
-      #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
-      tmptrace <- trace 
-      assign('.objectivestorage', list(), envir=as.environment(.storage))
-      trace=FALSE
-    } 
-    
-    # get upper and lower weights parameters from constraints
-    upper <- constraints$max
-    lower <- constraints$min
-    
-    # issue message if min_sum and max_sum are restrictive
-    if((constraints$max_sum - constraints$min_sum) < 0.02){
-      message("Leverage constraint min_sum and max_sum are restrictive, 
-              consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01")
-    }
+      if(hasArg(traceDE) ){traceDE <- eval.parent(match.call(expand.dots=TRUE)$traceDE)
+          traceDE <- ifelse(is.na(traceDE),yes = TRUE, no = traceDE )
+        } else {traceDE <- TRUE} #& !is.null(traceDE)
+             DEcformals$trace <- traceDE
+     }
+     if(isTRUE(trace)) { 
+          #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
+          tmptrace <- trace 
+          assign('.objectivestorage', list(), envir=as.environment(.storage))
+          trace=FALSE
+      } 
+  
+      # get upper and lower weights parameters from constraints
+      upper <- constraints$max
+      lower <- constraints$min
+  
+      # issue message if min_sum and max_sum are restrictive
+      if((constraints$max_sum - constraints$min_sum) < 0.02){
+        message("Leverage constraint min_sum and max_sum are restrictive, 
+                  consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01")
+      }
+      
+      if(isTRUE(parallel) && 'package:foreach' %in% search()){
+        if(!hasArg(parallelType)) {
+          
+          #Set Up Parallel computing cluster
+          parallelType=2
+          DEcformals$parallelType=parallelType
+          
+          if(parallelType == 2){
+              nC <- parallel::detectCores() 
+              
+              ## No performance improvement with more than 15 cores
+              rcl <- snow::makeSOCKcluster(max(nC,15))
+              
+              ## load any necessary packages in the cluster
+              snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
+                                             , require, character.only = TRUE))
+              
+              ## copy any necessary objects
+              #clusterExport(rcl, .formals)
+              
+              ## register foreach backend
+              doSNOW::registerDoSNOW(rcl) 
+      }}}
     
     #if(hasArg(rpseed)){ 
     #  seed <- match.call(expand.dots=TRUE)$rpseed
@@ -960,6 +999,10 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       return (paste("Optimizer was unable to find a solution for target"))
     }
     
+    if(identical(exists("rcl"),TRUE)){
+      #stop cluster if available
+      snow::stopCluster(rcl)
+      }
     if(isTRUE(tmptrace)) trace <- tmptrace
     
     weights <- as.vector(minw$optim$bestmem)

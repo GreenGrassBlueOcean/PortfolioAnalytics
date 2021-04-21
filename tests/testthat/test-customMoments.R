@@ -105,7 +105,8 @@ test_that("Custom Moment Functions work", {
                                   , search_size=5000
                                   , trace=TRUE
                                   , traceDE=1
-                                  , momentFUN="sigma.robust")
+                                  , momentFUN="sigma.robust"
+                                  )
   
   opt.pasd
   

@@ -46,3 +46,4 @@ vignettes/*.pdf
 src/PortfolioAnalytics.dll
 *.dll
 tests/testthat/test_dailydata.r
+.Rprofile

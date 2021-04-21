@@ -44,7 +44,9 @@ Suggests:
     Rsolnp
 Imports:
     methods,
-    doParallel
+    doParallel,
+    snow,
+    doSNOW
 Remotes:
     github::GreenGrassBlueOcean/ROI.plugin.symphony
 License: GPL-2 | GPL-3

@@ -24,7 +24,7 @@ pspec <- portfolio.spec(assets=colnames(ret))
 
 #' Here we define individual constraint objects.
 #' Leverage constraint.
-lev_constr <- weight_sum_constraint(min_sum=1, max_sum=1)
+lev_constr <- weight_sum_constraint(min_sum=0.99, max_sum=1.01)
 
 #' Box constraint
 lo_constr <- box_constraint(assets=pspec$assets, min=c(0.01, 0.02, 0.03, 0.04), max=0.65)
@@ -154,7 +154,7 @@ optrp1 <- optimize.portfolio(R=ret, portfolio=pspec,
                            constraints=list(lev_constr, lo_constr, grp_constr), 
                            objectives=list(ret_obj), 
                            optimize_method="random", 
-                           search_size=2000, 
+                           search_size=20000, 
                            trace=TRUE)
 optrp1
 
