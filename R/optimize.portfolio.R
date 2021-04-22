@@ -1007,7 +1007,11 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
     controlDE <- do.call(DEoptim::DEoptim.control, DEcformals)
     # We are passing fn_map to the optional fnMap function to do the 
     # transformation so we need to force normalize=FALSE in call to constrained_objective
-    minw = try(DEoptim::DEoptim( constrained_objective,  lower=lower[1:N], upper=upper[1:N], control=controlDE, R=R, portfolio=portfolio, env=dotargs, normalize=FALSE, fnMap=function(x) fn_map(x, portfolio=portfolio)$weights), silent=TRUE)
+    # minw = try(
+      
+      minw =   DEoptim::DEoptim( constrained_objective,  lower=lower[1:N], upper=upper[1:N], control=controlDE, R=R, portfolio=portfolio, env=dotargs, normalize=FALSE, fnMap=function(x) fn_map(x, portfolio=portfolio)$weights)
+      
+      # , silent=TRUE)
     
     if(inherits(minw, "try-error")) { 
       message(minw)
