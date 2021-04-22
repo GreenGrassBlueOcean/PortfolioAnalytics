@@ -939,7 +939,10 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
           #Set Up Parallel computing cluster
           parallelType=2
           DEcformals$parallelType=parallelType
-        }
+        } else {
+          parallelType = eval.parent(match.call(expand.dots = TRUE)$parallelType)
+          DEcformals$parallelType = parallelType
+        }  
         if(parallelType == 2){
             nC <- parallel::detectCores() 
             
