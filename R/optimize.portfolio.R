@@ -193,7 +193,8 @@ optimize.portfolio_v1 <- function(
           snow::clusterExport(rcl
                               , list("R","portfolio", "constraints", "objectives"
                                      , "optimize_method", "search_size", "trace"
-                                     , "momentFUN", "rp"))
+                                     , "momentFUN", "rp")
+                              , envir = environment())
           
           ## register foreach backend
           doSNOW::registerDoSNOW(rcl) 
@@ -962,7 +963,8 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
             snow::clusterExport(rcl
                                 , list("R","portfolio", "constraints", "objectives"
                                        , "optimize_method", "search_size", "trace"
-                                       , "momentFUN", "rp"))
+                                       , "momentFUN", "rp")
+                                , envir = environment())
             
             ## register foreach backend
             doSNOW::registerDoSNOW(rcl) 
