@@ -190,7 +190,10 @@ optimize.portfolio_v1 <- function(
                                          , require, character.only = TRUE))
           
           ## copy any necessary objects
-          #clusterExport(rcl, .formals)
+          snow::clusterExport(rcl
+                              , list("R","portfolio", "constraints", "objectives"
+                                     , "optimize_method", "search_size", "trace"
+                                     , "momentFUN", "rp"))
           
           ## register foreach backend
           doSNOW::registerDoSNOW(rcl) 
@@ -956,8 +959,11 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
                                           , require, character.only = TRUE))
               
             ## copy any necessary objects
-            #clusterExport(rcl, .formals)
-              
+            snow::clusterExport(rcl
+                                , list("R","portfolio", "constraints", "objectives"
+                                       , "optimize_method", "search_size", "trace"
+                                       , "momentFUN", "rp"))
+            
             ## register foreach backend
             doSNOW::registerDoSNOW(rcl) 
             
