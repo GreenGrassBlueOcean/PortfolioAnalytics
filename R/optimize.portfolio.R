@@ -183,7 +183,7 @@ optimize.portfolio_v1 <- function(
           nC <- parallel::detectCores() 
           
           ## No performance improvement with more than 15 cores
-          rcl <- snow::makeSOCKcluster(max(nC,15))
+          rcl <- snow::makeSOCKcluster(ifelse(nC <= 15, nC, 15))
           
           ## load any necessary packages in the cluster
           snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
@@ -949,7 +949,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
             nC <- parallel::detectCores() 
             
             ## No performance improvement with more than 15 cores
-            rcl <- snow::makeSOCKcluster(max(nC,15))
+            rcl <- snow::makeSOCKcluster(ifelse(nC <= 15, nC, 15))
             
             ## load any necessary packages in the cluster
             snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
