@@ -176,7 +176,8 @@ optimize.portfolio_v1 <- function(
         parallelType=2
         DEcformals$parallelType=parallelType
       } else {
-        DEcformals$parallelType = eval.parent(match.call(expand.dots = TRUE)$parallelType)
+        parallelType = eval.parent(match.call(expand.dots = TRUE)$parallelType)
+        DEcformals$parallelType = parallelType
       }
         if(parallelType == 2){
           nC <- parallel::detectCores() 
