@@ -194,6 +194,8 @@ optimize.portfolio_v1 <- function(
           
           ## register foreach backend
           doSNOW::registerDoSNOW(rcl) 
+          
+          DEcformals$cluster <- rcl
         }}
             if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))) {
               #use all packages
@@ -958,6 +960,9 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
               
             ## register foreach backend
             doSNOW::registerDoSNOW(rcl) 
+            
+            DEcformals$cluster <- rcl
+            
       }}
     
     #if(hasArg(rpseed)){ 
