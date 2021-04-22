@@ -175,7 +175,7 @@ optimize.portfolio_v1 <- function(
         #Set Up Parallel computing cluster
         parallelType=2
         DEcformals$parallelType=parallelType
-        
+      }
         if(parallelType == 2){
           nC <- parallel::detectCores() 
           
@@ -191,7 +191,7 @@ optimize.portfolio_v1 <- function(
           
           ## register foreach backend
           doSNOW::registerDoSNOW(rcl) 
-        }}}
+        }}
             if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))) {
               #use all packages
               packages <- names(sessionInfo()$otherPkgs)
@@ -936,23 +936,23 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
           #Set Up Parallel computing cluster
           parallelType=2
           DEcformals$parallelType=parallelType
-          
-          if(parallelType == 2){
-              nC <- parallel::detectCores() 
+        }
+        if(parallelType == 2){
+            nC <- parallel::detectCores() 
+            
+            ## No performance improvement with more than 15 cores
+            rcl <- snow::makeSOCKcluster(max(nC,15))
+            
+            ## load any necessary packages in the cluster
+            snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
+                                          , require, character.only = TRUE))
               
-              ## No performance improvement with more than 15 cores
-              rcl <- snow::makeSOCKcluster(max(nC,15))
+            ## copy any necessary objects
+            #clusterExport(rcl, .formals)
               
-              ## load any necessary packages in the cluster
-              snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
-                                             , require, character.only = TRUE))
-              
-              ## copy any necessary objects
-              #clusterExport(rcl, .formals)
-              
-              ## register foreach backend
-              doSNOW::registerDoSNOW(rcl) 
-      }}}
+            ## register foreach backend
+            doSNOW::registerDoSNOW(rcl) 
+      }}
     
     #if(hasArg(rpseed)){ 
     #  seed <- match.call(expand.dots=TRUE)$rpseed
