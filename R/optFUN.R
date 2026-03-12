@@ -983,9 +983,6 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
     obj_vals[["StdDev"]] <- port.sd
   }
   out$obj_vals <- obj_vals
-=======
-  out$solver_message <- roi.result$message
->>>>>>> theirs
   return(out)
 }
 

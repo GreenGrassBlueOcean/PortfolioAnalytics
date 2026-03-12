@@ -285,9 +285,6 @@ chart.EfficientFrontier.optimize.portfolio.ROI <- function(object, ..., optimize
 
 #' @rdname chart.EfficientFrontier
 #' @method chart.EfficientFrontier optimize.portfolio
-=======
-# #' @S3method chart.EfficientFrontier optimize.portfolio
->>>>>>> theirs
 #' @export
 chart.EfficientFrontier.optimize.portfolio <- function(object, ..., match.col="ES", n.portfolios=25, xlim=NULL, ylim=NULL, cex.axis=0.8, element.color="darkgray", main="Efficient Frontier", RAR.text="SR", rf=0, tangent.line=TRUE, cex.legend=0.8, chart.assets=TRUE, labels.assets=TRUE, pch.assets=21, cex.assets=0.8){
   # This function will work with objects of class optimize.portfolio.DEoptim,
