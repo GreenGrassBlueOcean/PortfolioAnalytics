@@ -16,7 +16,18 @@
   symphony = "solve_roi",
   ipop     = "solve_roi",
   pso      = "solve_pso",
-  GenSA    = "solve_gensa"
+  GenSA    = "solve_gensa",
+  CVXR     = "solve_cvxr",
+  cvxr     = "solve_cvxr",
+  CBC      = "solve_cvxr",
+  GLPK     = "solve_cvxr",
+  GLPK_MI  = "solve_cvxr",
+  OSQP     = "solve_cvxr",
+  CPLEX    = "solve_cvxr",
+  SCS      = "solve_cvxr",
+  ECOS     = "solve_cvxr",
+  GUROBI   = "solve_cvxr",
+  MOSEK    = "solve_cvxr"
 )
 
 # Environment for user-registered solvers
