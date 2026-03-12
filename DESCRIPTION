@@ -52,9 +52,7 @@ Suggests:
     rmarkdown,
     GSE,
     RobStatTM,
-    PCRA,
     R.rsp,
-    RPESE,
     TTR,
     Matrix,
     FRAPO,
@@ -65,7 +63,10 @@ Suggests:
 VignetteBuilder: R.rsp
 Imports:
     methods,
-    mco
+    mco,
+    GenSA,
+    ROI.plugin.symphony,
+    pso
 License: GPL-3
 URL: https://github.com/braverock/PortfolioAnalytics
 Copyright: (c) 2004-2026
