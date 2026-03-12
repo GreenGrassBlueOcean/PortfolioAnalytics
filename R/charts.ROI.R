@@ -80,7 +80,7 @@ chart.Weight.ROI <- function(object, ..., neighbors = NULL, main="Weights", las 
 chart.Weights.optimize.portfolio.ROI <- chart.Weight.ROI
 
 
-.chart_scatter_ROI <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL, rp=FALSE){
+chart.Scatter.ROI <- .chart_scatter_ROI <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL, rp=FALSE){
   
   if(!inherits(object, "optimize.portfolio.ROI")) stop("object must be of class 'optimize.portfolio.ROI'")
   

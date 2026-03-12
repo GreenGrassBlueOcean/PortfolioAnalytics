@@ -78,7 +78,7 @@ chart.Weight.pso <- function(object, ..., neighbors = NULL, main="Weights", las 
 #' @export
 chart.Weights.optimize.portfolio.pso <- chart.Weight.pso
 
-.chart_scatter_pso <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL){
+chart.Scatter.pso <- .chart_scatter_pso <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL){
   if(!inherits(object, "optimize.portfolio.pso")) stop("object must be of class 'optimize.portfolio.pso'")
   
   R <- object$R

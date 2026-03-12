@@ -78,7 +78,7 @@ chart.Weight.GenSA <- function(object, ..., neighbors = NULL, main="Weights", la
 #' @export
 chart.Weights.optimize.portfolio.GenSA <- chart.Weight.GenSA
 
-.chart_scatter_GenSA <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color="darkgray", cex.axis=0.8, ylim=NULL, xlim=NULL, rp=FALSE){
+chart.Scatter.GenSA <- .chart_scatter_GenSA <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color="darkgray", cex.axis=0.8, ylim=NULL, xlim=NULL, rp=FALSE){
   
   if(!inherits(object, "optimize.portfolio.GenSA")) stop("object must be of class 'optimize.portfolio.GenSA'")
   
