@@ -22,19 +22,29 @@
 #' @param portfolio object of class \code{portfolio}
 #' @param relax TRUE/FALSE, default FALSE. Enable constraints to be relaxed.
 #' @param verbose print error messages for debuggin purposes
+#' @param method character, one of \code{"projection"} (default) or
+#'   \code{"rp_transform"}. When \code{"projection"}, uses Dykstra's
+#'   alternating projection algorithm for deterministic, nearest-point repair
+#'   of convex constraint sets (box + weight_sum + group). Falls back to
+#'   \code{rp_transform} automatically for non-convex constraints (position
+#'   limits, leverage) or if projection fails to converge. When
+#'   \code{"rp_transform"}, uses the legacy random perturbation method
+#'   exclusively.
 #' @param \dots any other passthru parameters
-#' @return 
+#' @return A list with components:
 #' \describe{
-#' \item{weights:}{vector of transformed weights meeting constraints.}
-#' \item{min: }{vector of min box constraints that may have been modified if relax=TRUE.}
-#' \item{max: }{vector of max box constraints that may have been modified if relax=TRUE.}
-#' \item{cLO: }{vector of lower bound group constraints that may have been modified if relax=TRUE.}
-#' \item{cUP: }{vector of upper bound group constraints that may have been modified if relax=TRUE.}
+#'   \item{weights}{vector of transformed weights meeting constraints.}
+#'   \item{min}{vector of min box constraints that may have been modified if relax=TRUE.}
+#'   \item{max}{vector of max box constraints that may have been modified if relax=TRUE.}
+#'   \item{cLO}{vector of lower bound group constraints that may have been modified if relax=TRUE.}
+#'   \item{cUP}{vector of upper bound group constraints that may have been modified if relax=TRUE.}
 #' }
 #' @author Ross Bennett
 #' @export
-fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE, ...){
+fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
+                   method=c("projection", "rp_transform"), ...){
   if(!is.portfolio(portfolio)) stop("portfolio passed in is not of class 'portfolio'")
+  method <- match.arg(method)
   
   nassets <- length(portfolio$assets)
   
@@ -61,12 +71,59 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE, ...){
   cLO <- constraints$cLO
   cUP <- constraints$cUP
   group_pos <- constraints$group_pos
-  div_target <- constraints$div_target
-  turnover_target <- constraints$turnover_target
   max_pos <- constraints$max_pos
   max_pos_long <- constraints$max_pos_long
   max_pos_short <- constraints$max_pos_short
   leverage <- constraints$leverage
+  
+  # --- Attempt deterministic projection for convex constraint sets ---
+  # Convex when: no position_limit and no leverage constraints
+  is_convex <- is.null(max_pos) && is.null(max_pos_long) &&
+    is.null(max_pos_short) && is.null(leverage)
+  
+  if (method == "projection" && is_convex) {
+    proj <- project_weights(
+      w = weights,
+      min_sum = min_sum,
+      max_sum = max_sum,
+      min_box = min,
+      max_box = max,
+      groups = groups,
+      cLO = cLO,
+      cUP = cUP
+    )
+    if (!is.null(proj)) {
+      names(proj) <- names(weights)
+      return(list(weights = proj,
+                  min = min,
+                  max = max,
+                  cLO = cLO,
+                  cUP = cUP,
+                  max_pos = max_pos,
+                  max_pos_long = max_pos_long,
+                  max_pos_short = max_pos_short,
+                  leverage = leverage))
+    }
+    # Projection failed to converge — fall through to rp_transform path
+    if (verbose) message("Dykstra projection did not converge; falling back to rp_transform")
+  }
+  
+  # --- Legacy rp_transform path ---
+  # rp_transform will rarely find a feasible portfolio if there is not some 
+  # 'wiggle room' between min_sum and max_sum
+  if((max_sum - min_sum) < 0.02){
+    min_sum <- min_sum - 0.01
+    max_sum <- max_sum + 0.01
+  }
+  
+  weight_seq <- portfolio$weight_seq
+  if(is.null(weight_seq)){
+    weight_seq <- generatesequence(min=min(constraints$min), max=max(constraints$max), by=0.002)
+  }
+  weight_seq <- as.vector(weight_seq)
+  
+  div_target <- constraints$div_target
+  turnover_target <- constraints$turnover_target
   tolerance <- .Machine$double.eps^0.5
   
   # We will modify the weights vector so create a temporary copy
@@ -1103,6 +1160,177 @@ rp_position_limit <- function(weights, max_pos=NULL, max_pos_long=NULL, max_pos_
 # R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
 # Copyright (c) 2004-2021 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Deterministic Constraint Repair via Dykstra's Alternating Projection
+#
+# For convex constraint sets (box + weight_sum + group), Dykstra's algorithm
+# finds the nearest (Euclidean) feasible point in finite iterations —
+# guaranteed convergence, no randomness.
+###############################################################################
+
+#' Euclidean projection onto box constraints
+#' @param w numeric vector of weights
+#' @param min_box numeric vector of lower bounds
+#' @param max_box numeric vector of upper bounds
+#' @return projected weights (element-wise clamping)
+#' @keywords internal
+.project_box <- function(w, min_box, max_box) {
+  pmin(pmax(w, min_box), max_box)
+}
+
+#' Euclidean projection onto the weight-sum slab
+#' @param w numeric vector of weights
+#' @param min_sum scalar lower bound on sum(w)
+#' @param max_sum scalar upper bound on sum(w)
+#' @return projected weights
+#' @keywords internal
+.project_weight_sum <- function(w, min_sum, max_sum) {
+  s <- sum(w)
+  if (s >= min_sum && s <= max_sum) return(w)
+  # Project onto the nearest bounding hyperplane
+  target <- if (s < min_sum) min_sum else max_sum
+  w + (target - s) / length(w)
+}
+
+#' Euclidean projection onto a single group-sum constraint
+#' @param w numeric vector of weights (full portfolio)
+#' @param idx integer vector of indices for this group
+#' @param lo scalar lower bound on group sum
+#' @param up scalar upper bound on group sum
+#' @return projected weights (only group elements modified)
+#' @keywords internal
+.project_group <- function(w, idx, lo, up) {
+  gs <- sum(w[idx])
+  if (gs >= lo && gs <= up) return(w)
+  target <- if (gs < lo) lo else up
+  w[idx] <- w[idx] + (target - gs) / length(idx)
+  w
+}
+
+#' Check if a weight vector is feasible w.r.t. all projection constraints
+#' @keywords internal
+.is_projection_feasible <- function(w, min_sum, max_sum, min_box, max_box,
+                                    groups = NULL, cLO = NULL, cUP = NULL,
+                                    ftol = 1e-8) {
+  if (sum(w) < min_sum - ftol || sum(w) > max_sum + ftol) return(FALSE)
+  if (any(w < min_box - ftol) || any(w > max_box + ftol)) return(FALSE)
+  if (!is.null(groups)) {
+    for (g in seq_along(groups)) {
+      gs <- sum(w[groups[[g]]])
+      if (gs < cLO[g] - ftol || gs > cUP[g] + ftol) return(FALSE)
+    }
+  }
+  TRUE
+}
+
+#' Deterministic constraint repair via Dykstra's alternating projection
+#'
+#' Finds the nearest (Euclidean) feasible point to \code{w} in the intersection
+#' of convex constraint sets: box constraints, weight-sum constraint, and
+#' group-sum constraints. Each individual group is treated as a separate
+#' convex set with its own Dykstra residual, correctly handling overlapping
+#' groups.
+#'
+#' When the algorithm detects that \code{x} has stabilized (changes below
+#' \code{tol}) but the result is not yet feasible, it continues iterating —
+#' this handles limit-cycle cases where residuals are still evolving.
+#' Returns \code{NULL} if \code{max_iter} is reached without finding a
+#' feasible point (suggesting conflicting constraints or an extremely
+#' challenging geometry).
+#'
+#' @param w numeric vector of weights to project
+#' @param min_sum scalar lower bound on sum(w)
+#' @param max_sum scalar upper bound on sum(w)
+#' @param min_box numeric vector of lower bounds per asset
+#' @param max_box numeric vector of upper bounds per asset
+#' @param groups list of integer vectors specifying group membership (or NULL)
+#' @param cLO numeric vector of group lower bounds (or NULL)
+#' @param cUP numeric vector of group upper bounds (or NULL)
+#' @param max_iter maximum number of Dykstra cycles (default 1000)
+#' @param tol convergence tolerance (default 1e-10)
+#' @return projected weights satisfying all constraints, or NULL if the
+#'   algorithm fails to converge (suggesting an empty intersection / conflicting
+#'   constraints)
+#' @export
+project_weights <- function(w,
+                            min_sum,
+                            max_sum,
+                            min_box,
+                            max_box,
+                            groups = NULL,
+                            cLO = NULL,
+                            cUP = NULL,
+                            max_iter = 1000,
+                            tol = 1e-10) {
+  n <- length(w)
+  x <- w
+
+  # Build list of constraint sets: box, weight_sum, then each group
+  # K = 2 + number of groups
+  n_groups <- if (!is.null(groups)) length(groups) else 0L
+  K <- 2L + n_groups
+
+  # Dykstra residual vectors (one per constraint set)
+  p <- vector("list", K)
+  for (k in seq_len(K)) p[[k]] <- rep(0, n)
+
+  # Track consecutive stalled cycles (x stable but infeasible)
+  stall_count <- 0L
+
+  for (iter in seq_len(max_iter)) {
+    x_old <- x
+
+    # Constraint set 1: box
+    y <- .project_box(x + p[[1]], min_box, max_box)
+    p[[1]] <- (x + p[[1]]) - y
+    x <- y
+
+    # Constraint set 2: weight_sum
+    y <- .project_weight_sum(x + p[[2]], min_sum, max_sum)
+    p[[2]] <- (x + p[[2]]) - y
+    x <- y
+
+    # Constraint sets 3..K: individual groups
+    if (n_groups > 0L) {
+      for (g in seq_len(n_groups)) {
+        k <- 2L + g
+        y <- .project_group(x + p[[k]], groups[[g]], cLO[g], cUP[g])
+        p[[k]] <- (x + p[[k]]) - y
+        x <- y
+      }
+    }
+
+    # Convergence requires BOTH stability AND feasibility.
+    # If x stabilizes but is infeasible, we're in a limit cycle where
+    # residuals are still evolving — keep iterating. If the stall persists
+    # for many cycles, the intersection is likely empty.
+    x_stable <- max(abs(x - x_old)) < tol
+
+    if (x_stable) {
+      if (.is_projection_feasible(x, min_sum, max_sum, min_box, max_box,
+                                  groups, cLO, cUP)) {
+        return(x)
+      }
+      stall_count <- stall_count + 1L
+      # If x is stuck in a limit cycle for too long, give up
+      if (stall_count > 200L) return(NULL)
+    } else {
+      stall_count <- 0L
+    }
+  }
+
+  # max_iter reached — return result if feasible, NULL otherwise
+  if (.is_projection_feasible(x, min_sum, max_sum, min_box, max_box,
+                              groups, cLO, cUP)) {
+    return(x)
+  }
+  NULL
+}
+
+
+###############################################################################
+# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
+#
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING

@@ -32,7 +32,7 @@ init.portf
 
 maxSTARR.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf, 
                                       optimize_method="ROI",
-                                      trace=TRUE)
+                                      trace=TRUE) #, maxSTARR=FALSE 
 maxSTARR.lo.ROI
 
 #' Although the maximum STARR Ratio objective can be solved quickly and accurately

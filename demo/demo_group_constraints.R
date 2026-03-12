@@ -10,6 +10,8 @@
 #' Load the package and data
 library(PortfolioAnalytics)
 
+set.seed(123)
+
 data(edhec)
 R <- edhec[, 1:5]
 colnames(R) <- c("CA", "CTAG", "DS", "EM", "EQM")
@@ -55,12 +57,12 @@ init.portf$constraints[[1]]$max_sum=1.01
 #' By construction, the random portfolios will be generated to satisfy the
 #' group constraint.
 minStdDev.RP <- optimize.portfolio(R=R, portfolio=init.portf, 
-                                   optimize_method="random", search_size=2000)
+                                   optimize_method="random", search_size=5000)
 minStdDev.RP
 extractGroups(minStdDev.RP)
 
 #' Run the optimization with DEoptim as the optimization backend.
 minStdDev.DE <- optimize.portfolio(R=R, portfolio=init.portf, 
-                                   optimize_method="DEoptim", search_size=2000)
+                                   optimize_method="DEoptim", search_size=5000)
 minStdDev.DE
 extractGroups(minStdDev.DE)

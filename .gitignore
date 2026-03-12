@@ -2,6 +2,10 @@
 .Rhistory
 .Rapp.history
 
+.Rproj.user
+.RData
+.Ruserdata
+
 # Session Data files
 .RData
 
@@ -21,6 +25,13 @@
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+# keep pre-built PDFs for R.rsp::asis vignettes
+!vignettes/portfolio_vignette.pdf
+!vignettes/ROI_vignette.pdf
+!vignettes/custom_moments_objectives.pdf
+!vignettes/risk_budget_optimization.pdf
+!vignettes/cvxrPortfolioAnalytics.pdf
+!vignettes/robustCovMatForPA.pdf
 
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth
@@ -32,9 +43,15 @@ vignettes/*.pdf
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md
-.Rproj.user
 
 # compiled files
 *.o
 *.so
+*.dll
 inst/doc
+src/PortfolioAnalytics.dll
+tests/testthat/test_dailydata.r
+.Rprofile
+.positai
+nul
+tests/testthat/_problems/

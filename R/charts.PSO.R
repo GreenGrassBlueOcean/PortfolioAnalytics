@@ -78,7 +78,7 @@ chart.Weight.pso <- function(object, ..., neighbors = NULL, main="Weights", las 
 #' @export
 chart.Weights.optimize.portfolio.pso <- chart.Weight.pso
 
-chart.Scatter.pso <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL){
+.chart_scatter_pso <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL){
   if(!inherits(object, "optimize.portfolio.pso")) stop("object must be of class 'optimize.portfolio.pso'")
   
   R <- object$R
@@ -209,12 +209,12 @@ chart.Scatter.pso <- function(object, ..., neighbors=NULL, return.col="mean", ri
 chart.RiskReward.optimize.portfolio.pso <- chart.Scatter.pso
 
 
-charts.pso <- function(pso, return.col="mean", risk.col="ES", chart.assets=FALSE, cex.axis=0.8, element.color="darkgray", neighbors=NULL, main="PSO.Portfolios", xlim=NULL, ylim=NULL, ...){
+.charts_pso <- function(pso, return.col="mean", risk.col="ES", chart.assets=FALSE, cex.axis=0.8, element.color="darkgray", neighbors=NULL, main="PSO.Portfolios", xlim=NULL, ylim=NULL, ...){
   # Specific to the output of the optimize_method=pso
   op <- par(no.readonly=TRUE)
   layout(matrix(c(1,2)),heights=c(2,2),widths=1)
   par(mar=c(4,4,4,2))
-  chart.Scatter.pso(object=pso, return.col=return.col, risk.col=risk.col, chart.assets=chart.assets, element.color=element.color, cex.axis=cex.axis, main=main, xlim=xlim, ylim=ylim, ...=...)
+  .chart_scatter_pso(object=pso, return.col=return.col, risk.col=risk.col, chart.assets=chart.assets, element.color=element.color, cex.axis=cex.axis, main=main, xlim=xlim, ylim=ylim, ...=...)
   par(mar=c(2,4,0,2))
   chart.Weight.pso(object=pso, neighbors=neighbors, las=3, xlab=NULL, cex.lab=1, element.color=element.color, cex.axis=cex.axis, ...=..., main="")
   par(op)
@@ -225,7 +225,7 @@ charts.pso <- function(pso, return.col="mean", risk.col="ES", chart.assets=FALSE
 #' @method plot optimize.portfolio.pso
 #' @export
 plot.optimize.portfolio.pso <- function(x, ..., return.col="mean", risk.col="ES", chart.assets=FALSE, cex.axis=0.8, element.color="darkgray", neighbors=NULL, main="PSO.Portfolios", xlim=NULL, ylim=NULL){
-  charts.pso(pso=x, return.col=return.col, risk.col=risk.col, chart.assets=FALSE, cex.axis=cex.axis, element.color=element.color, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...=...)
+  .charts_pso(pso=x, return.col=return.col, risk.col=risk.col, chart.assets=FALSE, cex.axis=cex.axis, element.color=element.color, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...=...)
 }
 
 

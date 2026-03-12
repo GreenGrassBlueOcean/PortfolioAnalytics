@@ -89,11 +89,25 @@ extractStats.optimize.portfolio.DEoptim <- function(object, prefix=NULL, ...) {
   # Check if object$DEoptim_objective_results is null, the user called optimize.portfolio with trace=FALSE
   if(is.null(object$DEoptim_objective_results)) stop("DEoptim_objective_results is null, trace=TRUE must be specified in optimize.portfolio")
   
+  # Parallel DEoptim cannot accumulate per-iteration results because the
+
+  # storage environment is serialized to worker processes.  Fall back to
+  # returning a single-row matrix built from the optimal solution.
+  l = length(object$DEoptim_objective_results)
+  if(l == 0L) {
+    obj <- unlist(object$objective_measures)
+    trow <- c(obj, out = object$out, object$weights)
+    rnames <- c(names(obj), 'out', paste('w', names(object$weights), sep = '.'))
+    rnames <- name.replace(rnames)
+    result <- matrix(trow, nrow = 1, dimnames = list(
+      paste0(prefix, "DE.portf.optimal"), rnames))
+    return(result)
+  }
+  
   # first pull out the optimal portfolio
   trow<-c(unlist(object$objective_measures),out=object$out,object$weights)
   #colnames(trow)<-c(colnames(unlist(object$objective_measures)),'out',names(object$weights))
   result<-trow
-  l = length(object$DEoptim_objective_results)
   nobj<-length(unlist(object$DEoptim_objective_results[[1]]$objective_measures))
   result=matrix(nrow=l,ncol=(nobj+length(object$weights))+1)
   ncols<-ncol(result)
@@ -276,7 +290,7 @@ extractStats.optimize.portfolio.rebalancing <- function(object, prefix=NULL, ...
   if(inherits(object$portfolio, "regime.portfolios")){
     return(extractStatsRegime(object, prefix=prefix))
   } else {
-    return(lapply(object$opt_rebal, extractStats, ...))
+    return(lapply(object$opt_rebalancing, extractStats, ...))
   }
 }
 
@@ -398,7 +412,7 @@ extractStats.opt.rebal.list <- function(object, ...){
 #' @seealso \code{\link{optimize.portfolio}}, \code{\link{optimize.portfolio.rebalancing}}
 #' @export
 extractWeights <- function (object, ...){
-  UseMethod('extractWeights')
+  UseMethod('extractWeights', object = object)
 }
 
 #' @method extractWeights optimize.portfolio
@@ -418,7 +432,7 @@ extractWeights.optimize.portfolio.rebalancing <- function(object, ...){
   if(!inherits(object, "optimize.portfolio.rebalancing")){
     stop("Object passed in must be of class 'optimize.portfolio.rebalancing'")
   }
-  rebal_object <- object$opt_rebal
+  rebal_object <- object$opt_rebalancing
   numColumns = length(rebal_object[[1]]$weights)
   numRows = length(rebal_object)
 
@@ -496,7 +510,7 @@ extractWeights.opt.rebal.list <- function(object, ...){
 #' @author Ross Bennett
 #' @export
 extractObjectiveMeasures <- function(object){
-  UseMethod("extractObjectiveMeasures")
+  UseMethod("extractObjectiveMeasures", object = object)
 }
 
 #' @method extractObjectiveMeasures optimize.portfolio
@@ -518,7 +532,7 @@ extractObjectiveMeasures.optimize.portfolio.rebalancing <- function(object){
   if(inherits(object$portfolio, "regime.portfolios")){
     result <- extractObjRegime(object)
   } else {
-    rebal_object <- object$opt_rebal
+    rebal_object <- object$opt_rebalancing
     num.columns <- length(unlist(extractObjectiveMeasures(rebal_object[[1]])))
     num.rows <- length(rebal_object)
     result <- matrix(nrow=num.rows, ncol=num.columns)
@@ -747,5 +761,95 @@ extractGroups <- function(object, ...){
               category_weights=cat_weights, 
               group_weights=group_weights)
   )
+}
+
+
+#' Extract feasibility reports from optimization results
+#'
+#' Generic function to extract \code{feasibility_report} objects from
+#' \code{optimize.portfolio} results, including rebalancing and
+#' multi-portfolio objects.
+#'
+#' @param object An optimization result object.
+#' @param ... Additional arguments passed to methods.
+#' @param as.data.frame logical. If \code{TRUE}, the report(s) are converted
+#'   to tidy data frames via \code{\link{as.data.frame.feasibility_report}}.
+#'   Default \code{FALSE}.
+#'
+#' @return A \code{feasibility_report} object, a list of such objects,
+#'   or a data frame when \code{as.data.frame = TRUE}.
+#'
+#' @examples
+#' \dontrun{
+#' opt <- optimize.portfolio(R, portf, optimize_method = "ROI")
+#' extractFeasibility(opt)
+#' extractFeasibility(opt, as.data.frame = TRUE)
+#' }
+#'
+#' @seealso \code{\link{check_portfolio_feasibility}},
+#'   \code{\link{as.data.frame.feasibility_report}}
+#' @export
+extractFeasibility <- function(object, ...) {
+  UseMethod("extractFeasibility")
+}
+
+#' @rdname extractFeasibility
+#' @method extractFeasibility optimize.portfolio
+#' @export
+extractFeasibility.optimize.portfolio <- function(object, ..., as.data.frame = FALSE) {
+  fr <- object$feasibility_report
+  if (is.null(fr)) return(NULL)
+  if (isTRUE(as.data.frame)) return(as.data.frame(fr, ...))
+  fr
+}
+
+#' @rdname extractFeasibility
+#' @method extractFeasibility optimize.portfolio.rebalancing
+#' @export
+extractFeasibility.optimize.portfolio.rebalancing <- function(object, ..., as.data.frame = FALSE) {
+  opt_list <- object$opt_rebalancing
+  if (is.null(opt_list)) return(NULL)
+
+  reports <- lapply(opt_list, function(x) x$feasibility_report)
+
+  if (isTRUE(as.data.frame)) {
+    dfs <- lapply(seq_along(reports), function(i) {
+      fr <- reports[[i]]
+      if (is.null(fr)) return(NULL)
+      df <- as.data.frame(fr, ...)
+      df$date <- names(reports)[i]
+      df
+    })
+    dfs <- Filter(Negate(is.null), dfs)
+    if (length(dfs) == 0L) return(data.frame())
+    return(do.call(rbind, dfs))
+  }
+  reports
+}
+
+#' @rdname extractFeasibility
+#' @method extractFeasibility opt.list
+#' @export
+extractFeasibility.opt.list <- function(object, ..., as.data.frame = FALSE) {
+  reports <- lapply(object, function(x) x$feasibility_report)
+  if (isTRUE(as.data.frame)) {
+    dfs <- lapply(reports, function(fr) {
+      if (is.null(fr)) return(NULL)
+      as.data.frame(fr, ...)
+    })
+    dfs <- Filter(Negate(is.null), dfs)
+    if (length(dfs) == 0L) return(data.frame())
+    return(do.call(rbind, dfs))
+  }
+  reports
+}
+
+#' @rdname extractFeasibility
+#' @method extractFeasibility opt.rebal.list
+#' @export
+extractFeasibility.opt.rebal.list <- function(object, ..., as.data.frame = FALSE) {
+  lapply(object, function(x) {
+    extractFeasibility(x, ..., as.data.frame = as.data.frame)
+  })
 }
 

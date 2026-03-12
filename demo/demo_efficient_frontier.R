@@ -16,6 +16,10 @@ library(DEoptim)
 library(ROI)
 require(ROI.plugin.quadprog)
 require(ROI.plugin.glpk)
+library(foreach)
+
+
+foreach::registerDoSEQ()
 
 #' Load the data and change the column names for better legends in plotting.
 data(edhec)

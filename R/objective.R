@@ -59,6 +59,10 @@ is.objective <- function( x ) {
 #' @export
 add.objective_v1 <- function(constraints, type, name, arguments=NULL, enabled=TRUE, ..., indexnum=NULL)
 {
+    .Deprecated("add.objective", package = "PortfolioAnalytics",
+                msg = paste("'add.objective_v1' is deprecated.",
+                            "Use 'add.objective()' with a 'portfolio.spec' object instead.",
+                            "See help('add.objective').", sep = "\n"))
     if (!is.constraint(constraints)) {stop("constraints passed in are not of class constraint")}
 
     if (!hasArg(name)) stop("you must supply a name for the objective")

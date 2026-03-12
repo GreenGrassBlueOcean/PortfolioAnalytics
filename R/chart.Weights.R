@@ -31,7 +31,7 @@
 #' @name chart.Weights
 #' @export
 chart.Weights <- function(object, ...){
-  UseMethod("chart.Weights")
+  UseMethod("chart.Weights", object = object)
 }
 
 barplotWeights <- function(object, ..., main="Weights", las=3, xlab=NULL, cex.lab=1, element.color="darkgray", cex.axis=0.8, legend.loc="topright", cex.legend=0.8, colorset=NULL){
@@ -97,6 +97,9 @@ barplotWeights <- function(object, ..., main="Weights", las=3, xlab=NULL, cex.la
 
 #' @rdname chart.Weights
 #' @method chart.Weights optimize.portfolio.rebalancing
+=======
+# #' @S3method chart.Weights optimize.portfolio.rebalancing
+>>>>>>> theirs
 #' @export
 chart.Weights.optimize.portfolio.rebalancing <- function(object, ..., main="Weights"){
   rebal.weights <- extractWeights(object)

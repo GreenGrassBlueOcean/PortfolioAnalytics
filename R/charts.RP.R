@@ -93,7 +93,7 @@ chart.Weight.RP <- function(object, ..., neighbors = NULL, main="Weights", las =
 #' @export
 chart.Weights.optimize.portfolio.random <- chart.Weight.RP
 
-chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', risk.col='ES', chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL){
+.chart_scatter_RP <- function(object, ..., neighbors = NULL, return.col='mean', risk.col='ES', chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL){
   # more or less specific to the output of the random portfolio code with constraints
   # will work to a point with other functions, such as optimize.porfolio.parallel
   # there's still a lot to do to improve this.
@@ -131,12 +131,12 @@ chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', r
     wts_index <- grep("w.", columnnames)
     wts <- xtract[, wts_index]
     if(is.na(return.column)){
-      tmpret <- applyFUN(R=R, weights=wts, FUN=return.col)
+      tmpret <- applyFUN(R=R, weights=wts, FUN=return.col, arguments = NULL)
       xtract <- cbind(tmpret, xtract)
       colnames(xtract)[which(colnames(xtract) == "tmpret")] <- return.col
     }
     if(is.na(risk.column)){
-      tmprisk <- applyFUN(R=R, weights=wts, FUN=risk.col)
+      tmprisk <- applyFUN(R=R, weights=wts, FUN=risk.col, arguments = NULL)
       xtract <- cbind(tmprisk, xtract)
       colnames(xtract)[which(colnames(xtract) == "tmprisk")] <- risk.col
     }
@@ -243,8 +243,8 @@ chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', r
     risk.col <- gsub("\\..*", "", risk.col)
     # warning(return.col,' or ', risk.col, ' do  not match extractStats output of $objective_measures slot')
     opt_weights <- object$weights
-    ret <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=return.col))
-    risk <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=risk.col))
+    ret <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=return.col, arguments = NULL))
+    risk <- as.numeric(applyFUN(R=R, weights=opt_weights, FUN=risk.col, arguments = NULL))
     points(risk, ret, col="blue", pch=16) #optimal
     text(x=risk, y=ret, labels="Optimal",col="blue", pos=4, cex=0.8)
   } else {
@@ -262,13 +262,13 @@ chart.Scatter.RP <- function(object, ..., neighbors = NULL, return.col='mean', r
 chart.RiskReward.optimize.portfolio.random <- chart.Scatter.RP
 
 
-charts.RP <- function(RP, risk.col, return.col, chart.assets=FALSE, neighbors=NULL, main="Random.Portfolios", xlim=NULL, ylim=NULL, ...){
+.charts_RP <- function(RP, risk.col, return.col, chart.assets=FALSE, neighbors=NULL, main="Random.Portfolios", xlim=NULL, ylim=NULL, ...){
   # Specific to the output of the random portfolio code with constraints
   if(!inherits(RP, "optimize.portfolio.random")) stop("RP must be of class optimize.portfolio.random")
   op <- par(no.readonly=TRUE)
   layout(matrix(c(1,2)),heights=c(2,1.5),widths=1)
   par(mar=c(4,4,4,2))
-  chart.Scatter.RP(object=RP, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=NULL, ylim=NULL, ...)
+  .chart_scatter_RP(object=RP, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=NULL, ylim=NULL, ...)
   par(mar=c(2,4,0,2))
   chart.Weight.RP(object=RP, main="", neighbors=neighbors, ...)
   par(op)
@@ -279,7 +279,7 @@ charts.RP <- function(RP, risk.col, return.col, chart.assets=FALSE, neighbors=NU
 #' @method plot optimize.portfolio.random
 #' @export
 plot.optimize.portfolio.random <- function(x, ..., return.col='mean', risk.col='ES',  chart.assets=FALSE, neighbors=NULL, xlim=NULL, ylim=NULL, main='optimized portfolio plot') {
-    charts.RP(RP=x, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...)
+    .charts_RP(RP=x, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...)
 }
 
 
@@ -287,5 +287,5 @@ plot.optimize.portfolio.random <- function(x, ..., return.col='mean', risk.col='
 #' @method plot optimize.portfolio
 #' @export
 plot.optimize.portfolio <- function(x, ...,  return.col='mean', risk.col='ES',  chart.assets=FALSE, neighbors=NULL, xlim=NULL, ylim=NULL, main='optimized portfolio plot') {
-    charts.RP(RP=x, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...)
+    .charts_RP(RP=x, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, neighbors=neighbors, main=main, xlim=xlim, ylim=ylim, ...)
 }

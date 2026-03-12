@@ -5,3 +5,9 @@ sandbox
 ^\.Rproj\.user$
 ^.*\.Rproj$
 codeblock.txt
+^\.github$
+^\.positai$
+^\.claude$
+^\.lintr$
+^architecture\.md$
+^codecov\.yml$

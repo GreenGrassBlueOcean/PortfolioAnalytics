@@ -24,6 +24,10 @@ optimize.portfolio_v1 <- function(
 		momentFUN='set.portfolio.moments_v1'
 )
 {
+  .Deprecated("optimize.portfolio", package = "PortfolioAnalytics",
+              msg = paste("'optimize.portfolio_v1' is deprecated.",
+                          "Use 'optimize.portfolio()' with a 'portfolio.spec' object instead.",
+                          "See help('optimize.portfolio').", sep = "\n"))
   optimize_method=optimize_method[1]
   tmptrace=NULL
   start_t<-Sys.time()
@@ -92,17 +96,23 @@ optimize.portfolio_v1 <- function(
   if(optimize_method=="DEoptim"){
     stopifnot("package:DEoptim" %in% search()  ||  requireNamespace("DEoptim",quietly = TRUE) )
     # DEoptim does 200 generations by default, so lets set the size of each generation to search_size/200)
-    if(hasArg(itermax)) itermax=match.call(expand.dots=TRUE)$itermax else itermax=N*50
+    if(hasArg(itermax) ){itermax <- eval.parent(match.call(expand.dots=TRUE)$itermax)
+                         itermax <- ifelse(is.na(itermax),yes = TRUE, no = itermax )
+    } else {itermax=N*50}
     NP = round(search_size/itermax)
     if(NP<(N*10)) NP <- N*10
     if(NP>2000) NP=2000
-    if(!hasArg(itermax)) {
+    if(!hasArg(itermax) || is.na(itermax) ) {
         itermax<-round(search_size/NP)
         if(itermax<50) itermax=50 #set minimum number of generations
     }
+    message(paste0("DEoptim NP = ", NP))
+    message(paste0("DEoptim itermax = ", itermax))
     
     #check to see whether we need to disable foreach for parallel optimization, esp if called from inside foreach
-    if(hasArg(parallel)) parallel=match.call(expand.dots=TRUE)$parallel else parallel=TRUE
+    if(hasArg(parallel)){ parallel <- eval.parent(match.call(expand.dots=TRUE)$parallel)
+                          parallel <- ifelse(test = is.na(parallel), yes = TRUE, no = parallel)
+                        } else {parallel <- TRUE} #&& !is.na(parallel)
     if(!isTRUE(parallel) && 'package:foreach' %in% search()){
         foreach::registerDoSEQ()
     }
@@ -159,37 +169,127 @@ optimize.portfolio_v1 <- function(
         #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
         tmptrace=trace 
         assign('.objectivestorage', list(), as.environment(.storage))
+		if(!hasArg(strategy) || is.na(eval.parent(match.call(expand.dots = TRUE)$strategy))) {
+		  # use DE/current-to-p-best/1
+		  strategy=6
+      DEcformals$strategy=strategy
+      } else {DEcformals$strategy = eval.parent(match.call(expand.dots = TRUE)$strategy)}
+		if(!hasArg(reltol)|| is.na(eval.parent(match.call(expand.dots = TRUE)$reltol))) {
+		  # 1/1000 of 1% change in objective is significant
+		  reltol=.000001
+      DEcformals$reltol=reltol
+      } else {DEcformals$reltol = eval.parent(match.call(expand.dots = TRUE)$reltol)}
+		if(!hasArg(steptol) || is.na(eval.parent(match.call(expand.dots = TRUE)$steptol))) {
+		  # number of assets times 1.5 tries to improve
+		  steptol=round(N*1.5)
+      DEcformals$steptol=steptol
+      } else {DEcformals$steptol = eval.parent(match.call(expand.dots = TRUE)$steptol)}
+		if(!hasArg(c) || is.na(eval.parent(match.call(expand.dots = TRUE)$c))) {
+		  # JADE mutation parameter, this could maybe use some adjustment
+		  tmp.c=.4
+      DEcformals$c=tmp.c
+      } else {DEcformals$c = eval.parent(match.call(expand.dots = TRUE)$c)}
+    if(!hasArg(storepopfrom) || is.na(eval.parent(match.call(expand.dots = TRUE)$storepopfrom))) {
+          storepopfrom=1
+          DEcformals$storepopfrom=storepopfrom
+    } else {DEcformals$storepopfrom = eval.parent(match.call(expand.dots = TRUE)$storepopfrom)}
+    # Local environment for trace accumulation (reentrant, no global state)
+    storage_env <- new.env(parent = emptyenv())
+    if(isTRUE(trace)) { 
+        #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
+        tmptrace=trace
+        assign('.objectivestorage', list(), envir = storage_env)
         trace=FALSE
-    } 
-    
+    }
     # get upper and lower weights parameters from constraints
     upper = constraints$max
     lower = constraints$min
-
+        
     if(hasArg(rpseed)){ 
-      seed <- match.call(expand.dots=TRUE)$rpseed
-      DEcformals$initialpop <- seed
-      rpseed <- FALSE
-    } else {
-      rpseed <- TRUE
+        seed <- match.call(expand.dots=TRUE)$rpseed
+        DEcformals$initialpop <- seed
+        rpseed <- FALSE
+      } else {
+        rpseed <- TRUE
+      }
+    if(hasArg(rpseed) & isTRUE(rpseed)) {
+       # initial seed population is generated with random_portfolios function
+      if(hasArg(eps)) eps=match.call(expand.dots=TRUE)$eps else eps = 0.01
+        rpconstraint<-constraint(assets=length(lower), min_sum=constraints$min_sum-eps, max_sum=constraints$max_sum+eps, 
+                                 min=lower, max=upper, weight_seq=generatesequence())
+        rp <- random_portfolios_v1(rpconstraints=rpconstraint,permutations=NP)
+        DEcformals$initialpop=rp
+    }    
+    if(isTRUE(parallel) && 'package:foreach' %in% search()){
+      if(!hasArg(parallelType)) {
+        #Set Up Parallel computing cluster
+        parallelType=2
+        DEcformals$parallelType=parallelType
+      } else {
+        parallelType = eval.parent(match.call(expand.dots = TRUE)$parallelType)
+        DEcformals$parallelType = parallelType
+      }
+        if(parallelType == 2){
+          if (!requireNamespace("snow", quietly = TRUE) ||
+              !requireNamespace("doSNOW", quietly = TRUE)) {
+            stop("Packages 'snow' and 'doSNOW' are required for parallelType=2. ",
+                 "Install them with install.packages(c('snow', 'doSNOW'))",
+                 call. = FALSE)
+          }
+          nC <- parallel::detectCores() 
+          
+          ## No performance improvement with more than 15 cores
+          rcl <- snow::makeSOCKcluster(ifelse(nC <= 15, nC, 15))
+          
+          ## load any necessary packages in the cluster
+          snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
+                                         , require, character.only = TRUE))
+          
+          ## copy any necessary objects
+          snow::clusterExport(rcl
+                              , list("R","portfolio", "constraints", "objectives"
+                                     , "optimize_method", "search_size", "trace"
+                                     , "momentFUN", "rp")
+                              , envir = environment())
+          
+          ## register foreach backend
+          doSNOW::registerDoSNOW(rcl) 
+          
+          DEcformals$cluster <- rcl
+        }}
+            if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))) {
+              #use all packages
+              packages <- names(sessionInfo()$otherPkgs)
+              DEcformals$packages <- packages
+              }
+        
+		 
+        #TODO FIXME also check for a passed in controlDE list, including checking its class, and match formals
     }
-	if(hasArg(rpseed) & isTRUE(rpseed)) {
-	    # initial seed population is generated with random_portfolios function
-	    if(hasArg(eps)) eps=match.call(expand.dots=TRUE)$eps else eps = 0.01
-    	rpconstraint<-constraint(assets=length(lower), min_sum=constraints$min_sum-eps, max_sum=constraints$max_sum+eps, 
-             					min=lower, max=upper, weight_seq=generatesequence())
-    	rp <- random_portfolios_v1(rpconstraints=rpconstraint,permutations=NP)
-    	DEcformals$initialpop=rp
-    }
+    
+     
+    
+  
     controlDE <- do.call(DEoptim::DEoptim.control,DEcformals)
 
     # minw = try(DEoptim( constrained_objective ,  lower = lower[1:N] , upper = upper[1:N] , control = controlDE, R=R, constraints=constraints, ...=...)) # add ,silent=TRUE here?
-    minw = try(DEoptim::DEoptim( constrained_objective_v1 ,  lower = lower[1:N] , upper = upper[1:N] , control = controlDE, R=R, constraints=constraints, nargs = dotargs , ...=...)) # add ,silent=TRUE here?
+    minw = try(DEoptim::DEoptim( constrained_objective_v1 ,  lower = lower[1:N] , upper = upper[1:N] , control = controlDE, R=R, constraints=constraints, nargs = dotargs, storage_env = storage_env, ...=...))
  
-    if(inherits(minw,"try-error")) { minw=NULL }
+    if(inherits(minw,"try-error")) { ErrorM <- minw
+                                     minw=NULL }
     if(is.null(minw)){
-        message(paste("Optimizer was unable to find a solution for target"))
-        return (paste("Optimizer was unable to find a solution for target"))
+        message("Optimizer was unable to find a solution for target")
+        return(optimization_failure(
+          message = "Optimizer was unable to find a solution for target",
+          solver  = "DEoptim",
+          call    = match.call(),
+          error   = if(exists("ErrorM")) ErrorM else NULL
+        ))
+    }
+    
+    if(identical(exists("rcl"),TRUE)){
+      #stop cluster if available
+      snow::stopCluster(rcl)
     }
     
     if(isTRUE(tmptrace)) trace <- tmptrace
@@ -201,8 +301,11 @@ optimize.portfolio_v1 <- function(
     out = list(weights=weights, objective_measures=constrained_objective_v1(w=weights,R=R,constraints,trace=TRUE)$objective_measures,out=minw$optim$bestval, call=call)
     if (isTRUE(trace)){
         out$DEoutput=minw
-        out$DEoptim_objective_results<-try(get('.objectivestorage',envir=.storage),silent=TRUE)
-        rm('.objectivestorage',envir=.storage)
+        out$DEoptim_objective_results <- tryCatch(
+          get(".objectivestorage", envir = storage_env, inherits = FALSE),
+          error = function(e) NULL
+        )
+        rm(list = ".objectivestorage", envir = storage_env)
     }
     
   } ## end case for DEoptim
@@ -254,7 +357,8 @@ optimize.portfolio_v1 <- function(
     # This will take a new constraint object that is of the same structure of a 
     # ROI constraint object, but with an additional solver arg.
     # then we can do something like this
-    print("ROI_old is going to be depricated.")
+    .Deprecated("ROI", package = "PortfolioAnalytics",
+                msg = "ROI_old is deprecated. Use optimize_method='ROI' instead.")
     roi.result <- ROI::ROI_solve(x=constraints$constrainted_objective, constraints$solver)
     weights <- roi.result$solution
     names(weights) <- colnames(R)
@@ -390,8 +494,12 @@ optimize.portfolio_v1 <- function(
     
     if(inherits(minw,"try-error")) { minw=NULL }
     if(is.null(minw)){
-      message(paste("Optimizer was unable to find a solution for target"))
-      return (paste("Optimizer was unable to find a solution for target"))
+      message("Optimizer was unable to find a solution for target")
+      return(optimization_failure(
+        message = "Optimizer was unable to find a solution for target",
+        solver  = "pso",
+        call    = match.call()
+      ))
     }
     
     weights <- as.vector( minw$par)
@@ -437,8 +545,12 @@ optimize.portfolio_v1 <- function(
     
     if(inherits(minw,"try-error")) { minw=NULL }
     if(is.null(minw)){
-      message(paste("Optimizer was unable to find a solution for target"))
-      return (paste("Optimizer was unable to find a solution for target"))
+      message("Optimizer was unable to find a solution for target")
+      return(optimization_failure(
+        message = "Optimizer was unable to find a solution for target",
+        solver  = "GenSA",
+        call    = match.call()
+      ))
     }
     
     weights <- as.vector(minw$par)
@@ -467,10 +579,7 @@ optimize.portfolio_v1 <- function(
     return(out)
 }
 
-.onLoad <- function(lib, pkg) {
-  if(!exists('.storage'))
-    .storage <<- new.env()
-}
+
 
 #' Constrained optimization of portfolios
 #' 
@@ -507,16 +616,16 @@ optimize.portfolio_v1 <- function(
 #' 
 #' The extension to ROI solves a limited type of convex optimization problems:
 #' \itemize{
-#' \item Maxmimize portfolio return subject leverage, box, group, position limit, target mean return, and/or factor exposure constraints on weights.
-#' \item Minimize portfolio variance subject to leverage, box, group, turnover, and/or factor exposure constraints (otherwise known as global minimum variance portfolio).
-#' \item Minimize portfolio variance subject to leverage, box, group, and/or factor exposure constraints and a desired portfolio return.
-#' \item Maximize quadratic utility subject to leverage, box, group, target mean return, turnover, and/or factor exposure constraints and risk aversion parameter.
-#' (The risk aversion parameter is passed into \code{optimize.portfolio} as an added argument to the \code{portfolio} object).
-#' \item Maximize portfolio mean return per unit standard deviation (i.e. the Sharpe Ratio) can be done by specifying \code{maxSR=TRUE} in \code{optimize.portfolio}. 
-#' If both mean and StdDev are specified as objective names, the default action is to maximize quadratic utility, therefore \code{maxSR=TRUE} must be specified to maximize Sharpe Ratio.
-#' \item Minimize portfolio ES/ETL/CVaR optimization subject to leverage, box, group, position limit, target mean return, and/or factor exposure constraints and target portfolio return.
-#' \item Maximize portfolio mean return per unit ES/ETL/CVaR (i.e. the STARR Ratio) can be done by specifying \code{maxSTARR=TRUE} in \code{optimize.portfolio}. 
-#' If both mean and ES/ETL/CVaR are specified as objective names, the default action is to maximize mean return per unit ES/ETL/CVaR.
+#' \item{Maxmimize portfolio return subject leverage, box, group, position limit, target mean return, and/or factor exposure constraints on weights.}
+#' \item{Minimize portfolio variance subject to leverage, box, group, turnover, and/or factor exposure constraints (otherwise known as global minimum variance portfolio).}
+#' \item{Minimize portfolio variance subject to leverage, box, group, and/or factor exposure constraints and a desired portfolio return.}
+#' \item{Maximize quadratic utility subject to leverage, box, group, target mean return, turnover, and/or factor exposure constraints and risk aversion parameter.
+#' (The risk aversion parameter is passed into \code{optimize.portfolio} as an added argument to the \code{portfolio} object).}
+#' \item{Maximize portfolio mean return per unit standard deviation (i.e. the Sharpe Ratio) can be done by specifying \code{maxSR=TRUE} in \code{optimize.portfolio}. 
+#' If both mean and StdDev are specified as objective names, the default action is to maximize quadratic utility, therefore \code{maxSR=TRUE} must be specified to maximize Sharpe Ratio.}
+#' \item{Minimize portfolio ES/ETL/CVaR optimization subject to leverage, box, group, position limit, target mean return, and/or factor exposure constraints and target portfolio return.}
+#' \item{Maximize portfolio mean return per unit ES/ETL/CVaR (i.e. the STARR Ratio) can be done by specifying \code{maxSTARR=TRUE} in \code{optimize.portfolio}. 
+#' If both mean and ES/ETL/CVaR are specified as objective names, the default action is to maximize mean return per unit ES/ETL/CVaR.}
 #' }
 #' These problems also support a weight_concentration objective where concentration
 #' of weights as measured by HHI is added as a penalty term to the quadratic objective.
@@ -579,19 +688,31 @@ optimize.portfolio_v1 <- function(
 #' @param rp matrix of random portfolio weights, default NULL, mostly for automated use by rebalancing optimization or repeated tests on same portfolios
 #' @param momentFUN the name of a function to call to set portfolio moments, default \code{\link{set.portfolio.moments_v2}}
 #' @param message TRUE/FALSE. The default is message=FALSE. Display messages if TRUE.
+#' @param check_feasibility TRUE/FALSE. The default is TRUE. If TRUE, run
+#'   post-optimization constraint feasibility check on the result.
+#' @param penalty penalty value for constraint violations. The default
+#'   \code{"auto"} calibrates the penalty relative to the objective function
+#'   scale using \code{\link{calibrate_penalty}} (recommended for stochastic
+#'   solvers). Pass a numeric value to override. Ignored by ROI and other
+#'   analytical solvers.
+#' @param warm_start optional numeric vector of initial weights to seed
+#'   stochastic solvers (DEoptim, GenSA, pso). Must have the same length and
+#'   (if named) the same asset names as \code{R}. Defaults to \code{NULL}
+#'   (no warm start). See also the \code{warm_start} argument of
+#'   \code{\link{optimize.portfolio.rebalancing}}.
 #' 
 #' @return a list containing the following elements
 #' \describe{
-#'   \item{\code{weights}:}{ The optimal set weights.}
-#'   \item{\code{objective_measures}:}{ A list containing the value of each objective corresponding to the optimal weights.}
-#'   \item{\code{opt_values}:}{ A list containing the value of each objective corresponding to the optimal weights.}
-#'   \item{\code{out}:}{ The output of the solver.}
-#'   \item{\code{call}:}{ The function call.}
-#'   \item{\code{portfolio}:}{ The portfolio object.}
-#'   \item{\code{R}:}{ The asset returns.}
-#'   \item{\code{data summary:}}{ The first row and last row of \code{R}.}
-#'   \item{\code{elapsed_time:}}{ The amount of time that elapses while the optimization is run.}
-#'   \item{\code{end_t:}}{ The date and time the optimization completed.}
+#'   \item{weights}{The optimal set weights.}
+#'   \item{objective_measures}{A list containing the value of each objective corresponding to the optimal weights.}
+#'   \item{opt_values}{A list containing the value of each objective corresponding to the optimal weights.}
+#'   \item{out}{The output of the solver.}
+#'   \item{call}{The function call.}
+#'   \item{portfolio}{The portfolio object.}
+#'   \item{R}{The asset returns.}
+#'   \item{data_summary}{The first row and last row of \code{R}.}
+#'   \item{elapsed_time}{The amount of time that elapses while the optimization is run.}
+#'   \item{end_t}{The date and time the optimization completed.}
 #' }
 #' When Trace=TRUE is specified, the following elements will be returned in 
 #' addition to the elements above. The output depends on the optimization 
@@ -600,56 +721,31 @@ optimize.portfolio_v1 <- function(
 #' 
 #' \code{optimize_method="random"}
 #' \describe{
-#'   \item{\code{random_portfolios}:}{ A matrix of the random portfolios.}
-#'   \item{\code{random_portfolio_objective_results}:}{ A list of the following elements for each random portfolio.}
-#'   \describe{
-#'     \item{\code{out}:}{ The output value of the solver corresponding to the random portfolio weights.}
-#'     \item{\code{weights}:}{ The weights of the random portfolio.}
-#'     \item{\code{objective_measures}:}{ A list of each objective measure corresponding to the random portfolio weights.}
-#'   }
+#'   \item{random_portfolios}{A matrix of the random portfolios.}
+#'   \item{random_portfolio_objective_results}{A list with \code{out},
+#'     \code{weights}, and \code{objective_measures} for each random portfolio.}
 #' }
 #' 
 #' \code{optimize_method="DEoptim"}
 #' \describe{
-#'   \item{\code{DEoutput:}}{ A list (of length 2) containing the following elements:}
-#'   \itemize{
-#'     \item \code{optim}
-#'     \item \code{member}
-#'   }
-#'   \item{\code{DEoptim_objective_results}:}{ A list containing the following elements for each intermediate population.}
-#'   \itemize{
-#'     \item \code{out}: The output of the solver.
-#'     \item \code{weights}: Population weights.
-#'     \item \code{init_weights}: Initial population weights.
-#'     \item \code{objective_measures}: A list of each objective measure corresponding to the weights
-#'   }
+#'   \item{DEoutput}{A list containing \code{optim} and \code{member}.}
+#'   \item{DEoptim_objective_results}{A list with \code{out}, \code{weights},
+#'     \code{init_weights}, and \code{objective_measures} for each intermediate population.}
 #' }
 #' 
 #' \code{optimize_method="pso"}
-#' \itemize{
-#'   \item \code{PSOoutput}: A list containing the following elements:
-#'   \itemize{
-#'     \item par
-#'     \item value 
-#'     \item counts 
-#'     \item convergence
-#'     \item message
-#'     \item stats
-#'   }
+#' \describe{
+#'   \item{PSOoutput}{A list containing \code{par}, \code{value},
+#'     \code{counts}, \code{convergence}, \code{message}, and \code{stats}.}
 #' }
 #' 
 #' \code{optimize_method="GenSA"}
-#' \itemize{
-#'   \item \code{GenSAoutput}: A list containing the following elements:
-#'   \itemize{
-#'     \item value
-#'     \item par
-#'     \item trace.mat
-#'     \item counts
-#'   }
+#' \describe{
+#'   \item{GenSAoutput}{A list containing \code{value}, \code{par},
+#'     \code{trace.mat}, and \code{counts}.}
 #' }
 #' 
-#' @author Kris Boudt, Peter Carl, Brian G. Peterson, Ross Bennett, Xiaokang Feng, Xinran Zhao
+#' @author Kris Boudt, Peter Carl, Brian G. Peterson, Ross Bennett
 #' @aliases optimize.portfolio_v2 optimize.portfolio_v1
 #' @seealso \code{\link{portfolio.spec}}
 #' @rdname optimize.portfolio
@@ -663,12 +759,17 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   objectives=NULL,
   optimize_method=c("DEoptim","random","ROI","pso","GenSA", "Rglpk", "osqp", "mco", "CVXR", "cvxr", ...),
   search_size=20000,
-  trace=FALSE, ...,
+  trace=FALSE, 
+  ...,
   rp=NULL,
   momentFUN='set.portfolio.moments',
-  message=FALSE
+  message=FALSE,
+  check_feasibility=TRUE,
+  penalty="auto",
+  warm_start=NULL
 )
 {
+  # browser()
   # This is the case where the user has passed in a list of portfolio objects
   # for the portfolio argument.
   # Loop through the portfolio list and recursively call optimize.portfolio
@@ -749,9 +850,12 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
         # If the user has not passed in a portfolio, we will create one for them
         tmp_portf <- portfolio.spec(assets=constraints$assets)
       }
-      message("constraint object passed in is a 'v1_constraint' object, updating to v2 specification")
+      warning("Passing 'v1_constraint' objects to optimize.portfolio() is deprecated ",
+              "and will be removed in a future version. ",
+              "The constraint has been auto-converted to v2 specification. ",
+              "Use portfolio.spec() with add.constraint() and add.objective() instead.",
+              call. = FALSE)
       portfolio <- update_constraint_v1tov2(portfolio=tmp_portf, v1_constraint=constraints)
-      # print.default(portfolio)
     }
     if(!inherits(constraints, "v1_constraint")){
       # Insert the constraints into the portfolio object
@@ -764,6 +868,10 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   }
   
   R <- checkData(R)
+  
+  # Validate portfolio spec and R compatibility before proceeding
+  validate_portfolio(portfolio, R)
+  
   N <- length(portfolio$assets)
   if (ncol(R) > N) {
     R <- R[,names(portfolio$assets)]
@@ -995,2095 +1103,54 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       rm('.objectivestorage',envir=.storage)
       #out$DEoptim_objective_results <- try(get('.objectivestorage',pos='.GlobalEnv'),silent=TRUE)
       #rm('.objectivestorage',pos='.GlobalEnv')
-    }
-    
-  } ## end case for DEoptim
-  
-  # case for random portfolios optimization method
-  if(optimize_method=="random"){
-    # issue message if min_sum and max_sum are too restrictive
-    if((constraints$max_sum - constraints$min_sum) < 0.02){
-      message("Leverage constraint min_sum and max_sum are restrictive, 
-              consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01")
-    }
-    
-    # call random_portfolios() with portfolio and search_size to create matrix of portfolios
-    if(missing(rp) | is.null(rp)){
-      if(hasArg(rp_method)) rp_method=match.call(expand.dots=TRUE)$rp_method else rp_method="sample"
-      if(hasArg(eliminate)) eliminate=match.call(expand.dots=TRUE)$eliminate else eliminate=TRUE
-      if(hasArg(fev)) fev=match.call(expand.dots=TRUE)$fev else fev=0:5
-      rp <- random_portfolios(portfolio=portfolio, permutations=search_size, rp_method=rp_method, eliminate=eliminate, fev=fev)
-    }
-    # store matrix in out if trace=TRUE
-    if (isTRUE(trace)) out$random_portfolios <- rp
-    # rp is already being generated with a call to fn_map so set normalize=FALSE in the call to constrained_objective
-    # write foreach loop to call constrained_objective() with each portfolio
-    if ("package:foreach" %in% search() & !hasArg(parallel)){
-      ii <- 1
-      rp_objective_results <- foreach::foreach(ii=1:nrow(rp), .errorhandling='pass') %dopar% constrained_objective(w=rp[ii,], R=R, portfolio=portfolio, trace=trace, env=dotargs, normalize=FALSE)
+  # Calibrate penalty for stochastic solvers
+  if (identical(penalty, "auto")) {
+    if (optimize_method %in% c("DEoptim", "random", "pso", "GenSA")) {
+      penalty <- calibrate_penalty(R = R, portfolio = portfolio, env = dotargs)
+      if (message) message("Calibrated penalty: ", round(penalty, 4))
     } else {
-      rp_objective_results <- apply(rp, 1, constrained_objective, R=R, portfolio=portfolio, trace=trace, normalize=FALSE, env=dotargs)
+      penalty <- 1e4
     }
-    # if trace=TRUE , store results of foreach in out$random_results
-    if(isTRUE(trace)) out$random_portfolio_objective_results <- rp_objective_results
-    # loop through results keeping track of the minimum value of rp_objective_results[[objective]]$out
-    search <- vector(length=length(rp_objective_results))
-    # first we construct the vector of results
-    for (i in 1:length(search)) {
-      if (isTRUE(trace)) {
-        search[i] <- ifelse(try(rp_objective_results[[i]]$out), rp_objective_results[[i]]$out,1e6)
-      } else {
-        search[i] <- as.numeric(rp_objective_results[[i]])
-      }
+  }
+  
+  # --- Warm-start validation ---
+  if (!is.null(warm_start)) {
+    if (!is.numeric(warm_start) || length(warm_start) != N) {
+      warning("warm_start ignored: expected numeric vector of length ", N,
+              ", got length ", length(warm_start), call. = FALSE)
+      warm_start <- NULL
+    } else if (!is.null(names(warm_start)) && !is.null(colnames(R)) &&
+               !identical(sort(names(warm_start)), sort(colnames(R)))) {
+      warning("warm_start ignored: asset names do not match R column names",
+              call. = FALSE)
+      warm_start <- NULL
     }
-    # now find the weights that correspond to the minimum score from the constrained objective
-    # and normalize_weights so that we meet our min_sum/max_sum constraints
-    # Is it necessary to normalize the weights at all with random portfolios?
-    if (isTRUE(trace)) {
-      min_objective_weights <- try(normalize_weights(rp_objective_results[[which.min(search)]]$weights))
-    } else {
-      min_objective_weights <- try(normalize_weights(rp[which.min(search),]))
-    }
-    # re-call constrained_objective on the best portfolio, as above in DEoptim, with trace=TRUE to get results for out list
-    out$weights <- min_objective_weights
-    obj_vals <- try(constrained_objective(w=min_objective_weights, R=R, portfolio=portfolio, trace=TRUE, normalize=FALSE, env=dotargs)$objective_measures)
-    out$objective_measures <- obj_vals
-    out$opt_values <- obj_vals
-    out$call <- call
-    # construct out list to be as similar as possible to DEoptim list, within reason
-    
-  } ## end case for random
-  
-  roi_solvers <- c("ROI", "quadprog", "glpk", "symphony", "ipop")
-  if(optimize_method %in% roi_solvers){
-    # check for a control argument for list of solver control arguments
-    if(hasArg(control)) control=match.call(expand.dots=TRUE)$control else control=NULL
-    
-    # This takes in a regular portfolio object and extracts the constraints and
-    # objectives and converts them for input. to a closed form solver using
-    # ROI as an interface.
-    moments <- list(mean=rep(0, N))
-    alpha <- 0.05
-    if(!is.null(constraints$return_target)){
-      target <- constraints$return_target
-    } else {
-      target <- NA
-    }
-    lambda <- 1
-    
-    # list of valid objective names for ROI solvers
-    valid_objnames <- c("HHI", "mean", "var", "sd", "StdDev", "CVaR", "ES", "ETL")
-    #objnames <- unlist(lapply(portfolio$objectives, function(x) x$name))
-    for(objective in portfolio$objectives){
-      if(objective$enabled){
-        if(!(objective$name %in% valid_objnames)){
-          stop("ROI only solves mean, var/StdDev, HHI, or sample ETL/ES/CVaR type business objectives, choose a different optimize_method.")
-        }
-        
-        # Grab the arguments list per objective
-        # Currently we are only getting arguments for "p" and "clean", not sure if we need others for the ROI QP/LP solvers
-        # if(length(objective$arguments) >= 1) arguments <- objective$arguments else arguments <- list()
-        arguments <- objective$arguments
-        if(!is.null(arguments$clean)) clean <- arguments$clean else clean <- "none"
-        # Note: arguments$p grabs arguments$portfolio_method if no p is specified
-        # so we need to be explicit with arguments[["p"]]
-        if(!is.null(arguments[["p"]])) alpha <- arguments$p else alpha <- alpha
-        if(alpha > 0.5) alpha <- (1 - alpha)
-        
-        # Some of the sub-functions for optimizations use the returns object as
-        # part of the constraints matrix (e.g. etl_opt and etl_milp_opt) so we
-        # will store the cleaned returns in the moments object. This may not
-        # be the most efficient way to pass around a cleaned returns object, 
-        # but it will keep it separate from the R object passed in by the user
-        # and avoid "re-cleaning" already cleaned returns if specified in 
-        # multiple objectives.
-        if(clean != "none") moments$cleanR <- Return.clean(R=R, method=clean)
-        
-        # Use $mu and $sigma estimates from momentFUN if available, fall back to
-        # calculating sample mean and variance
-        if(objective$name == "mean"){
-          if(!is.null(mout$mu)){
-            moments[["mean"]] <- as.vector(mout$mu)
-          } else {
-            moments[["mean"]] <- try(as.vector(apply(Return.clean(R=R, method=clean), 2, "mean", na.rm=TRUE)), silent=TRUE)
-          }
-        } else if(objective$name %in% c("StdDev", "sd", "var")){
-          if(!is.null(mout$sigma)){
-            moments[["var"]] <- mout$sigma
-          } else {
-            moments[["var"]] <- try(var(x=Return.clean(R=R, method=clean), na.rm=TRUE), silent=TRUE)
-          }
-        } else if(objective$name %in% c("CVaR", "ES", "ETL")){
-          # do nothing (no point in computing ES here)
-          moments[[objective$name]] <- ""
-        } else {
-          # I'm not sure this is serving any purpose since we control the types
-          # of problems solved with ROI. The min ES problem only uses 
-          # moments$mu if a target return is specified.
-          moments[[objective$name]] <- try(eval(as.symbol(objective$name))(Return.clean(R=R, method=clean)), silent=TRUE)
-        }
-        target <- ifelse(!is.null(objective$target), objective$target, target)
-        # alpha <- ifelse(!is.null(objective$alpha), objective$alpha, alpha)
-        # only accept confidence level for ES/ETL/CVaR to come from the 
-        # arguments list to be consistent with how this is done in other solvers.
-        lambda <- ifelse(!is.null(objective$risk_aversion), objective$risk_aversion, lambda)
-        if(!is.null(objective$conc_aversion)) lambda_hhi <- objective$conc_aversion else lambda_hhi <- NULL
-        if(!is.null(objective$conc_groups)) conc_groups <- objective$conc_groups else conc_groups <- NULL
-      }
-    }
-    
-    if("var" %in% names(moments)){
-      # Set a default solver if optimize_method == "ROI", otherwise assume the
-      # optimize_method specified by the user is the solver for ROI
-      if(optimize_method == "ROI"){
-        solver <- "quadprog"
-      } else {
-        solver <- optimize_method
-      }
-      # Minimize variance if the only objective specified is variance
-      # Maximize Quadratic Utility if var and mean are specified as objectives
-      if(!is.null(constraints$turnover_target) | !is.null(constraints$ptc) | !is.null(constraints$leverage)){
-        if(!is.null(constraints$turnover_target) & !is.null(constraints$ptc)){
-          warning("Turnover and proportional transaction cost constraints detected, only running optimization for turnover constraint.")
-          constraints$ptc <- NULL
-        }
-        # turnover constraint
-        if(!is.null(constraints$turnover_target) & is.null(constraints$ptc)){
-          qp_result <- gmv_opt_toc(R=R, constraints=constraints, moments=moments, lambda=lambda, target=target, init_weights=portfolio$assets, solver=solver, control=control)
-          weights <- qp_result$weights
-          # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-          obj_vals <- qp_result$obj_vals
-          out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=qp_result$out, call=call)
-        }
-        # proportional transaction costs constraint
-        if(!is.null(constraints$ptc) & is.null(constraints$turnover_target)){
-          qp_result <- gmv_opt_ptc(R=R, constraints=constraints, moments=moments, lambda=lambda, target=target, init_weights=portfolio$assets, solver=solver, control=control)
-          weights <- qp_result$weights
-          # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-          obj_vals <- qp_result$obj_vals
-          out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=qp_result$out, call=call)
-        }
-        # leverage constraint
-        if(!is.null(constraints$leverage)){
-          qp_result <- gmv_opt_leverage(R=R, constraints=constraints, moments=moments, lambda=lambda, target=target, solver=solver, control=control)
-          weights <- qp_result$weights
-          # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-          obj_vals <- qp_result$obj_vals
-          out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=qp_result$out, call=call)
-        }
-      } else {
-        # if(hasArg(ef)) ef=match.call(expand.dots=TRUE)$ef else ef=FALSE
-        if(hasArg(maxSR)) maxSR=match.call(expand.dots=TRUE)$maxSR else maxSR=FALSE
-        if(maxSR){
-          target <- max_sr_opt(R=R, constraints=constraints, moments=moments, lambda_hhi=lambda_hhi, conc_groups=conc_groups, solver=solver, control=control)
-          # need to set moments$mean=0 here because quadratic utility and target return is sensitive to returning no solution
-          tmp_moments_mean <- moments$mean
-          moments$mean <- rep(0, length(moments$mean))
-        }
-        roi_result <- gmv_opt(R=R, constraints=constraints, moments=moments, lambda=lambda, target=target, lambda_hhi=lambda_hhi, conc_groups=conc_groups, solver=solver, control=control)
-        weights <- roi_result$weights
-        # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-        obj_vals <- roi_result$obj_vals
-        if(maxSR){
-          # need to recalculate mean here if we are maximizing sharpe ratio
-          port.mean <- as.numeric(sum(weights * tmp_moments_mean))
-          names(port.mean) <- "mean"
-          obj_vals$mean <- port.mean
-        }
-        out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=roi_result$out, call=call)
-      }
-    }
-    if(length(names(moments)) == 1 & "mean" %in% names(moments)) {
-      # Set a default solver if optimize_method == "ROI", otherwise assume the
-      # optimize_method specified by the user is the solver for ROI
-      if(optimize_method == "ROI"){
-        solver <- "glpk"
-      } else {
-        solver <- optimize_method
-      }
-      
-      # Maximize return if the only objective specified is mean
-      if(!is.null(constraints$max_pos) | !is.null(constraints$leverage)) {
-        # This is an MILP problem if max_pos is specified as a constraint
-        roi_result <- maxret_milp_opt(R=R, constraints=constraints, moments=moments, target=target, solver=solver, control=control)
-        weights <- roi_result$weights
-        # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-        obj_vals <- roi_result$obj_vals
-        out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=roi_result$out, call=call)
-      } else {
-        # Maximize return LP problem
-        roi_result <- maxret_opt(R=R, constraints=constraints, moments=moments, target=target, solver=solver, control=control)
-        weights <- roi_result$weights
-        # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-        obj_vals <- roi_result$obj_vals
-        out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=roi_result$out, call=call)
-      }
-    }
-    if( any(c("CVaR", "ES", "ETL") %in% names(moments)) ) {
-      # Set a default solver if optimize_method == "ROI", otherwise assume the
-      # optimize_method specified by the user is the solver for ROI
-      if(optimize_method == "ROI"){
-        solver <- "glpk"
-      } else {
-        solver <- optimize_method
-      }
-      
-      if(hasArg(ef)) ef=match.call(expand.dots=TRUE)$ef else ef=FALSE
-      if(hasArg(maxSTARR)) maxSTARR=match.call(expand.dots=TRUE)$maxSTARR else maxSTARR=TRUE
-      if(ef) meanetl <- TRUE else meanetl <- FALSE
-      tmpnames <- c("CVaR", "ES", "ETL")
-      idx <- which(tmpnames %in% names(moments))
-      # Minimize sample ETL/ES/CVaR if CVaR, ETL, or ES is specified as an objective
-      if(length(moments) == 2 & all(moments$mean != 0) & ef==FALSE & maxSTARR){
-        # This is called by meanetl.efficient.frontier and we do not want that for efficient frontiers, need to have ef==FALSE
-        target <- mean_etl_opt(R=R, constraints=constraints, moments=moments, alpha=alpha, solver=solver, control=control)
-        meanetl <- TRUE
-      }
-      if(!is.null(constraints$max_pos)) {
-        # This is an MILP problem if max_pos is specified as a constraint
-        roi_result <- etl_milp_opt(R=R, constraints=constraints, moments=moments, target=target, alpha=alpha, solver=solver, control=control)
-        weights <- roi_result$weights
-        # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-        # obj_vals <- roi_result$obj_vals
-        # calculate obj_vals based on solver output
-        obj_vals <- list()
-        if(meanetl) obj_vals$mean <- sum(weights * moments$mean)
-        obj_vals[[tmpnames[idx]]] <- roi_result$out
-        out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=roi_result$out, call=call)
-      } else {
-        # Minimize sample ETL/ES/CVaR LP Problem
-        roi_result <- etl_opt(R=R, constraints=constraints, moments=moments, target=target, alpha=alpha, solver=solver, control=control)
-        weights <- roi_result$weights
-        # obj_vals <- constrained_objective(w=weights, R=R, portfolio, trace=TRUE, normalize=FALSE)$objective_measures
-        # obj_vals <- roi_result$obj_vals
-        obj_vals <- list()
-        if(meanetl) obj_vals$mean <- sum(weights * moments$mean)
-        obj_vals[[tmpnames[idx]]] <- roi_result$out
-        out <- list(weights=weights, objective_measures=obj_vals, opt_values=obj_vals, out=roi_result$out, call=call)
-      }
-    }
-    out$moment_values = list(momentFun = moment_name,mu = mout$mu, sigma = mout$sigma)
-    # Set here at the end so we get optimize.portfolio.ROI and not optimize.portfolio.{solver} classes
-    optimize_method <- "ROI"
-  } ## end case for ROI
-  
-  ## case if method=pso---particle swarm
-  if(optimize_method=="pso"){
-    stopifnot("package:pso" %in% search()  ||  requireNamespace("pso",quietly = TRUE) )
-    if(hasArg(maxit)) maxit=match.call(expand.dots=TRUE)$maxit else maxit=N*50
-    controlPSO <- list(trace=FALSE, fnscale=1, maxit=1000, maxf=Inf, abstol=-Inf, reltol=0)
-    PSOcargs <- names(controlPSO)
-    
-    if( is.list(dotargs) ){
-      pm <- pmatch(names(dotargs), PSOcargs, nomatch = 0L)
-      names(dotargs[pm > 0L]) <- PSOcargs[pm]
-      controlPSO$maxit <- maxit
-      controlPSO[pm] <- dotargs[pm > 0L]
-      if(!hasArg(reltol)) controlPSO$reltol <- .000001 # 1/1000 of 1% change in objective is significant
-      if(hasArg(trace) && try(trace==TRUE,silent=TRUE)) controlPSO$trace <- TRUE
-      if(hasArg(trace) && isTRUE(trace)) {
-        controlPSO$trace <- TRUE
-        controlPSO$trace.stats=TRUE
-      }
-    }
-    
-    # get upper and lower weights parameters from constraints
-    upper <- constraints$max
-    lower <- constraints$min
-    
-    minw <- try(pso::psoptim( par = rep(NA, N), fn = constrained_objective,  R=R, portfolio=portfolio, env=dotargs,
-                         lower = lower[1:N] , upper = upper[1:N] , control = controlPSO)) # add ,silent=TRUE here?
-    
-    if(inherits(minw,"try-error")) { minw=NULL }
-    if(is.null(minw)){
-      message(paste("Optimizer was unable to find a solution for target"))
-      return (paste("Optimizer was unable to find a solution for target"))
-    }
-    
-    weights <- as.vector( minw$par)
-    weights <- normalize_weights(weights)
-    names(weights) <- colnames(R)
-    obj_vals <- constrained_objective(w=weights, R=R, portfolio=portfolio, trace=TRUE, env=dotargs)$objective_measures
-    out <- list(weights=weights, 
-                objective_measures=obj_vals,
-                opt_values=obj_vals,
-                out=minw$value, 
-                call=call)
-    if (isTRUE(trace)){
-      out$PSOoutput=minw
-    }
-    
-  } ## end case for pso
-  
-  ## case if method=GenSA---Generalized Simulated Annealing
-  if(optimize_method=="GenSA"){
-    stopifnot("package:GenSA" %in% search()  ||  requireNamespace("GenSA",quietly = TRUE) )
-    if(hasArg(maxit)) maxit=match.call(expand.dots=TRUE)$maxit else maxit=N*50
-    controlGenSA <- list(maxit = 5000, threshold.stop = NULL, temperature = 5230, 
-                         visiting.param = 2.62, acceptance.param = -5, max.time = NULL, 
-                         nb.stop.improvement = 1e+06, smooth = TRUE, max.call = 1e+07, 
-                         verbose = FALSE)
-    GenSAcargs <- names(controlGenSA)
-    
-    if( is.list(dotargs) ){
-      pm <- pmatch(names(dotargs), GenSAcargs, nomatch = 0L)
-      names(dotargs[pm > 0L]) <- GenSAcargs[pm]
-      controlGenSA$maxit <- maxit
-      controlGenSA[pm] <- dotargs[pm > 0L]
-      if(hasArg(trace) && try(trace==TRUE,silent=TRUE)) controlGenSA$verbose <- TRUE
-    }
-    
-    upper <- constraints$max
-    lower <- constraints$min
-
-    if(!is.null(rp)) par = rp[,1] else par = rep(1/N, N)
-      
-    minw = try(GenSA::GenSA( par=par, lower = lower[1:N] , upper = upper[1:N], control = controlGenSA, 
-                      fn = constrained_objective ,  R=R, portfolio=portfolio, env=dotargs)) # add ,silent=TRUE here?
-    
-    if(inherits(minw,"try-error")) { minw=NULL }
-    if(is.null(minw)){
-      message(paste("Optimizer was unable to find a solution for target"))
-      return (paste("Optimizer was unable to find a solution for target"))
-    }
-    
-    weights <- as.vector(minw$par)
-    weights <- normalize_weights(weights)
-    names(weights) <- colnames(R)
-    obj_vals <- constrained_objective(w=weights, R=R, portfolio=portfolio, trace=TRUE, env=dotargs)$objective_measures
-    out = list(weights=weights, 
-               objective_measures=obj_vals,
-               opt_values=obj_vals,
-               out=minw$value, 
-               call=call)
-    if (isTRUE(trace)){
-      out$GenSAoutput=minw
-    }
-    
-  } ## end case for GenSA
-  
-  ## case if method = Rglpk -- R GUI Linear Programming Kit
-  if (optimize_method == "Rglpk") {
-    # search for required package
-    stopifnot("package:Rglpk" %in% search() ||
-      requireNamespace("Rglpk", quietly = TRUE))
-  
-    # Rglpk solver can only solve linear programming problems
-    valid_objnames <- c("mean", "CVaR", "ES", "ETL")
-  
-    # default setting
-    target <- -Inf
-    alpha <- 0.05
-    reward <- FALSE
-    risk <- FALSE
-  
-    # search invalid objectives
-    for (objective in portfolio$objectives) {
-      if (objective$enabled) {
-        if (!(objective$name %in% valid_objnames)) {
-          stop("Rglpk only solves mean and ETL/ES/CVaR type business objectives, 
-                 choose a different optimize_method.")
-        }
-  
-        # alpha
-        alpha <- ifelse(!is.null(objective$arguments[["p"]]),
-          objective$arguments[["p"]], alpha
-        )
-  
-        # return target
-        target <- ifelse(!is.null(objective$target), objective$target, target)
-  
-        # optimization objective function
-        reward <- ifelse(objective$name == "mean", TRUE, reward)
-        risk <- ifelse(objective$name %in% valid_objnames[2:4], TRUE, risk)
-        arguments <- objective$arguments
-      }
-    }
-  
-    # trim alpha and target
-    alpha <- ifelse(alpha > 0.5, 1 - alpha, alpha)
-    target <- max(target, constraints$return_target, na.rm = TRUE)
-  
-    # get leverage paramters from constraints
-    max_sum <- constraints$max_sum
-    min_sum <- constraints$min_sum
-  
-    # transfer inf to big number
-    max_sum <- ifelse(is.infinite(max_sum), 9999.0, max_sum)
-    min_sum <- ifelse(is.infinite(min_sum), -9999.0, min_sum)
-  
-    # get upper and lower limitation
-    upper <- constraints$max
-    lower <- constraints$min
-  
-    upper[which(is.infinite(upper))] <- 9999.0
-    lower[which(is.infinite(lower))] <- 9999.0
-  
-    # issue message if min_sum and max_sum are restrictive
-    if ((max_sum - min_sum) < 0.02) {
-      message("Leverage constraint min_sum and max_sum are restrictive, 
-                consider relaxing. e.g. 'full_investment' constraint 
-                should be min_sum=0.99 and max_sum=1.01")
-    }
-  
-    # Here, I created two version optimization. One for no position
-    # limitation; the other one for situation with position limitation.
-    # This will keep code clean and accelerate simple case process speed.
-  
-    if (is.null(constraints$max_pos) & is.null(constraints$group_pos)) {
-      # deploy optimization for different types situations
-      # max return case
-      if (reward & !risk) {
-        # utility function coef
-        Rglpk.obj <- colMeans(R)
-  
-        # leverage constraint
-        Rglpk.mat <- rbind(rep(1, N), rep(1, N))
-        Rglpk.dir <- c(">=", "<=")
-        Rglpk.rhs <- c(min_sum, max_sum)
-  
-        # box constraint
-        Rglpk.bound <- list(
-          lower = list(
-            ind = 1:N,
-            val = lower
-          ),
-          upper = list(
-            ind = 1:N,
-            val = upper
-          )
-        )
-  
-        # group constraint
-        if (!is.null(constraints$groups)) {
-          # check group constraint validility
-          if (!all(c(
-            length(constraints$cLO),
-            length(constraints$cUP)
-          )
-          == length(constraints$groups))) {
-            stop("Please assign group constraint")
-          }
-  
-          # update constraints matrix, direction and right-hand vector
-          for (i in 1:length(constraints$groups)) {
-            # temp index variable
-            temp <- rep(0, N)
-            temp[constraints$groups[[i]]] <- 1
-  
-            Rglpk.mat <- rbind(Rglpk.mat, temp, temp)
-            Rglpk.dir <- c(Rglpk.dir, ">=", "<=")
-            Rglpk.rhs <- c(
-              Rglpk.rhs,
-              constraints$cLO[i],
-              constraints$cUP[i]
-            )
-          }
-          rm(temp)
-        }
-  
-        # return target constraint
-        if (!is.infinite(target)) {
-          Rglpk.mat <- rbind(Rglpk.mat, colMeans(R))
-          Rglpk.dir <- c(Rglpk.dir, ">=")
-          Rglpk.rhs <- c(Rglpk.rhs, target)
-        }
-  
-        # result from solver
-        Rglpk.result <- try(Rglpk::Rglpk_solve_LP(
-          obj = Rglpk.obj,
-          mat = Rglpk.mat,
-          dir = Rglpk.dir,
-          rhs = Rglpk.rhs,
-          bound = Rglpk.bound,
-          types = rep("C", N),
-          max = TRUE
-        ))
-  
-        # null result
-        if (inherits(Rglpk.result, "try-error")) Rglpk.result <- NULL
-        if (is.null(Rglpk.result)) {
-          message(paste("Optimizer was unable to find a solution for target"))
-          return(paste("Optimizer was unable to find a solution for target"))
-        }
-  
-        # prepare output
-        weights <- as.vector(Rglpk.result$solution[1:N])
-        weights <- normalize_weights(weights)
-        names(weights) <- colnames(R)
-        obj_vals <- constrained_objective(
-          w = weights, R = R, portfolio = portfolio,
-          trace = TRUE, env = dotargs
-        )$objective_measures
-        out <- list(
-          weights = weights,
-          objective_measures = obj_vals,
-          opt_values = obj_vals,
-          out = Rglpk.result$optimum,
-          call = call
-        )
-        if (isTRUE(trace)) {
-          out$Rglpkoutput <- Rglpk.result
-        }
-      }
-  
-      # min CVaR case
-      else if (risk & !reward) {
-        # utility function coef: weight + loss + VaR
-        Rglpk.obj <- c(
-          rep(0, N),
-          rep(-1 / alpha / T, T),
-          -1
-        )
-  
-        # leverage constraint
-        Rglpk.mat <- rbind(
-          c(rep(1, N), rep(0, T + 1)),
-          c(rep(1, N), rep(0, T + 1))
-        )
-        Rglpk.dir <- c(">=", "<=")
-        Rglpk.rhs <- c(min_sum, max_sum)
-  
-        # box constraint
-        Rglpk.bound <- list(
-          lower = list(
-            ind = c(1:N, N + T + 1),
-            val = c(lower, -Inf)
-          ),
-          upper = list(
-            ind = c(1:N, N + T + 1),
-            val = c(upper, Inf)
-          )
-        )
-  
-        # group constraint
-        if (!is.null(constraints$groups)) {
-          # check group constraint validility
-          if (!all(c(
-            length(constraints$cLO),
-            length(constraints$cUP)
-          )
-          == length(constraints$groups))) {
-            stop("Please assign group constraint")
-          }
-  
-          # update constraints matrix, direction and right-hand vector
-          for (i in 1:length(constraints$groups)) {
-            # temp index variable
-            temp <- rep(0, N + T + 1)
-            temp[constraints$groups[[i]]] <- 1
-  
-            Rglpk.mat <- rbind(Rglpk.mat, temp, temp)
-            Rglpk.dir <- c(Rglpk.dir, ">=", "<=")
-            Rglpk.rhs <- c(
-              Rglpk.rhs,
-              constraints$cLO[i],
-              constraints$cUP[i]
-            )
-          }
-          rm(temp)
-        }
-  
-        # return target constraint
-        if (!is.infinite(target)) {
-          Rglpk.mat <- rbind(Rglpk.mat, colMeans(R))
-          Rglpk.dir <- c(Rglpk.dir, ">=")
-          Rglpk.rhs <- c(Rglpk.rhs, target)
-        }
-  
-        # scenario constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          cbind(
-            matrix(R, T),
-            diag(1, T),
-            rep(1, T)
-          )
-        )
-        Rglpk.dir <- c(Rglpk.dir, rep(">=", T))
-        Rglpk.rhs <- c(Rglpk.rhs, rep(0, T))
-  
-        # result from solver
-        Rglpk.result <- try(Rglpk::Rglpk_solve_LP(
-          obj = Rglpk.obj,
-          mat = Rglpk.mat,
-          dir = Rglpk.dir,
-          rhs = Rglpk.rhs,
-          bound = Rglpk.bound,
-          types = rep("C", N + T + 1),
-          max = TRUE
-        ))
-  
-        # null result
-        if (inherits(Rglpk.result, "try-error")) Rglpk.result <- NULL
-        if (is.null(Rglpk.result)) {
-          message(paste("Optimizer was unable to find a solution for target"))
-          return(paste("Optimizer was unable to find a solution for target"))
-        }
-  
-        # prepare output
-        weights <- as.vector(Rglpk.result$solution[1:N])
-        weights <- normalize_weights(weights)
-        names(weights) <- colnames(R)
-        obj_vals <- constrained_objective(
-          w = weights, R = R, portfolio = portfolio,
-          trace = TRUE, env = dotargs
-        )$objective_measures
-        out <- list(
-          weights = weights,
-          objective_measures = obj_vals,
-          opt_values = obj_vals,
-          out = Rglpk.result$optimum,
-          call = call
-        )
-        if (isTRUE(trace)) {
-          out$Rglpkoutput <- Rglpk.result
-        }
-      }
-  
-      # max ratio
-      else if (risk & reward) {
-        # utility function coef: weight + loss + VaR + shrinkage
-        Rglpk.obj <- c(
-          rep(0, N), # weight
-          rep(-1 / alpha / T, T), # loss
-          -1, # VaR
-          0 # shrinkage
-        )
-  
-        # leverage constraint
-        Rglpk.mat <- rbind(
-          c(rep(1, N), rep(0, T + 1), -min_sum),
-          c(rep(1, N), rep(0, T + 1), -max_sum)
-        )
-        Rglpk.dir <- c(">=", "<=")
-        Rglpk.rhs <- c(0, 0)
-  
-        # box constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          cbind(diag(1, N), matrix(0, N, T + 1), -lower),
-          cbind(diag(1, N), matrix(0, N, T + 1), -upper)
-        )
-        Rglpk.dir <- c(Rglpk.dir, rep(">=", N), rep("<=", N))
-        Rglpk.rhs <- c(Rglpk.rhs, rep(0, 2 * N))
-  
-        Rglpk.bound <- list(
-          lower = list(
-            ind = c(1:N, N + T + 1),
-            val = c(rep(-Inf, N), -Inf)
-          ),
-          upper = list(
-            ind = c(1:N, N + T + 1),
-            val = c(rep(Inf, N), Inf)
-          )
-        )
-  
-        # group constraint
-        if (!is.null(constraints$groups)) {
-          # check group constraint validility
-          if (!all(c(
-            length(constraints$cLO),
-            length(constraints$cUP)
-          )
-          == length(constraints$groups))) {
-            stop("Please assign group constraint")
-          }
-  
-          # update constraints matrix, direction and right-hand vector
-          for (i in 1:length(constraints$groups)) {
-            # temp index variable
-            # low level
-            temp <- c(rep(0, N + T + 1), -constraints$cLO[i])
-            temp[constraints$groups[[i]]] <- 1
-            Rglpk.mat <- rbind(Rglpk.mat, temp)
-            Rglpk.dir <- c(Rglpk.dir, ">=")
-            Rglpk.rhs <- c(Rglpk.rhs, 0)
-  
-            # up level
-            temp <- c(rep(0, N + T + 1), -constraints$cUP[i])
-            temp[constraints$groups[[i]]] <- 1
-            Rglpk.mat <- rbind(Rglpk.mat, temp)
-            Rglpk.dir <- c(Rglpk.dir, "<=")
-            Rglpk.rhs <- c(Rglpk.rhs, 0)
-          }
-          rm(temp)
-        }
-  
-        # return target constraint
-        if (!is.infinite(target)) {
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            c(rep(0, N + T + 1)),
-            target
-          )
-  
-          Rglpk.dir <- c(Rglpk.dir, "<=")
-          Rglpk.rhs <- c(Rglpk.rhs, 1)
-        }
-  
-        # shrinkage constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          c(colMeans(R), rep(0, T + 2))
-        )
-  
-        Rglpk.dir <- c(Rglpk.dir, "==")
-        Rglpk.rhs <- c(Rglpk.rhs, 1)
-  
-        # scenario constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          cbind(
-            matrix(R, T),
-            diag(1, T),
-            rep(1, T),
-            rep(0, T)
-          )
-        )
-        Rglpk.dir <- c(Rglpk.dir, rep(">=", T))
-        Rglpk.rhs <- c(Rglpk.rhs, rep(0, T))
-  
-  
-  
-        # result from solver
-        Rglpk.result <- try(Rglpk::Rglpk_solve_LP(
-          obj = Rglpk.obj,
-          mat = Rglpk.mat,
-          dir = Rglpk.dir,
-          rhs = Rglpk.rhs,
-          bound = Rglpk.bound,
-          types = rep("C", N + T + 2),
-          max = TRUE
-        ))
-  
-        # null result
-        if (inherits(Rglpk.result, "try-error")) Rglpk.result <- NULL
-        if (is.null(Rglpk.result)) {
-          message(paste("Optimizer was unable to find a solution for target"))
-          return(paste("Optimizer was unable to find a solution for target"))
-        }
-  
-        # prepare output
-        weights <- as.vector(Rglpk.result$solution[1:N] / Rglpk.result$solution[N + T + 2])
-        weights <- normalize_weights(weights)
-        names(weights) <- colnames(R)
-        obj_vals <- constrained_objective(
-          w = weights, R = R, portfolio = portfolio,
-          trace = TRUE, env = dotargs
-        )$objective_measures
-        out <- list(
-          weights = weights,
-          objective_measures = obj_vals,
-          opt_values = obj_vals,
-          out = Rglpk.result$optimum,
-          call = call
-        )
-        if (isTRUE(trace)) {
-          out$Rglpkoutput <- Rglpk.result
-        }
-      }
-    }
-  
-    # The simple case without position case is done.
-    # Following case can handle position limitation, but in a really slow
-    # pace, especially choosing n from 2n.
-  
-    else {
-      # deploy optimization for different types situations
-      # max return case
-      if (reward & !risk) {
-        # utility function coef: weight + position index
-        Rglpk.obj <- c(colMeans(R), rep(0, N))
-  
-        # leverage constraint
-        Rglpk.mat <- rbind(
-          c(rep(1, N), rep(0, N)),
-          c(rep(1, N), rep(0, N))
-        )
-        Rglpk.dir <- c(">=", "<=")
-        Rglpk.rhs <- c(min_sum, max_sum)
-  
-        # box constraint
-        Rglpk.bound <- list(
-          lower = list(
-            ind = 1:N,
-            val = lower
-          ),
-          upper = list(
-            ind = 1:N,
-            val = upper
-          )
-        )
-  
-        # group constraint
-        if (!is.null(constraints$groups)) {
-          # check group constraint validility
-          if (!all(c(
-            length(constraints$cLO),
-            length(constraints$cUP)
-          )
-          == length(constraints$groups))) {
-            stop("Please assign group constraint")
-          }
-  
-          # group weight constraint
-          for (i in 1:length(constraints$groups)) {
-            # temp index variable
-            temp <- rep(0, 2 * N)
-            temp[constraints$groups[[i]]] <- 1
-  
-            # weight constraints
-            Rglpk.mat <- rbind(Rglpk.mat, temp, temp)
-            Rglpk.dir <- c(Rglpk.dir, ">=", "<=")
-            Rglpk.rhs <- c(
-              Rglpk.rhs,
-              constraints$cLO[i],
-              constraints$cUP[i]
-            )
-          }
-  
-          # group postion limitation
-          if (!is.null(constraints$group_pos)) {
-            # check group position limitation length
-            if (length(constraints$group_pos)
-            != length(constraints$groups)) {
-              stop("Please assign group constraint")
-            }
-            for (i in 1:length(constraints$groups)) {
-              # temp index variable
-              temp <- rep(0, 2 * N)
-              temp[constraints$groups[[i]] + N] <- 1
-  
-              # position limitation constraints
-              Rglpk.mat <- rbind(Rglpk.mat, temp)
-              Rglpk.dir <- c(Rglpk.dir, "==")
-              Rglpk.rhs <- c(
-                Rglpk.rhs,
-                constraints$group_pos[i]
-              )
-            }
-          }
-  
-          # remove temp variable
-          rm(temp)
-        }
-  
-        # return target constraint
-        if (!is.infinite(target)) {
-          Rglpk.mat <- rbind(Rglpk.mat, c(colMeans(R), rep(0, N)))
-          Rglpk.dir <- c(Rglpk.dir, ">=")
-          Rglpk.rhs <- c(Rglpk.rhs, target)
-        }
-  
-        # position limitation constraint
-        if (!is.null(constraints$max_pos)) {
-          Rglpk.mat <- rbind(Rglpk.mat, c(rep(0, N), rep(1, N)))
-          Rglpk.dir <- c(Rglpk.dir, "<=")
-          Rglpk.rhs <- c(Rglpk.rhs, constraints$max_pos)
-  
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            cbind(diag(1, N), diag(-upper, N)),
-            cbind(diag(1, N), diag(-lower, N))
-          )
-          Rglpk.dir <- c(Rglpk.dir, rep("<=", N), rep(">=", N))
-          Rglpk.rhs <- c(Rglpk.rhs, rep(0, 2 * N))
-        }
-  
-        # result from solver
-        Rglpk.result <- try(Rglpk::Rglpk_solve_LP(
-          obj = Rglpk.obj,
-          mat = Rglpk.mat,
-          dir = Rglpk.dir,
-          rhs = Rglpk.rhs,
-          bound = Rglpk.bound,
-          types = c(rep("C", N), rep("B", N)),
-          max = TRUE
-        ))
-  
-        # null result
-        if (inherits(Rglpk.result, "try-error")) Rglpk.result <- NULL
-        if (is.null(Rglpk.result)) {
-          message(paste("Optimizer was unable to find a solution for target"))
-          return(paste("Optimizer was unable to find a solution for target"))
-        }
-  
-        # prepare output
-        weights <- as.vector(Rglpk.result$solution[1:N])
-        weights <- normalize_weights(weights)
-        names(weights) <- colnames(R)
-        obj_vals <- constrained_objective(
-          w = weights, R = R, portfolio = portfolio,
-          trace = TRUE, env = dotargs
-        )$objective_measures
-        out <- list(
-          weights = weights,
-          objective_measures = obj_vals,
-          opt_values = obj_vals,
-          out = Rglpk.result$optimum,
-          call = call
-        )
-        if (isTRUE(trace)) {
-          out$Rglpkoutput <- Rglpk.result
-        }
-      }
-  
-      # min VaR case
-      else if (risk & !reward) {
-        # utility function coef: weight + loss + VaR + position index
-        Rglpk.obj <- c(
-          rep(0, N), # weight
-          rep(-1 / alpha / T, T), # loss
-          -1, # VaR
-          rep(0, N) # position index
-        )
-  
-        # leverage constraint
-        Rglpk.mat <- rbind(
-          c(rep(1, N), rep(0, T + 1 + N)),
-          c(rep(1, N), rep(0, T + 1 + N))
-        )
-        Rglpk.dir <- c(">=", "<=")
-        Rglpk.rhs <- c(min_sum, max_sum)
-  
-        # box constraint
-        Rglpk.bound <- list(
-          lower = list(
-            ind = c(1:N, N + T + 1),
-            val = c(constraints$min, -Inf)
-          ),
-          upper = list(
-            ind = c(1:N, N + T + 1),
-            val = c(constraints$max, Inf)
-          )
-        )
-  
-        # group constraint
-        if (!is.null(constraints$groups)) {
-          # check group constraint validility
-          if (!all(c(
-            length(constraints$cLO),
-            length(constraints$cUP)
-          )
-          == length(constraints$groups))) {
-            stop("Please assign group constraint")
-          }
-  
-          # group weight constraint
-          for (i in 1:length(constraints$groups)) {
-            # temp index variable
-            temp <- rep(0, 2 * N + T + 1)
-            temp[constraints$groups[[i]]] <- 1
-  
-            # weight constraints
-            Rglpk.mat <- rbind(Rglpk.mat, temp, temp)
-            Rglpk.dir <- c(Rglpk.dir, ">=", "<=")
-            Rglpk.rhs <- c(
-              Rglpk.rhs,
-              constraints$cLO[i],
-              constraints$cUP[i]
-            )
-          }
-  
-          # group postion limitation
-          if (!is.null(constraints$group_pos)) {
-            # check group position limitation length
-            if (length(constraints$group_pos)
-            != length(constraints$groups)) {
-              stop("Please assign group constraint")
-            }
-            for (i in 1:length(constraints$groups)) {
-              # temp index variable
-              temp <- rep(0, 2 * N + T + 1)
-              temp[constraints$groups[[i]] + N + T + 1] <- 1
-  
-              # position limitation constraints
-              Rglpk.mat <- rbind(Rglpk.mat, temp)
-              Rglpk.dir <- c(Rglpk.dir, "==")
-              Rglpk.rhs <- c(
-                Rglpk.rhs,
-                constraints$group_pos[i]
-              )
-            }
-          }
-  
-          # remove temp variable
-          rm(temp)
-        }
-  
-        # return target constraint
-        if (!is.infinite(target)) {
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            c(colMeans(R), rep(0, N + T + 1))
-          )
-          Rglpk.dir <- c(Rglpk.dir, ">=")
-          Rglpk.rhs <- c(Rglpk.rhs, target)
-        }
-  
-        # position limitation constraint
-        if (!is.null(constraints$max_pos)) {
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            c(rep(0, N + T + 1), rep(1, N))
-          )
-          Rglpk.dir <- c(Rglpk.dir, "<=")
-          Rglpk.rhs <- c(Rglpk.rhs, constraints$max_pos)
-  
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            cbind(
-              diag(1, N),
-              matrix(0, N, T + 1),
-              diag(-upper, N)
-            ),
-            cbind(
-              diag(1, N),
-              matrix(0, N, T + 1),
-              diag(-lower, N)
-            )
-          )
-          Rglpk.dir <- c(Rglpk.dir, rep("<=", N), rep(">=", N))
-          Rglpk.rhs <- c(Rglpk.rhs, rep(0, 2 * N))
-        }
-  
-        # scenario constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          cbind(
-            matrix(R, T),
-            diag(1, T),
-            rep(1, T),
-            matrix(0, T, N)
-          )
-        )
-        Rglpk.dir <- c(Rglpk.dir, rep(">=", T))
-        Rglpk.rhs <- c(Rglpk.rhs, rep(0, T))
-  
-        # result from solver
-        Rglpk.result <- try(Rglpk::Rglpk_solve_LP(
-          obj = Rglpk.obj,
-          mat = Rglpk.mat,
-          dir = Rglpk.dir,
-          rhs = Rglpk.rhs,
-          bound = Rglpk.bound,
-          types = c(rep("C", N + T + 1), rep("B", N)),
-          max = TRUE
-        ))
-  
-        # null result
-        if (inherits(Rglpk.result, "try-error")) Rglpk.result <- NULL
-        if (is.null(Rglpk.result)) {
-          message(paste("Optimizer was unable to find a solution for target"))
-          return(paste("Optimizer was unable to find a solution for target"))
-        }
-  
-        # prepare output
-        weights <- as.vector(Rglpk.result$solution[1:N])
-        weights <- normalize_weights(weights)
-        names(weights) <- colnames(R)
-        obj_vals <- constrained_objective(
-          w = weights, R = R, portfolio = portfolio,
-          trace = TRUE, env = dotargs
-        )$objective_measures
-        out <- list(
-          weights = weights,
-          objective_measures = obj_vals,
-          opt_values = obj_vals,
-          out = Rglpk.result$optimum,
-          call = call
-        )
-        if (isTRUE(trace)) {
-          out$Rglpkoutput <- Rglpk.result
-        }
-      }
-  
-      # min ratio
-      else if (risk & reward) {
-        # utility function coef: weight + loss + VaR + shrinkage + position
-        Rglpk.obj <- c(
-          rep(0, N), # weight
-          rep(-1 / alpha / T, T), # loss
-          -1, # VaR
-          0, # shrinkage
-          rep(0, N) # position index
-        )
-  
-        # leverage constraint
-        Rglpk.mat <- rbind(
-          c(
-            rep(1, N), rep(0, T + 1),
-            -min_sum, rep(0, N)
-          ),
-          c(
-            rep(1, N), rep(0, T + 1),
-            -max_sum, rep(0, N)
-          )
-        )
-        Rglpk.dir <- c(">=", "<=")
-        Rglpk.rhs <- c(0, 0)
-  
-        # box constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          cbind(diag(1, N), matrix(0, N, T + 1), -lower, diag(0, N)),
-          cbind(diag(1, N), matrix(0, N, T + 1), -upper, diag(0, N))
-        )
-        Rglpk.dir <- c(Rglpk.dir, rep(">=", N), rep("<=", N))
-        Rglpk.rhs <- c(Rglpk.rhs, rep(0, 2 * N))
-  
-        # box constraint
-        Rglpk.bound <- list(
-          lower = list(
-            ind = c(1:N, N + T + 1),
-            val = rep(-Inf, N + 1)
-          ),
-          upper = list(
-            ind = c(1:N, N + T + 1),
-            val = rep(Inf, N + 1)
-          )
-        )
-  
-        # group constraint
-        if (!is.null(constraints$groups)) {
-          # check group constraint validility
-          if (!all(c(
-            length(constraints$cLO),
-            length(constraints$cUP)
-          )
-          == length(constraints$groups))) {
-            stop("Please assign group constraint")
-          }
-  
-          # update constraints matrix, direction and right-hand vector
-          for (i in 1:length(constraints$groups)) {
-            # temp index variable
-            # low level
-            temp <- c(rep(0, N + T + 1), -constraints$cLO[i], rep(0, N))
-            temp[constraints$groups[[i]]] <- 1
-            Rglpk.mat <- rbind(Rglpk.mat, temp)
-            Rglpk.dir <- c(Rglpk.dir, ">=")
-            Rglpk.rhs <- c(Rglpk.rhs, 0)
-  
-            # up level
-            temp <- c(rep(0, N + T + 1), -constraints$cUP[i], rep(0, N))
-            temp[constraints$groups[[i]]] <- 1
-            Rglpk.mat <- rbind(Rglpk.mat, temp)
-            Rglpk.dir <- c(Rglpk.dir, "<=")
-            Rglpk.rhs <- c(Rglpk.rhs, 0)
-          }
-  
-          # update group position constraints
-          if (!is.null(constraints$groups_pos)) {
-            # check group constraint validility
-            if (length(constraints$groups_pos)
-            != length(constraints$groups)) {
-              stop("Please assign group constraint")
-            }
-            for (i in 1:length(constraints$groups)) {
-              # temp index variable
-              # low level
-              temp <- c(rep(0, N + T + 2), rep(1, N))
-              Rglpk.mat <- rbind(Rglpk.mat, temp)
-              Rglpk.dir <- c(Rglpk.dir, "==")
-              Rglpk.rhs <- c(Rglpk.rhs, constraints$groups_pos[i])
-            }
-          }
-          rm(temp)
-        }
-  
-        # return target constraint
-        if (!is.infinite(target)) {
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            c(rep(0, N + T + 1)),
-            target,
-            rep(0, N)
-          )
-  
-          Rglpk.dir <- c(Rglpk.dir, "<=")
-          Rglpk.rhs <- c(Rglpk.rhs, 1)
-        }
-  
-        # shrinkage constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          c(colMeans(R), rep(0, T + N + 2))
-        )
-        Rglpk.dir <- c(Rglpk.dir, "==")
-        Rglpk.rhs <- c(Rglpk.rhs, 1)
-  
-        # position limitation constraint
-        if (!is.null(constraints$max_pos)) {
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            c(rep(0, N + T + 2), rep(1, N))
-          )
-          Rglpk.dir <- c(Rglpk.dir, "<=")
-          Rglpk.rhs <- c(Rglpk.rhs, constraints$max_pos)
-  
-          Rglpk.mat <- rbind(
-            Rglpk.mat,
-            cbind(
-              diag(1, N),
-              matrix(0, N, T + 2),
-              diag(-upper - 9999, N)
-            ),
-            cbind(
-              diag(1, N),
-              matrix(0, N, T + 2),
-              diag(-lower + 9999, N)
-            )
-          )
-          Rglpk.dir <- c(Rglpk.dir, rep("<=", N), rep(">=", N))
-          Rglpk.rhs <- c(Rglpk.rhs, rep(0, N), rep(0, N))
-        }
-  
-        # scenario constraint
-        Rglpk.mat <- rbind(
-          Rglpk.mat,
-          cbind(
-            matrix(R, T),
-            diag(1, T),
-            rep(1, T),
-            matrix(0, T, N + 1)
-          )
-        )
-        Rglpk.dir <- c(Rglpk.dir, rep(">=", T))
-        Rglpk.rhs <- c(Rglpk.rhs, rep(0, T))
-  
-        # result from solver
-        Rglpk.result <- try(Rglpk::Rglpk_solve_LP(
-          obj = Rglpk.obj,
-          mat = Rglpk.mat,
-          dir = Rglpk.dir,
-          rhs = Rglpk.rhs,
-          bound = Rglpk.bound,
-          types = c(rep("C", N + T + 2), rep("B", N)),
-          max = TRUE
-        ))
-  
-        # null result
-        if (inherits(Rglpk.result, "try-error")) Rglpk.result <- NULL
-        if (is.null(Rglpk.result)) {
-          message(paste("Optimizer was unable to find a solution for target"))
-          return(paste("Optimizer was unable to find a solution for target"))
-        }
-  
-        # prepare output
-        weights <- as.vector(Rglpk.result$solution[1:N] / Rglpk.result$solution[N + T + 2])
-        weights <- normalize_weights(weights)
-        names(weights) <- colnames(R)
-        obj_vals <- constrained_objective(
-          w = weights, R = R, portfolio = portfolio,
-          trace = TRUE, env = dotargs
-        )$objective_measures
-        out <- list(
-          weights = weights,
-          objective_measures = obj_vals,
-          opt_values = obj_vals,
-          out = Rglpk.result$optimum,
-          call = call
-        )
-        if (isTRUE(trace)) {
-          out$Rglpkoutput <- Rglpk.result
-        }
-      }
-    }
-  } ## end case for Rglpk
-  
-  ## case if method = osqp -- Operator Splitting Quadratic Program
-  if (optimize_method == "osqp") {
-    # search for required package
-    stopifnot("package:osqp" %in% search() ||
-      requireNamespace("osqp", quietly = TRUE))
-  
-    # osqp solver can only solve quadratic programming problems
-    valid_objnames <- c(
-      "mean", "sigma", "StdDev", "var", "volatility",
-      "sd"
-    )
-  
-    # default risk and reward parameter
-    reward <- FALSE
-    risk <- FALSE
-    target <- -Inf
-  
-    # search invalid objectives
-    for (objective in portfolio$objectives) {
-      if (objective$enabled) {
-        if (!(objective$name %in% valid_objnames)) {
-          stop("osqp only solves mean and sd type business objectives, 
-                 choose a different optimize method.")
-        }
-  
-        # return target
-        target <- ifelse(!is.null(objective$target), objective$target, target)
-  
-        # optimization objective function
-        reward <- ifelse(objective$name == "mean", TRUE, reward)
-        risk <- ifelse(objective$name %in% valid_objnames[2:6], TRUE, risk)
-      }
-    }
-  
-    # trim target return
-    target <- max(target, constraints$return_target, na.rm = TRUE)
-  
-    # get leverage paramters from constraints
-    max_sum <- constraints$max_sum
-    min_sum <- constraints$min_sum
-  
-    # transfer inf to big number
-    max_sum <- ifelse(is.infinite(max_sum), 9999.0, max_sum)
-    min_sum <- ifelse(is.infinite(min_sum), -9999.0, min_sum)
-  
-    # get upper and lower limitation
-    upper <- constraints$max
-    lower <- constraints$min
-  
-    upper[which(is.infinite(upper))] <- 9999.0
-    lower[which(is.infinite(lower))] <- 9999.0
-  
-    # issue message if min_sum and max_sum are restrictive
-    if ((max_sum - min_sum) < 0.02) {
-      message("Leverage constraint min_sum and max_sum are restrictive, 
-                consider relaxing. e.g. 'full_investment' constraint 
-                should be min_sum=0.99 and max_sum=1.01")
-    }
-  
-    # implement for different case
-    if (xor(risk, reward)) {
-      # set P matrix and q vector
-      if (reward) {
-        osqp.P <- diag(0, N)
-        osqp.q <- -colMeans(R)
-      }
-      else {
-        osqp.P <- cov(R)
-        osqp.q <- rep(0, N)
-      }
-  
-      # leverage constraint
-      osqp.A <- rep(1, N)
-      osqp.l <- min_sum
-      osqp.u <- max_sum
-      osqp.rnames <- c("sum")
-  
-      # box constraint
-      osqp.A <- rbind(osqp.A, diag(1, N))
-      osqp.l <- c(osqp.l, lower)
-      osqp.u <- c(osqp.u, upper)
-      osqp.rnames <- c(
-        osqp.rnames,
-        rep("box", N)
-      )
-  
-      # group constraint
-      if (!is.null(constraints$groups)) {
-        # check group constraint validility
-        if (!all(c(
-          length(constraints$cLO),
-          length(constraints$cUP)
-        )
-        == length(constraints$groups))) {
-          stop("Please assign group constraint")
-        }
-  
-        # update constraints matrix, direction and right-hand vector
-        for (i in 1:length(constraints$groups)) {
-          # temp index variable
-          temp <- rep(0, N)
-          temp[constraints$groups[[i]]] <- 1
-  
-          osqp.A <- rbind(osqp.A, temp)
-          osqp.l <- c(osqp.l, constraints$cLO[i])
-          osqp.u <- c(osqp.u, constraints$cUP[i])
-        }
-        rm(temp)
-        osqp.rnames <- c(
-          osqp.rnames,
-          rep(
-            "group",
-            length(constraints$groups)
-          )
-        )
-      }
-  
-      # return target constraint
-      if (!is.infinite(target)) {
-        osqp.A <- rbind(osqp.A, colMeans(R))
-        osqp.l <- c(osqp.l, target)
-        osqp.u <- c(osqp.u, Inf)
-        osqp.rnames <- c(osqp.rnames, "target")
-      }
-  
-      rownames(osqp.A) <-
-        names(osqp.u) <-
-        names(osqp.l) <- osqp.rnames
-      colnames(osqp.A) <- colnames(R)
-  
-      # result from solver
-      osqp.result <- try(osqp::solve_osqp(
-        P = osqp.P,
-        q = osqp.q,
-        A = osqp.A,
-        l = osqp.l,
-        u = osqp.u,
-        pars = osqp::osqpSettings(verbose = FALSE)
-      ))
-  
-      # null result
-      if (inherits(osqp.result, "try-error")) osqp.result <- NULL
-      if (is.null(osqp.result)) {
-        message(paste("Optimizer was unable to find a solution for target"))
-        return(paste("Optimizer was unable to find a solution for target"))
-      }
-  
-      # prepare output
-      weights <- as.vector(osqp.result$x)
-      weights <- normalize_weights(weights)
-      names(weights) <- colnames(R)
-      obj_vals <- constrained_objective(
-        w = weights, R = R, portfolio = portfolio,
-        trace = TRUE, env = dotargs
-      )$objective_measures
-      out <- list(
-        weights = weights,
-        objective_measures = obj_vals,
-        opt_values = obj_vals,
-        out = osqp.result$info$obj_val,
-        call = call
-      )
-      if (isTRUE(trace)) {
-        out$osqpoutput <- osqp.result
-      }
-    }
-    else {
-      osqp.P <- cbind(rbind(cov(R), rep(0, N)), rep(0, N + 1))
-      osqp.q <- rep(0, N + 1)
-      osqp.rnames <- c()
-  
-      # leverage constraint
-      osqp.A <- c(rep(1, N), -min_sum)
-      osqp.A <- rbind(osqp.A, c(rep(-1, N), max_sum))
-      osqp.l <- c(0, 0)
-      osqp.u <- c(Inf, Inf)
-      osqp.rnames <- c("min.sum", "max.sum")
-  
-      # box constraint
-      osqp.A <- rbind(
-        osqp.A,
-        cbind(diag(1, N), -lower)
-      )
-      osqp.A <- rbind(
-        osqp.A,
-        cbind(diag(-1, N), upper)
-      )
-      osqp.l <- c(osqp.l, rep(0, 2 * N))
-      osqp.u <- c(osqp.u, rep(Inf, 2 * N))
-      osqp.rnames <- c(osqp.rnames, rep("Box", 2 * N))
-  
-      # group constraint
-      if (!is.null(constraints$groups)) {
-        # check group constraint validility
-        if (!all(c(
-          length(constraints$cLO),
-          length(constraints$cUP)
-        )
-        == length(constraints$groups))) {
-          stop("Please assign group constraint")
-        }
-  
-        # update constraints matrix, direction and right-hand vector
-        for (i in 1:length(constraints$groups)) {
-          # temp index variable
-          temp <- rep(0, N)
-          temp[constraints$groups[[i]]] <- 1
-  
-          osqp.A <- rbind(
-            osqp.A,
-            c(temp, -constraints$cLO[i])
-          )
-          osqp.A <- rbind(
-            osqp.A,
-            c(-temp, constraints$cUP[i])
-          )
-          osqp.l <- c(osqp.l, 0, 0)
-          osqp.u <- c(osqp.u, Inf, Inf)
-        }
-  
-        osqp.rnames <- c(osqp.rnames, rep(
-          "Group",
-          2 * length(constraints$groups)
-        ))
-        rm(temp)
-      }
-  
-      # return target constraint
-      if (!is.infinite(target)) {
-        osqp.A <- rbind(osqp.A, c(rep(0, N), target))
-        osqp.l <- c(osqp.l, -Inf)
-        osqp.u <- c(osqp.u, 1)
-        osqp.rnames <- c(osqp.rnames, "target")
-      }
-  
-      # shrinkage constraint
-      osqp.A <- rbind(osqp.A, c(colMeans(R), 0))
-      osqp.l <- c(osqp.l, 1)
-      osqp.u <- c(osqp.u, 1)
-      osqp.A <- rbind(osqp.A, c(rep(0, N), 1))
-      osqp.l <- c(osqp.l, 0)
-      osqp.u <- c(osqp.u, Inf)
-      osqp.rnames <- c(osqp.rnames, rep("Shrinkage", 2))
-  
-      rownames(osqp.A) <-
-        names(osqp.u) <-
-        names(osqp.l) <- osqp.rnames
-      colnames(osqp.A) <- c(colnames(R), "Shrinkage")
-  
-      # result from solver
-      osqp.result <- try(osqp::solve_osqp(
-        P = osqp.P,
-        q = osqp.q,
-        A = osqp.A,
-        l = osqp.l,
-        u = osqp.u,
-        pars = osqp::osqpSettings(verbose = FALSE)
-      ))
-  
-      # null result
-      if (inherits(osqp.result, "try-error")) osqp.result <- NULL
-      if (is.null(osqp.result)) {
-        message(paste("Optimizer was unable to find a solution for target"))
-        return(paste("Optimizer was unable to find a solution for target"))
-      }
-  
-      # prepare output
-      weights <- as.vector(osqp.result$x[1:N] / osqp.result$x[N + 1])
-      weights <- normalize_weights(weights)
-      names(weights) <- colnames(R)
-      obj_vals <- constrained_objective(
-        w = weights, R = R, portfolio = portfolio,
-        trace = TRUE, env = dotargs
-      )$objective_measures
-      out <- list(
-        weights = weights,
-        objective_measures = obj_vals,
-        opt_values = obj_vals,
-        out = osqp.result$info$obj_val,
-        call = call
-      )
-      if (isTRUE(trace)) {
-        out$osqpoutput <- osqp.result
-      }
-    }
-  } ## end case for osqp
-  
-  ## case if method = mco -- Multi-criteria Optimization
-  if (optimize_method == "mco") {
-    # utility function
-    mco.fn <- function(w) {
-      # default return index
-      mco.return <- FALSE
-  
-      # default risk index
-      mco.risk <- FALSE
-  
-      # default lambda
-      mco.lambda <- FALSE
-  
-      # default alpha
-      mco.alpha <- 0.05
-  
-      # search reward and risk in active objectives
-      for (objective in portfolio$objectives) {
-        if (objective$enabled) {
-          # grab reward
-          mco.return <- ifelse(objective$name == "mean",
-            t(w) %*% colMeans(R),
-            mco.return
-          )
-  
-          # grab risk
-          mco.risk <- switch(
-            objective$name,
-            "ES" = 1,
-            "CVaR" = 1,
-            "TVaR" = 1,
-            "sigma" = 2,
-            "volitility" = 2,
-            "StdDev" = 2,
-            "sd" = 2
-          )
-  
-          # check risk
-          mco.risk <- ifelse(is.null(mco.risk), FALSE, mco.risk)
-  
-          # grab alpha
-          mco.alpha <- switch(
-            is.null(objective$arguments[["p"]]) + 1,
-            objective$arguments[["p"]],
-            mco.alpha
-          )
-  
-          # check alpha
-          mco.alpha <- ifelse(mco.alpha > 0.5, 1 - mco.alpha, mco.alpha)
-  
-          # grab lambda
-          mco.lambda <- ifelse(is.null(objective$risk_aversion),
-            mco.lambda,
-            objective$risk_aversion
-          )
-        }
-      }
-  
-      # temp portfolio
-      mco.portfolio <- R %*% w
-  
-      # risk calculation
-      if (mco.risk == 1) {
-        mco.VaR <- quantile(mco.portfolio, mco.alpha)
-        mco.output.risk <- -mean(mco.portfolio[which(mco.portfolio <= mco.VaR)])
-      }
-      if (mco.risk == 2) {
-        mco.output.risk <- sd(mco.portfolio)
-        if (mco.lambda) {
-          mco.output.risk <- mco.output.risk - mco.lambda * mean(mco.portfolio)
-        }
-      }
-  
-      # negative return portfolio
-      if (mean(mco.portfolio) < 0) {
-        return(Inf)
-      }
-  
-      # output
-      if (mco.return) {
-        if (mco.risk) {
-          return(mco.output.risk / mean(mco.portfolio))
-        }
-        return(-mean(mco.portfolio))
-      }
-      return(mco.output.risk)
-    }
-  
-    # input dimension
-    mco.idim <- N
-  
-    # output dimension
-    mco.odim <- 1
-  
-    # constraints
-    mco.constraints <- function(w) {
-      result <- 0
-  
-      # leverage constraint
-      result <- result - 999 * max(sum(w) > constraints$max_sum, 0)
-      result <- result - 999 * max(constraints$min_sum > sum(w), 0)
-  
-      # position limitation
-      result <- result -
-        999 * max(sum(w != 0) > constraints$max_pos, 0, na.rm = TRUE)
-  
-      # return target
-      result <- result -
-        999 * max(t(w) %*% colMeans(R) < constraints$return_target,
-          0,
-          na.rm = TRUE
-        )
-  
-      # diversity constraint
-      result <- result -
-        999 * max(constraints$div_target > (1 - sum(w^2)),
-          0,
-          na.rm = TRUE
-        )
-  
-      # group constraint
-      if (!is.null(constraints$groups)) {
-        for (i in 1:length(constraints$groups)) {
-          result <- result -
-            999 * max(sum(w[constraints$groups[[i]]]) > constraints$cUP[i],
-              0,
-              na.rm = TRUE
-            )
-          result <- result -
-            999 * max(constraints$cLO[i] > sum(w[constraints$groups[[i]]]),
-              0,
-              na.rm = TRUE
-            )
-        }
-        if (!is.null(constraints$group_pos)) {
-          for (i in 1:length(constraints$groups)) {
-            temp <- w[constraints$groups[[i]]]
-            result <- result -
-              999 * max(sum(temp != 0) > constraints$group_pos[i],
-                0,
-                na.rm = TRUE
-              )
-          }
-        }
-      }
-  
-      return(result)
-    }
-  
-    # check group constraint
-    if (!is.null(constraints$groups)) {
-      # check group constraint validility
-      if (!all(c(
-        length(constraints$cLO),
-        length(constraints$cUP)
-      )
-      == length(constraints$groups))) {
-        stop("Please assign group constraint")
-      }
-      if (!is.null(constraints$group_pos)) {
-        if (length(constraints$group_pos)
-        != length(constraints$groups)) {
-          stop("Please assign group constraint")
-        }
-      }
-    }
-  
-    # result from solver
-    mco.result <- try(mco::nsga2(
-      fn = mco.fn,
-      idim = mco.idim,
-      odim = mco.odim,
-      constraints = mco.constraints,
-      cdim = 1,
-      lower.bounds = constraints$min,
-      upper.bounds = constraints$max
-    ))
-  
-    # null result
-    if (inherits(mco.result, "try-error")) mco.result <- NULL
-    if (is.null(mco.result)) {
-      message(paste("Optimizer was unable to find a solution for target"))
-      return(paste("Optimizer was unable to find a solution for target"))
-    }
-  
-    # prepare output
-    weights <- as.vector(mco.result$par[1, ])
-    weights <- normalize_weights(weights)
-    names(weights) <- colnames(R)
-    obj_vals <- constrained_objective(
-      w = weights, R = R, portfolio = portfolio,
-      trace = TRUE, env = dotargs
-    )$objective_measures
-    out <- list(
-      weights = weights,
-      objective_measures = obj_vals,
-      opt_values = obj_vals,
-      out = mco.result$value[1, 1],
-      call = call
-    )
-    if (isTRUE(trace)) {
-      out$mcooutput <- mco.result
-    }
-  } ## end case for mco
-  
-  ## case if method = CVXR
-  cvxr_solvers <- c("CBC", "GLPK", "GLPK_MI", "OSQP", "CPLEX", "SCS", "ECOS", "GUROBI", "MOSEK")
-  if (optimize_method == "CVXR" || optimize_method == "cvxr" || optimize_method %in% cvxr_solvers) {
-    ## search for required package
-    stopifnot("package:CVXR" %in% search() || requireNamespace("CVXR", quietly = TRUE))
-    if(optimize_method == "CVXR"|| optimize_method == "cvxr") cvxr_default=TRUE else cvxr_default=FALSE
-    
-    ## variables
-    X <- as.matrix(R)
-    wts <- CVXR::Variable(N)
-    z <- CVXR::Variable(T)
-    zeta <- CVXR::Variable(1)
-    t <- CVXR::Variable(1)
-    
-    # objective type
-    target = -Inf
-    reward <- FALSE
-    risk <- FALSE
-    risk_ES <- FALSE
-    risk_CSM <- FALSE
-    risk_HHI <- FALSE
-    risk_EQS <- FALSE
-    maxSR <- FALSE
-    maxSTARR <- FALSE
-    ESratio <- FALSE
-    CSMratio <- FALSE
-    EQSratio <- FALSE
-    alpha <- 0.05
-    lambda <- 1
-    
-    valid_objnames <- c("mean", "var", "sd", "StdDev", "ES", "CVaR", "ETL", "CSM", "HHI", "hhi", "EQS")
-    for (objective in portfolio$objectives) {
-      if (objective$enabled) {
-        if (!(objective$name %in% valid_objnames)) {
-          stop("CVXR only solves mean, var/sd/StdDev and ETL/ES/CVaR/CSM/EQS type business objectives, 
-                 choose a different optimize_method.")
-        }
-        # alpha
-        alpha <- ifelse(!is.null(objective$arguments[["p"]]), objective$arguments[["p"]], alpha)
-        lambda <- ifelse(!is.null(objective$risk_aversion), objective$risk_aversion, lambda)
-        
-        # return target
-        target <- ifelse(!is.null(objective$target), objective$target, target)
-        
-        # optimization objective function
-        reward <- ifelse(objective$name == "mean", TRUE, reward)
-        risk <- ifelse(objective$name %in% valid_objnames[2:4], TRUE, risk)
-        risk_ES <- ifelse(objective$name %in% valid_objnames[5:7], TRUE, risk_ES)
-        risk_CSM <- ifelse(objective$name %in% valid_objnames[8:8], TRUE, risk_CSM)
-        risk_EQS <- ifelse(objective$name %in% valid_objnames[11:11], TRUE, risk_EQS)
-        if(objective$name %in% valid_objnames[9:11]){
-          risk_HHI <- TRUE
-          lambda_hhi <- objective$conc_aversion
-        }
-        arguments <- objective$arguments
-      }
-    }
-    if(alpha > 0.5) alpha <- (1 - alpha)
-    
-    mean_value <- mout$mu
-    sigma_value <- mout$sigma
-    
-    # ef will be called while generating efficient frontier
-    if(hasArg(ef)) ef=match.call(expand.dots=TRUE)$ef else ef=FALSE
-    if(ef){
-      reward=FALSE
-      mean_idx <- which(unlist(lapply(portfolio$objectives, function(x) x$name)) == "mean")
-      return_target <- portfolio$objectives[[mean_idx]]$target
-    } else return_target=NULL
-    
-    if(reward & !risk & !risk_ES & !risk_CSM & !risk_HHI & !risk_EQS){
-      # max return
-      obj <- -t(mean_value) %*% wts
-      constraints_cvxr = list()
-      tmpname = "mean"
-    } else if(!reward & risk & !risk_ES & !risk_CSM & !risk_HHI & !risk_EQS){
-      # min var/std
-      obj <- CVXR::quad_form(wts, sigma_value)
-      constraints_cvxr = list()
-      tmpname = "StdDev"
-    } else if(!reward & risk & !risk_ES & !risk_CSM & risk_HHI & !risk_EQS){
-      # min HHI
-      obj <- CVXR::quad_form(wts, sigma_value) + lambda_hhi * CVXR::cvxr_norm(wts, 2) **2
-      constraints_cvxr = list()
-      tmpname = "HHI"
-    } else if(reward & risk & !risk_ES & !risk_CSM & !risk_HHI & !risk_EQS){
-      # mean-var/sharpe ratio
-      if(hasArg(maxSR)) maxSR=match.call(expand.dots=TRUE)$maxSR
-      
-      if(!maxSR){
-        # min mean-variance
-        obj <- CVXR::quad_form(wts, sigma_value) - (t(mean_value) %*% wts) / lambda
-        constraints_cvxr = list()
-        tmpname = "optimal value"
-      } else {
-        # max sharpe ratio
-        obj <- CVXR::quad_form(wts, sigma_value)
-        constraints_cvxr = list(t(mean_value) %*% wts == 1, sum(wts) >= 0)
-        tmpname = "Sharpe Ratio"
-      }
-    } else if(risk_ES & !risk_CSM & !risk_EQS){
-      # ES objectives
-      if(reward){
-        if(hasArg(maxSTARR)) maxSTARR=match.call(expand.dots=TRUE)$maxSTARR else maxSTARR=TRUE
-        if(hasArg(ESratio)) maxSTARR=match.call(expand.dots=TRUE)$ESratio else maxSTARR=maxSTARR
-      }
-      if(maxSTARR){
-        # max ES ratio
-        obj <- zeta + (1/(T*alpha)) * sum(z)
-        constraints_cvxr = list(z >= 0, 
-                                z >= -X %*% wts - zeta, 
-                                t(mean_value) %*% wts == 1,
-                                sum(wts) >= 0)
-        tmpname = "ES ratio"
-      } else {
-        # min ES
-        obj <- zeta + (1/(T*alpha)) * sum(z)
-        constraints_cvxr = list(z >= 0, z >= -X %*% wts - zeta)
-        tmpname = "ES"
-      }
-    } else if(!risk_ES & risk_CSM & !risk_EQS){
-      # CSM objectives
-      if(reward){
-        if(hasArg(CSMratio)) CSMratio=match.call(expand.dots=TRUE)$CSMratio else CSMratio=TRUE
-      }
-      if(CSMratio){
-        # max CSM ratio
-        obj <- zeta + (1/(alpha* sqrt(T))) * t
-        constraints_cvxr = list(z >= 0, 
-                                z >= -X %*% wts - zeta, 
-                                t(mean_value) %*% wts == 1,
-                                sum(wts) >= 0,
-                                t >= CVXR::p_norm(z, p=2))
-        tmpname = "CSM ratio"
-      } else {
-        # min CSM
-        obj <- zeta + (1/(alpha* sqrt(T))) * t
-        constraints_cvxr = list(z >= 0, z >= -X %*% wts - zeta,
-                                t >= CVXR::p_norm(z, p=2))
-        tmpname = "CSM"
-      }
-    } else if(!risk_ES & !risk_CSM & risk_EQS){
-      # EQS objectives
-      if(reward){
-        if(hasArg(EQSratio)) EQSratio=match.call(expand.dots=TRUE)$EQSratio else EQSratio=TRUE
-      }
-      if(EQSratio){
-        # max EQS ratio
-        obj <- zeta + (1/(alpha * T)) * sum(CVXR::pos(square(CVXR::pos(X %*% wts)) - zeta))
-        constraints_cvxr = list(t(mean_value) %*% wts == 1, sum(wts) >= 0)
-        tmpname = "EQS ratio"
-      } else {
-        # min EQS
-        obj <- zeta + (1/(alpha * T)) * sum(CVXR::pos(square(CVXR::pos(X %*% wts)) - zeta))
-        constraints_cvxr <- list()
-        tmpname = "EQS"
-      }
-    } else { 
-      # wrong objective
-      stop("Wrong multiple objectives. CVXR only solves mean, var, or simple ES/CSM type business objectives, please reorganize the objectives.")
-    }
-    
-    # weight scale for maximizing return per unit risk
-    if(!maxSR & !maxSTARR & !CSMratio) weight_scale=1 else weight_scale=sum(wts)
-    
-    # constraint type
-    ## weight sum constraint
-    ### Problem of maximizing return per unit risk doesn't need weight sum constraint, 
-    ### because weights could be scaled proportionally.
-    if(!maxSR & !maxSTARR & !CSMratio){
-      if(!is.null(constraints$max_sum) & !is.infinite(constraints$max_sum) & constraints$max_sum - constraints$min_sum <= 0.001){
-        constraints_cvxr = append(constraints_cvxr, sum(wts) == constraints$max_sum)
-      } else{
-        if(!is.null(constraints$max_sum)){
-          max_sum <- ifelse(is.infinite(constraints$max_sum), 9999.0, constraints$max_sum)
-          constraints_cvxr = append(constraints_cvxr, sum(wts) <= max_sum)
-        }
-        if(!is.null(constraints$min_sum)){
-          min_sum <- ifelse(is.infinite(constraints$min_sum), -9999.0, constraints$min_sum)
-          constraints_cvxr = append(constraints_cvxr, sum(wts) >= min_sum)
-        }
-      }
-    }
-    
-    ## box constraint
-    upper <- constraints$max
-    lower <- constraints$min
-    if(!all(is.infinite(upper))){
-      upper[which(is.infinite(upper))] <- 9999.0
-      constraints_cvxr = append(constraints_cvxr, wts <= upper * weight_scale)
-    }
-    if(!all(is.infinite(lower))){
-      lower[which(is.infinite(lower))] <- -9999.0
-      constraints_cvxr = append(constraints_cvxr, wts >= lower * weight_scale)
-    }
-    
-    ## group constraint
-    i = 1
-    for(g in constraints$groups){
-      constraints_cvxr = append(constraints_cvxr, sum(wts[g]) >= constraints$cLO[i] * weight_scale)
-      constraints_cvxr = append(constraints_cvxr, sum(wts[g]) <= constraints$cUP[i] * weight_scale)
-      i = i + 1
-    }
-    
-    ## target return constraint
-    ### target return in constraint
-    if(!is.null(constraints$return_target)){
-      constraints_cvxr = append(constraints_cvxr, t(mean_value) %*% wts >= constraints$return_target * weight_scale)
-    }
-    ### target return in objective, which is called by ef functions.
-    if(!is.null(return_target)){
-      constraints_cvxr = append(constraints_cvxr, t(mean_value) %*% wts >= return_target)
-    }
-    
-    ## factor exposure constraint
-    if(!is.null(constraints$B)){
-      constraints_cvxr = append(constraints_cvxr, t(constraints$B) %*% wts <= constraints$upper)
-      constraints_cvxr = append(constraints_cvxr, t(constraints$B) %*% wts >= constraints$lower)
-    }
-    
-    ## turnover constraint
-    if(!is.null(constraints$turnover_target)){
-      # set weight initial
-      if(is.null(constraints$weight_initial)){
-        weight_initial <- rep(1/N, N)
-      } else {
-        weight_initial <- constraints$weight_initial
-      }
-      # penalty for minvar
-      if(tmpname == "StdDev"){
-        if(is.null(constraints$turnover_penalty)){
-          stopifnot("package:Matrix" %in% search()  ||  requireNamespace("Matrix",quietly = TRUE))
-          sigma_value_penalty = Matrix::nearPD(sigma_value)$mat
-        } else {
-          sigma_value_penalty = sigma_value + diag(constraints$turnover_penalty, N)
-        }
-        obj <- CVXR::quad_form(wts - weight_initial, sigma_value_penalty) + 2 * t(wts - weight_initial) %*% sigma_value %*% weight_initial + t(weight_initial) %*% sigma_value %*% weight_initial
-      }
-      constraints_cvxr = append(constraints_cvxr, sum(abs(wts - weight_initial)) <= constraints$turnover_target)
-    }
-    
-    # problem
-    prob_cvxr <- CVXR::Problem(CVXR::Minimize(obj), constraints = constraints_cvxr)
-    
-    if(cvxr_default){
-      if((risk || maxSR) && !risk_HHI){
-        result_cvxr <- CVXR::solve(prob_cvxr, solver = "OSQP", ... = ...)
-      } else {
-        result_cvxr <- CVXR::solve(prob_cvxr, solver = "SCS", ... = ...)
-      }
-    } else {
-      result_cvxr <- CVXR::solve(prob_cvxr, solver = optimize_method, ... = ...)
-    }
-    
-    cvxr_wts <- result_cvxr$getValue(wts)
-    if(maxSR | maxSTARR | CSMratio) cvxr_wts <- cvxr_wts / sum(cvxr_wts)
-    cvxr_wts <- as.vector(cvxr_wts)
-    cvxr_wts <- normalize_weights(cvxr_wts)
-    names(cvxr_wts) <- colnames(R)
-    
-    obj_cvxr <- list()
-    if(reward & !risk & !risk_ES & !risk_CSM & !risk_HHI){ # max return
-      obj_cvxr[[tmpname]] <- -result_cvxr$value
-    } else if(!reward & risk & !risk_ES & !risk_CSM & !risk_HHI){ # min var/std
-      obj_cvxr[[tmpname]] <- sqrt(result_cvxr$value)
-    } else if(!reward & risk & !risk_ES & !risk_CSM & risk_HHI){ # min HHI
-      obj_cvxr[["StdDev"]] <- sqrt(t(cvxr_wts) %*% sigma_value %*% cvxr_wts)
-      obj_cvxr[[tmpname]] <- (result_cvxr$value - t(cvxr_wts) %*% sigma_value %*% cvxr_wts)/lambda_hhi
-    } else if(!maxSR & !maxSTARR & !CSMratio){ # mean-var/ES/CSM
-      obj_cvxr[[tmpname]] <- result_cvxr$value
-      if(reward & risk){
-        obj_cvxr[["mean"]] <- cvxr_wts %*% mean_value
-        obj_cvxr[["StdDev"]] <- sqrt(t(cvxr_wts) %*% sigma_value %*% cvxr_wts)
-      }
-    } else { # max return per unit risk
-      obj_cvxr[["mean"]] <- cvxr_wts %*% mean_value
-      if(maxSR){
-        obj_cvxr[["StdDev"]] <- sqrt(t(cvxr_wts) %*% sigma_value %*% cvxr_wts)
-        obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["StdDev"]]
-      } else if(maxSTARR){
-        obj_cvxr[["ES"]] <- result_cvxr$value / sum(result_cvxr$getValue(wts))
-        obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["ES"]]
-      } else if(CSMratio){
-        obj_cvxr[["CSM"]] <- result_cvxr$value / sum(result_cvxr$getValue(wts))
-        obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["CSM"]]
-      }
-    }
-    if(ef) obj_cvxr[["mean"]] <- cvxr_wts %*% mean_value
-    
-    out = list(weights = cvxr_wts,
-               objective_measures = obj_cvxr,
-               opt_values=obj_cvxr,
-               out = obj_cvxr[[tmpname]],
-               call = call,
-               solver = result_cvxr$solver,
-               moment_values = list(momentFun = moment_name,mu = mout$mu, sigma = mout$sigma))
-    
-    optimize_method = "CVXR"
-  }## end case for CVXR
+  }
+  
+  # --- Solver dispatch ---
+  solver_fn <- get_solver(optimize_method)
+  if (is.null(solver_fn)) {
+    stop("Unknown optimize_method: '", optimize_method,
+         "'. Available methods: ",
+         paste(names(.solver_dispatch), collapse = ", "))
+  }
+  
+  out <- solver_fn(
+    R = R, portfolio = portfolio, constraints = constraints,
+    moments = dotargs, penalty = penalty, N = N,
+    call = call, trace = trace, search_size = search_size,
+    rp = rp, message = message, optimize_method = optimize_method,
+    warm_start = warm_start, ...
+  )
+  
+  # If the solver returned early with an optimization_failure, propagate it
+  if (is.optimization_failure(out)) return(out)
+  
+  # Allow solver to override optimize_method for class naming (e.g., ROI)
+  if (!is.null(out$.optimize_method)) {
+    optimize_method <- out$.optimize_method
+    out$.optimize_method <- NULL
+  }
   
   # Prepare for final object to return
   end_t <- Sys.time()
@@ -3094,11 +1161,20 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   out$data_summary <- list(first=first(R), last=last(R))
   out$elapsed_time <- end_t - start_t
   out$end_t <- as.character(Sys.time())
+  out$penalty <- penalty
   # return a $regime element to indicate what regime portfolio used for
   # optimize.portfolio. The regime information is used in extractStats and
   # extractObjectiveMeasures
   if(regime.switching){
     out$regime <- regime.idx
+  }
+  if (isTRUE(check_feasibility) && !is.optimization_failure(out)) {
+    out$feasibility_report <- check_portfolio_feasibility(out$weights, portfolio)
+    if (!out$feasibility_report$feasible) {
+      warning("Optimization result violates constraints: ",
+              paste(out$feasibility_report$summary$violated_types, collapse = ", "),
+              call. = FALSE)
+    }
   }
   class(out) <- c(paste("optimize.portfolio", optimize_method, sep='.'), "optimize.portfolio")
   return(out)
@@ -3109,6 +1185,10 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
 #' @export
 optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("DEoptim","random","ROI"), search_size=20000, trace=FALSE, ..., rp=NULL, rebalance_on=NULL, training_period=NULL, rolling_window=NULL)
 {
+    .Deprecated("optimize.portfolio.rebalancing", package = "PortfolioAnalytics",
+                msg = paste("'optimize.portfolio.rebalancing_v1' is deprecated.",
+                            "Use 'optimize.portfolio.rebalancing()' with a 'portfolio.spec' object instead.",
+                            "See help('optimize.portfolio.rebalancing').", sep = "\n"))
     stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly=TRUE))
     start_t<-Sys.time()
       
@@ -3174,26 +1254,17 @@ optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("D
 #' 
 #' The user should be aware of the following behavior when both 
 #' \code{training_period} and \code{rolling_window} are specified and have 
-#' different values
+#' different values:
 #' \describe{
-#'   \item{\code{training_period < rolling_window}: }{For example, if you have 
+#'   \item{training_period < rolling_window}{For example, if you have 
 #'   \code{rolling_window=60}, \code{training_period=50}, and the periodicity 
 #'   of the data is the same as the rebalance frequency (i.e. monthly data with 
-#'   \code{rebalance_on="months")} then the returns data used in the optimization 
-#'   at each iteration are as follows:
-#'   \itemize{
-#'   \item 1: R[1:50,]
-#'   \item 2: R[1:51,]
-#'   \item ...
-#'   \item 11: R[1:60,]
-#'   \item 12: R[1:61,]
-#'   \item 13: R[2:62,]
-#'   \item ...
-#'   }
+#'   \code{rebalance_on="months"}) then the returns data used in the optimization 
+#'   at each iteration starts as R[1:50,], then R[1:51,], ..., R[1:60,], 
+#'   R[1:61,], R[2:62,], etc.
 #'   This results in a growing window for several optimizations initially while
-#'   the endpoint iterator (i.e. \code{[50, 51, ...]}) is less than the 
-#'   rolling window width.}
-#'   \item{\code{training_period > rolling_window}: }{The data used in the initial 
+#'   the endpoint iterator is less than the rolling window width.}
+#'   \item{training_period > rolling_window}{The data used in the initial 
 #'   optimization is \code{R[(training_period - rolling_window):training_period,]}. 
 #'   This results in some of the data being "thrown away", i.e. periods 1 to 
 #'   \code{(training_period - rolling_window - 1)} are not used in the optimization.}
@@ -3224,14 +1295,18 @@ optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("D
 #' @param rolling_window an integer of the width (i.e. number of periods)
 #' of the rolling window, the default of NULL will run the optimization 
 #' using the data from inception.
+#' @param warm_start logical, default \code{FALSE}. If \code{TRUE}, each
+#'   rebalancing window is seeded with the optimal weights from the previous
+#'   window. This forces sequential execution (overrides parallel) and can
+#'   significantly reduce convergence time for stochastic solvers.
 #' @return a list containing the following elements
 #' \describe{
-#'   \item{\code{portfolio}:}{ The portfolio object.}
-#'   \item{\code{R}:}{ The asset returns.}
-#'   \item{\code{call}:}{ The function call.}
-#'   \item{\code{elapsed_time:}}{ The amount of time that elapses while the 
+#'   \item{portfolio}{The portfolio object.}
+#'   \item{R}{The asset returns.}
+#'   \item{call}{The function call.}
+#'   \item{elapsed_time}{The amount of time that elapses while the 
 #'   optimization is run.}
-#'   \item{\code{opt_rebalancing:}}{ A list of \code{optimize.portfolio} 
+#'   \item{opt_rebalancing}{A list of \code{optimize.portfolio} 
 #'   objects computed at each rebalancing period.}
 #' }
 #' @author Kris Boudt, Peter Carl, Brian G. Peterson
@@ -3263,7 +1338,7 @@ optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("D
 #' rolling_window=48)
 #' }
 #' @export
-optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, objectives=NULL, optimize_method=c("DEoptim", "random", "ROI", "CVXR"), search_size=20000, trace=FALSE, ..., rp=NULL, rebalance_on=NULL, training_period=NULL, rolling_window=NULL)
+optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, objectives=NULL, optimize_method=c("DEoptim","random","ROI"), search_size=20000, trace=FALSE, ..., rp=NULL, rebalance_on=NULL, training_period=NULL, rolling_window=NULL, warm_start=FALSE)
 {
   stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly=TRUE))
   stopifnot("package:iterators" %in% search() || requireNamespace("iterators",quietly=TRUE))
@@ -3340,9 +1415,12 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
         # If the user has not passed in a portfolio, we will create one for them
         tmp_portf <- portfolio.spec(assets=constraints$assets)
       }
-      message("constraint object passed in is a 'v1_constraint' object, updating to v2 specification")
+      warning("Passing 'v1_constraint' objects to optimize.portfolio.rebalancing() is deprecated ",
+              "and will be removed in a future version. ",
+              "The constraint has been auto-converted to v2 specification. ",
+              "Use portfolio.spec() with add.constraint() and add.objective() instead.",
+              call. = FALSE)
       portfolio <- update_constraint_v1tov2(portfolio=tmp_portf, v1_constraint=constraints)
-      # print.default(portfolio)
     }
     if(!inherits(constraints, "v1_constraint")){
       # Insert the constraints into the portfolio object
@@ -3380,49 +1458,67 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
   
   if(is.null(training_period)) {if(nrow(R)<36) training_period=nrow(R) else training_period=36}
   
-  # turnover weight_initial is previous time point optimal weight
-  turnover_idx <- which(sapply(portfolio$constraints, function(x) x$type == "turnover"))
-  if(length(turnover_idx) > 0){
-    turnover_idx <- turnover_idx[1]
-    # original weight_initial
-    if(is.null(portfolio$constraints[[turnover_idx]]$weight_initial)){
-      portfolio$constraints[[turnover_idx]]$weight_initial <- rep(1/length(portfolio$assets), length(portfolio$assets))
-    }
+  # Define endpoint indices
+  ep.i <- endpoints(R, on = rebalance_on)[which(endpoints(R, on = rebalance_on) >= training_period)]
+  
+  if (isTRUE(warm_start)) {
+    # --- Sequential warm-start path ---
+    # Previous solution seeds the next window's optimizer. Requires sequential
+    # execution (no parallel), so %dopar% is not used.
+    if (message) message("warm_start=TRUE: running rebalancing windows sequentially")
+    out_list <- vector("list", length(ep.i))
+    prev_weights <- NULL
     
-    # rebalancing
-    if (is.null(rolling_window)){
-      # define the index endpoints of our periods
-      ep.i<-endpoints(R,on=rebalance_on)[which(endpoints(R, on = rebalance_on)>=training_period)]
-      # now apply optimize.portfolio to the periods, in parallel if available
-      ep <- ep.i[1]
-      out_list<-foreach::foreach(ep=iterators::iter(ep.i), .errorhandling='pass', .packages='PortfolioAnalytics') %dopar% {
-        opt <- optimize.portfolio(R[1:ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=FALSE, ...=...)
-        portfolio$constraints[[turnover_idx]]$weight_initial <- opt$weights
-        opt
+    for (i in seq_along(ep.i)) {
+      ep <- ep.i[i]
+      R_window <- if (is.null(rolling_window)) {
+        R[1:ep, ]
+      } else {
+        R[(max(1L, ep - rolling_window + 1L)):ep, ]
       }
-    } else {
-      # define the index endpoints of our periods
-      ep.i<-endpoints(R,on=rebalance_on)[which(endpoints(R, on = rebalance_on)>=training_period)]
-      # now apply optimize.portfolio to the periods, in parallel if available
-      out_list<-foreach::foreach(ep=iterators::iter(ep.i), .errorhandling='pass', .packages='PortfolioAnalytics') %dopar% {
-        opt <- optimize.portfolio(R[(ifelse(ep-rolling_window>=1,ep-rolling_window,1)):ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=FALSE, ...=...)
-        portfolio$constraints[[turnover_idx]]$weight_initial <- opt$weights
-        opt
+      
+      # Asset universe churn guard: check dimensions/names match
+      ws <- prev_weights
+      if (!is.null(ws)) {
+        N_cur <- ncol(R_window)
+        if (length(ws) != N_cur ||
+            (!is.null(names(ws)) && !is.null(colnames(R_window)) &&
+             !identical(sort(names(ws)), sort(colnames(R_window))))) {
+          if (message) message("Window ", i, ": asset universe changed, cold-starting")
+          ws <- NULL
+        }
+      }
+      
+      out_list[[i]] <- tryCatch(
+        optimize.portfolio(R_window, portfolio = portfolio,
+                           optimize_method = optimize_method,
+                           search_size = search_size, trace = trace,
+                           rp = rp, parallel = FALSE,
+                           warm_start = ws, ...),
+        error = function(e) {
+          warning("Rebalancing window ", i, " failed: ", conditionMessage(e),
+                  call. = FALSE)
+          e
+        }
+      )
+      
+      # Extract weights for next window's warm start
+      if (inherits(out_list[[i]], "optimize.portfolio") &&
+          !is.optimization_failure(out_list[[i]])) {
+        prev_weights <- out_list[[i]]$weights
+      } else {
+        # Failed window: cold-start the next one
+        prev_weights <- NULL
       }
     }
   } else {
+    # --- Original parallel foreach path ---
     if (is.null(rolling_window)){
-      # define the index endpoints of our periods
-      ep.i<-endpoints(R,on=rebalance_on)[which(endpoints(R, on = rebalance_on)>=training_period)]
-      # now apply optimize.portfolio to the periods, in parallel if available
       ep <- ep.i[1]
       out_list<-foreach::foreach(ep=iterators::iter(ep.i), .errorhandling='pass', .packages='PortfolioAnalytics') %dopar% {
         optimize.portfolio(R[1:ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=FALSE, ...=...)
       }
     } else {
-      # define the index endpoints of our periods
-      ep.i<-endpoints(R,on=rebalance_on)[which(endpoints(R, on = rebalance_on)>=training_period)]
-      # now apply optimize.portfolio to the periods, in parallel if available
       out_list<-foreach::foreach(ep=iterators::iter(ep.i), .errorhandling='pass', .packages='PortfolioAnalytics') %dopar% {
         optimize.portfolio(R[(ifelse(ep-rolling_window>=1,ep-rolling_window,1)):ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=FALSE, ...=...)
       }
@@ -3480,7 +1576,7 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
 #' @export
 optimize.portfolio.parallel <- function(R,
                                         portfolio,
-                                        optimize_method=c("DEoptim","random","ROI","pso","GenSA","CVXR"),
+                                        optimize_method=c("DEoptim","random","ROI","pso","GenSA"),
                                         search_size=20000,
                                         trace=FALSE, ...,
                                         rp=NULL,

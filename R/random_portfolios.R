@@ -59,8 +59,9 @@ generatesequence <- function (min=.01, max=1, by=min/max, rounding=3 )
 #' @author Peter Carl, Brian G. Peterson, (based on an idea by Pat Burns)
 #' @export
 randomize_portfolio_v1 <- function (rpconstraints, max_permutations=200, rounding=3)
-
-{ # @author: Peter Carl, Brian Peterson (based on an idea by Pat Burns)
+{
+  deprecate_once("randomize_portfolio_v1", "randomize_portfolio")
+  # @author: Peter Carl, Brian Peterson (based on an idea by Pat Burns)
   # generate random permutations of a portfolio seed meeting your constraints on the weights of each asset
   # set the portfolio to the seed
   seed=rpconstraints$assets
@@ -174,6 +175,7 @@ random_walk_portfolios <-function(...) {
 #' @seealso \code{\link{constraint}}, \code{\link{objective}}, \code{\link{randomize_portfolio}}
 #' @author Peter Carl, Brian G. Peterson, (based on an idea by Pat Burns)
 #' @examples
+#' \dontrun{
 #' rpconstraint<-constraint_v1(assets=10, 
 #'                          min_mult=-Inf, 
 #'                          max_mult=Inf, 
@@ -185,9 +187,11 @@ random_walk_portfolios <-function(...) {
 #'                          
 #' rp<- random_portfolios_v1(rpconstraints=rpconstraint,permutations=1000)
 #' head(rp)
+#' }
 #' @export
 random_portfolios_v1 <- function (rpconstraints,permutations=100,...)
-{ # 
+{
+  .Deprecated("random_portfolios", package = "PortfolioAnalytics")
   # this function generates a series of portfolios that are a "random walk" from the current portfolio
   seed=rpconstraints$assets
   result <- matrix(nrow=permutations, ncol=length(seed))
@@ -374,11 +378,11 @@ randomize_portfolio <- randomize_portfolio_v2 <- function (portfolio, max_permut
 #' @details
 #' Random portfolios can be generate using one of three methods.
 #' \describe{
-#'   \item{sample: }{The 'sample' method to generate random portfolios is based
+#'   \item{sample}{The 'sample' method to generate random portfolios is based
 #'   on an idea pioneerd by Pat Burns. This is the most flexible method, but 
 #'   also the slowest, and can generate portfolios to satisfy leverage, box, 
 #'   group, position limit, and leverage exposure constraints.}
-#'   \item{simplex: }{The 'simplex' method to generate random portfolios is 
+#'   \item{simplex}{The 'simplex' method to generate random portfolios is 
 #'   based on a paper by W. T. Shaw. The simplex method is useful to generate 
 #'   random portfolios with the full investment constraint, where the sum of the 
 #'   weights is equal to 1, and min box constraints. Values for \code{min_sum} 
@@ -386,7 +390,7 @@ randomize_portfolio <- randomize_portfolio_v2 <- function (portfolio, max_permut
 #'   weights will equal 1. All other constraints such as group and position 
 #'   limit constraints will be handled by elimination. If the constraints are 
 #'   very restrictive, this may result in very few feasible portfolios remaining.}
-#'   \item{grid: }{The 'grid' method to generate random portfolios is based on
+#'   \item{grid}{The 'grid' method to generate random portfolios is based on
 #'   the \code{gridSearch} function in package 'NMOF'. The grid search method 
 #'   only satisfies the \code{min} and \code{max} box constraints. The 
 #'   \code{min_sum} and \code{max_sum} leverage constraints will likely be 
@@ -425,7 +429,28 @@ randomize_portfolio <- randomize_portfolio_v2 <- function (portfolio, max_permut
 #' @export random_portfolios_v2
 random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=100, rp_method="sample", eliminate=TRUE, ...){
   if(hasArg(fev)) fev=match.call(expand.dots=TRUE)$fev else fev=0:5
-  if(hasArg(normalize)) normalize=match.call(expand.dots=TRUE)$normalize else normalize=TRUE
+  if(hasArg(normalize)) normalize=match.call(expand.dots=TRUE)$normalize else normalize = TRUE
+  if(hasArg(Multicore)) Multicore= eval.parent(match.call(expand.dots=TRUE)$Multicore) else Multicore = FALSE
+    
+    
+  if(Multicore){ 
+    if (!requireNamespace("doParallel", quietly = TRUE)) {
+      stop("Package 'doParallel' is required for Multicore=TRUE. ",
+           "Install it with install.packages('doParallel')",
+           call. = FALSE)
+    }
+    NCores <- max(2,ceiling(0.3*(parallel::detectCores())))
+    rcl <- parallel::makeCluster(NCores)
+    doParallel::registerDoParallel(rcl)
+  } else{ 
+    foreach::registerDoSEQ()
+    rcl <- NULL
+  }
+    
+  workers <- foreach::getDoParWorkers()
+  message("Parallel workers = ", workers)
+  
+  
   switch(rp_method,
          sample = {rp <- rp_sample(portfolio, permutations)
                    },
@@ -437,8 +462,19 @@ random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=1
   if(eliminate){
     # eliminate portfolios that do not satisfy constraints
     check <- vector("numeric", nrow(rp))
-    for(i in 1:nrow(rp)){
-      check[i] <- check_constraints(weights=rp[i,], portfolio=portfolio)
+    # for(i in 1:nrow(rp)){
+    #   check[i] <- check_constraints(weights=rp[i,], portfolio=portfolio)
+    # }
+    # We probably don't need or want to do this part in parallel. It could
+    # also interfere with optimize.portfolio.parallel since this function 
+    # will likely be called. Not sure how foreach handles nested loops 
+    # in parallel so it is best to avoid that altogether.
+    stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
+    
+    i <- NULL
+    check <- foreach::foreach(i=1:nrow(rp), .combine=c, .multicombine = TRUE, .packages = c("PortfolioAnalytics")) %dopar% {
+    #  # check_constraint returns TRUE if all constraints are satisfied
+      check_constraints(weights = rp[i,], portfolio=portfolio)
     }
     # We probably don't need or want to do this part in parallel. It could
     # also interfere with optimize.portfolio.parallel since this function 
@@ -451,6 +487,12 @@ random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=1
     #}
     rp <- rp[which(check==TRUE),]
   }
+  
+  if (!is.null(rcl)){
+    parallel::stopCluster(rcl)
+    foreach::registerDoSEQ()
+  }
+  
   return(rp)
 }
 
@@ -476,14 +518,31 @@ rp_sample <- function(portfolio, permutations, max_permutations=200){
   result[2,] <- rep(1/length(seed),length(seed))
   # rownames(result)[1]<-"seed.portfolio"
   # rownames(result)[2]<-"equal.weight"
-  for(i in 3:permutations) {
-    #result[i,] <- as.matrix(randomize_portfolio_v2(portfolio=portfolio, ...))
-    result[i,] <- randomize_portfolio_v2(portfolio=portfolio, max_permutations=max_permutations)
+  
+  if("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE)){
+  
+    
+  result[3:permutations,] <- foreach::foreach(i=1:(permutations-2), .combine="rbind", .inorder = FALSE, .multicombine = TRUE, .packages = c("PortfolioAnalytics")) %dopar% {
+     #  # check_constraint returns TRUE if all constraints are satisfied
+     randomize_portfolio_v2(portfolio=portfolio, max_permutations=max_permutations)
+   }
+    
+   
+   
+  # 
+  } else{
+    for(i in 3:permutations) {
+      #result[i,] <- as.matrix(randomize_portfolio_v2(portfolio=portfolio, ...))
+      result[i,] <- randomize_portfolio_v2(portfolio=portfolio, max_permutations=max_permutations)
+    }
+   
   }
-  result <- unique(result)
+  
   # i <- nrow(result)
   # result <- rbind(result, matrix(nrow=(permutations-i), ncol=length(seed)))
+  result <- unique(result)
   colnames(result) <- names(seed)
+  
   return(result)
 }
 

@@ -46,7 +46,7 @@ constraint_ROI <- function(assets=NULL, op.problem, solver=c("glpk", "quadprog")
       }
     }
   }
-  print(paste("You chose to use the ",solver[1]," solver", sep=""))
+  message("You chose to use the ", solver[1], " solver")
   return(structure(
     list(
          assets = assets,

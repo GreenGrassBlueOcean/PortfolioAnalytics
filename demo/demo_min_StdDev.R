@@ -29,7 +29,7 @@ minStdDev.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf,
                                        trace=TRUE)
 print(minStdDev.lo.ROI)
 
-plot(minStdDev.lo.ROI, risk.col="StdDev", main="Long Only Minimize Portfolio StdDev")
+# PortfolioAnalytics::plot(minStdDev.lo.ROI, risk.col="StdDev", main="Long Only Minimize Portfolio StdDev")
 
 #' It is more practical to impose box constraints on the weights of assets.
 #' Update the second constraint element with box constraints.

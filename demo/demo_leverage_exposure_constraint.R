@@ -47,7 +47,7 @@ leveraged.portf <- add.constraint(portfolio=leveraged.portf,
                                        type="weight_sum", 
                                        min_sum=0.99, max_sum=1.01)
 leveraged.portf <- add.constraint(portfolio=leveraged.portf, 
-                                       type="box", min=-0.3, max=0.8)
+                                       type="box", min= -0.2, max=0.6)
 leveraged.portf <- add.constraint(portfolio=leveraged.portf, 
                                        type="leverage_exposure", leverage=1.6)
 

@@ -64,7 +64,7 @@ chart.RiskBudget.optimize.portfolio <- function(object, ..., neighbors=NULL, ris
   # class of each objective
   obj_class <- sapply(portfolio$objectives, function(x) class(x)[1])
   
-  if(!("risk_budget_objective" %in% obj_class)) print("no risk_budget_objective")
+  if(!("risk_budget_objective" %in% obj_class)) warning("no risk_budget_objective found in portfolio")
   
   # Get the index number of the risk_budget_objectives
   rb_idx <- which(obj_class == "risk_budget_objective")

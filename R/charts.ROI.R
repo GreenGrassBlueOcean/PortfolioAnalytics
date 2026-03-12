@@ -18,7 +18,8 @@ chart.Weight.ROI <- function(object, ..., neighbors = NULL, main="Weights", las 
       minmargin = 5
     if(main=="") topmargin=1 else topmargin=4
     if(las > 1) {# set the bottom border to accommodate labels
-      bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
+      # bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
+      bottommargin <- 10
       if(bottommargin > 10 ) {
         bottommargin<-10
         columnnames<-substr(columnnames,1,19)
@@ -79,7 +80,7 @@ chart.Weight.ROI <- function(object, ..., neighbors = NULL, main="Weights", las 
 chart.Weights.optimize.portfolio.ROI <- chart.Weight.ROI
 
 
-chart.Scatter.ROI <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL, rp=FALSE){
+.chart_scatter_ROI <- function(object, ..., neighbors=NULL, return.col="mean", risk.col="ES", chart.assets=FALSE, element.color = "darkgray", cex.axis=0.8, xlim=NULL, ylim=NULL, rp=FALSE){
   
   if(!inherits(object, "optimize.portfolio.ROI")) stop("object must be of class 'optimize.portfolio.ROI'")
   
@@ -150,12 +151,12 @@ chart.Scatter.ROI <- function(object, ..., neighbors=NULL, return.col="mean", ri
 chart.RiskReward.optimize.portfolio.ROI <- chart.Scatter.ROI
 
 
-charts.ROI <- function(ROI, rp=FALSE, risk.col="ES", return.col="mean", chart.assets=FALSE, cex.axis=0.8, element.color="darkgray", neighbors=NULL, main="ROI.Portfolios", xlim=NULL, ylim=NULL, ...){
+.charts_ROI <- function(ROI, rp=FALSE, risk.col="ES", return.col="mean", chart.assets=FALSE, cex.axis=0.8, element.color="darkgray", neighbors=NULL, main="ROI.Portfolios", xlim=NULL, ylim=NULL, ...){
   # Specific to the output of the optimize_method=ROI
   op <- par(no.readonly=TRUE)
   layout(matrix(c(1,2)),heights=c(2,1.5),widths=1)
   par(mar=c(4,4,4,2))
-  chart.Scatter.ROI(object=ROI, rp=rp, return.col=return.col, risk.col=risk.col, ..., chart.assets=chart.assets, element.color=element.color, cex.axis=cex.axis, main=main, xlim=xlim, ylim=ylim)
+  .chart_scatter_ROI(object=ROI, rp=rp, return.col=return.col, risk.col=risk.col, ..., chart.assets=chart.assets, element.color=element.color, cex.axis=cex.axis, main=main, xlim=xlim, ylim=ylim)
   par(mar=c(2,4,0,2))
   chart.Weight.ROI(object=ROI, neighbors=neighbors, ..., main="", las=3, xlab=NULL, cex.lab=1, element.color=element.color, cex.axis=cex.axis)
   par(op)
@@ -165,7 +166,7 @@ charts.ROI <- function(ROI, rp=FALSE, risk.col="ES", return.col="mean", chart.as
 #' @method plot optimize.portfolio.ROI
 #' @export
 plot.optimize.portfolio.ROI <- function(x, ..., rp=FALSE, risk.col="ES", return.col="mean", chart.assets=FALSE, element.color="darkgray", neighbors=NULL, main="ROI.Portfolios", xlim=NULL, ylim=NULL){
-  charts.ROI(ROI=x, rp=rp, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, main=main, xlim=xlim, ylim=ylim, ...)
+  .charts_ROI(ROI=x, rp=rp, risk.col=risk.col, return.col=return.col, chart.assets=chart.assets, main=main, xlim=xlim, ylim=ylim, ...)
 }
 
 

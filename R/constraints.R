@@ -13,7 +13,12 @@
 #' @rdname constraint
 #' @export
 constraint_v1 <- function(assets=NULL, ... ,min,max,min_mult,max_mult,min_sum=.99,max_sum=1.01,weight_seq=NULL)
-{ # based on GPL R-Forge pkg roi by Stefan Thuessel,Kurt Hornik,David Meyer
+{
+  .Deprecated("portfolio.spec", package = "PortfolioAnalytics",
+              msg = paste("'constraint_v1' is deprecated.",
+                          "Use 'portfolio.spec()' with 'add.constraint()' and 'add.objective()' instead.",
+                          "See help('portfolio.spec').", sep = "\n"))
+  # based on GPL R-Forge pkg roi by Stefan Thuessel,Kurt Hornik,David Meyer
   if (hasArg(min) & hasArg(max)) {
     if (is.null(assets) & (!length(min)>1) & (!length(max)>1)) {
       stop("You must either specify the assets or pass a vector for both min and max")
@@ -182,18 +187,18 @@ constraint <- constraint_v2 <- function(type, enabled=TRUE, ..., constrclass="v2
 #' 
 #' The following constraint types may be specified:
 #' \describe{
-#' \item{\code{weight_sum}, \code{weight}, \code{leverage}}{ Specify constraint on the sum of the weights, see \code{\link{weight_sum_constraint}} }
-#' \item{\code{full_investment}}{ Special case to set \code{min_sum=1} and \code{max_sum=1} of weight sum constraints }
-#' \item{\code{dollar_neutral}, \code{active}}{ Special case to set \code{min_sum=0} and \code{max_sum=0} of weight sum constraints }
-#' \item{\code{box}}{ box constraints for the individual asset weights, see \code{\link{box_constraint}} }
-#' \item{\code{long_only}}{ Special case to set \code{min=0} and \code{max=1} of box constraints }
-#' \item{\code{group}}{ specify the sum of weights within groups and the number of assets with non-zero weights in groups, see \code{\link{group_constraint}} }
-#' \item{\code{turnover}}{ Specify a constraint for target turnover. Turnover is calculated from a set of initial weights, see \code{\link{turnover_constraint}} }
-#' \item{\code{diversification}}{ target diversification of a set of weights, see \code{\link{diversification_constraint}} }
-#' \item{\code{position_limit}}{ Specify the number of non-zero, long, and/or short positions, see \code{\link{position_limit_constraint}} }
-#' \item{\code{return}}{ Specify the target mean return, see \code{\link{return_constraint}}}
-#' \item{\code{factor_exposure}}{ Specify risk factor exposures, see \code{\link{factor_exposure_constraint}}}
-#' \item{\code{leverage_exposure}}{ Specify a maximum leverage exposure, see \code{\link{leverage_exposure_constraint}}}
+#'   \item{weight_sum, weight, leverage}{Specify constraint on the sum of the weights, see \code{\link{weight_sum_constraint}}}
+#'   \item{full_investment}{Special case to set \code{min_sum=1} and \code{max_sum=1} of weight sum constraints}
+#'   \item{dollar_neutral, active}{Special case to set \code{min_sum=0} and \code{max_sum=0} of weight sum constraints}
+#'   \item{box}{box constraints for the individual asset weights, see \code{\link{box_constraint}}}
+#'   \item{long_only}{Special case to set \code{min=0} and \code{max=1} of box constraints}
+#'   \item{group}{specify the sum of weights within groups and the number of assets with non-zero weights in groups, see \code{\link{group_constraint}}}
+#'   \item{turnover}{Specify a constraint for target turnover. Turnover is calculated from a set of initial weights, see \code{\link{turnover_constraint}}}
+#'   \item{diversification}{target diversification of a set of weights, see \code{\link{diversification_constraint}}}
+#'   \item{position_limit}{Specify the number of non-zero, long, and/or short positions, see \code{\link{position_limit_constraint}}}
+#'   \item{return}{Specify the target mean return, see \code{\link{return_constraint}}}
+#'   \item{factor_exposure}{Specify risk factor exposures, see \code{\link{factor_exposure_constraint}}}
+#'   \item{leverage_exposure}{Specify a maximum leverage exposure, see \code{\link{leverage_exposure_constraint}}}
 #' }
 #' 
 #' @param portfolio an object of class 'portfolio' to add the constraint to, specifying the constraints for the optimization, see \code{\link{portfolio.spec}}

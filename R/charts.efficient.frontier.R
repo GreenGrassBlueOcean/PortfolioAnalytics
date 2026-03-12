@@ -59,7 +59,7 @@
 #' @rdname chart.EfficientFrontier
 #' @export
 chart.EfficientFrontier <- function(object, ...){
-  UseMethod("chart.EfficientFrontier")
+  UseMethod("chart.EfficientFrontier", object = object)
 }
 
 #' @rdname chart.EfficientFrontier
@@ -199,7 +199,7 @@ chart.EfficientFrontier.optimize.portfolio.ROI <- function(object, ..., optimize
   columnames <- names(xtract)
   if(!(("mean") %in% columnames)){
     # we need to calculate the mean given the optimal weights
-    opt_ret <- applyFUN(R=R, weights=wts, FUN="mean")
+    opt_ret <- applyFUN(R=R, weights=wts, FUN="mean", arguments = NULL)
   } else {
     opt_ret <- xtract["mean"]
   }
@@ -210,7 +210,7 @@ chart.EfficientFrontier.optimize.portfolio.ROI <- function(object, ..., optimize
   }
   if(is.na(mtc)){
     # if(is.na(mtc)) stop("could not match match.col with column name of extractStats output")
-    opt_risk <- applyFUN(R=R, weights=wts, FUN=match.col)
+    opt_risk <- applyFUN(R=R, weights=wts, FUN=match.col, arguments = NULL)
   } else {
     opt_risk <- xtract[mtc]
   }
@@ -285,6 +285,9 @@ chart.EfficientFrontier.optimize.portfolio.ROI <- function(object, ..., optimize
 
 #' @rdname chart.EfficientFrontier
 #' @method chart.EfficientFrontier optimize.portfolio
+=======
+# #' @S3method chart.EfficientFrontier optimize.portfolio
+>>>>>>> theirs
 #' @export
 chart.EfficientFrontier.optimize.portfolio <- function(object, ..., match.col="ES", n.portfolios=25, xlim=NULL, ylim=NULL, cex.axis=0.8, element.color="darkgray", main="Efficient Frontier", RAR.text="SR", rf=0, tangent.line=TRUE, cex.legend=0.8, chart.assets=TRUE, labels.assets=TRUE, pch.assets=21, cex.assets=0.8){
   # This function will work with objects of class optimize.portfolio.DEoptim,

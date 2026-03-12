@@ -160,6 +160,7 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
     obj_vals[["StdDev"]] <- port.sd
   }
   out$obj_vals <- obj_vals
+  out$solver_message <- result$message
   # out$out <- result$objval # ROI
   # out$call <- call # need to get the call outside of the function
   return(out)
@@ -268,6 +269,7 @@ maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=N
   names(port.mean) <- "mean"
   obj_vals[["mean"]] <- port.mean
   out$obj_vals <- obj_vals
+  out$solver_message <- roi.result$message
   # out$call <- call # need to get the call outside of the function
   return(out)
 }
@@ -395,6 +397,8 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
   names(port.mean) <- "mean"
   obj_vals[["mean"]] <- port.mean
   out$obj_vals <- obj_vals
+  # MILP duals are not reliably available from ROI
+  out$solver_message <- NULL
   return(out)
 }
 
@@ -494,6 +498,7 @@ etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", contr
     obj_vals[[es_names[es_idx]]] <- port.es
   }
   out$obj_vals <- obj_vals
+  out$solver_message <- roi.result$message
   return(out)
 }
 
@@ -652,6 +657,8 @@ etl_milp_opt <- function(R, constraints, moments, target, alpha, solver="glpk", 
     obj_vals[[es_names[es_idx]]] <- port.es
   }
   out$obj_vals <- obj_vals
+  # MILP duals are not reliably available from ROI
+  out$solver_message <- NULL
   return(out)
 }
 
@@ -811,6 +818,7 @@ gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, s
     obj_vals[["StdDev"]] <- port.sd
   }
   out$obj_vals <- obj_vals
+  out$solver_message <- roi.result$message
   return(out)
 }
 
@@ -975,6 +983,9 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
     obj_vals[["StdDev"]] <- port.sd
   }
   out$obj_vals <- obj_vals
+=======
+  out$solver_message <- roi.result$message
+>>>>>>> theirs
   return(out)
 }
 
@@ -1131,6 +1142,7 @@ gmv_opt_leverage <- function(R, constraints, moments, lambda, target, solver="qu
     obj_vals[["StdDev"]] <- port.sd
   }
   out$obj_vals <- obj_vals
+  out$solver_message <- roi.result$message
   return(out)
 }
 

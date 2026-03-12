@@ -16,6 +16,7 @@ funds <- colnames(R)
 #' Construct initial portfolio with basic constraints.
 init.portf <- portfolio.spec(assets=funds)
 init.portf <- add.constraint(portfolio=init.portf, type="full_investment")
+init.portf <- add.constraint(init.portf, type = "weight_sum", min_sum=0.99, max_sum=1.01)
 init.portf <- add.constraint(portfolio=init.portf, type="long_only")
 init.portf <- add.objective(portfolio=init.portf, type="return", name="mean")
 init.portf <- add.objective(portfolio=init.portf, type="risk", name="StdDev")
@@ -30,10 +31,11 @@ init.portf
 #' optimize_method="ROI" is to maximize quadratic utility. If we want to maximize
 #' Sharpe Ratio, we need to pass in maxSR=TRUE to optimize.portfolio.
 
-maxSR.lo.ROI <- optimize.portfolio(R=R, portfolio=init.portf, 
-                                   optimize_method="ROI", 
-                                   maxSR=TRUE, trace=TRUE)
-maxSR.lo.ROI
+#' Although the maximum Sharpe Ratio objective can be solved quickly and accurately
+#' with optimize_method="ROI", it is also possible to solve this optimization
+#' problem using other solvers such as random portfolios or DEoptim. These
+#' solvers have the added flexibility of using different methods to calculate
+#' the Sharpe Ratio (e.g. we could specify annualized measures of risk and return).
 
 #' Although the maximum Sharpe Ratio objective can be solved quickly and accurately
 #' with optimize_method="ROI", it is also possible to solve this optimization

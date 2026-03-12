@@ -1,0 +1,7 @@
+linters: list(
+    lintr::print_linter()
+  )
+exclusions: list(
+    "R/generics.R",
+    "demo"
+  )

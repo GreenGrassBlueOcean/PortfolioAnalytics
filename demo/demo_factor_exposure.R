@@ -154,7 +154,7 @@ optrp1 <- optimize.portfolio(R=ret, portfolio=pspec,
                            constraints=list(lev_constr, lo_constr, grp_constr), 
                            objectives=list(ret_obj), 
                            optimize_method="random", 
-                           search_size=2000, 
+                           search_size=20000, 
                            trace=TRUE)
 optrp1
 

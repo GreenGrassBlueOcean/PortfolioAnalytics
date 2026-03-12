@@ -37,6 +37,9 @@ Suggests:
     ROI (>= 0.1.0),
     ROI.plugin.glpk (>= 0.0.2),
     ROI.plugin.quadprog (>= 0.0.2),
+    ROI.plugin.symphony (>= 0.0.2),
+    pso,
+    GenSA,
     corpcor,
     testthat,
     nloptr (>= 1.0.0),
@@ -53,14 +56,16 @@ Suggests:
     R.rsp,
     RPESE,
     TTR,
-    Matrix
+    Matrix,
+    FRAPO,
+    Rsolnp,
+    snow,
+    doSNOW,
+    lintr
 VignetteBuilder: R.rsp
 Imports:
     methods,
-    GenSA,
-    ROI.plugin.symphony,
-    mco,
-    pso
+    mco
 License: GPL-3
 URL: https://github.com/braverock/PortfolioAnalytics
 Copyright: (c) 2004-2026

@@ -2,6 +2,9 @@
 
 #' @rdname chart.Weights
 #' @method chart.Weights opt.list
+=======
+# #' @S3method chart.Weights opt.list
+>>>>>>> theirs
 #' @export
 chart.Weights.opt.list <- function(object, neighbors=NULL, ..., main="Weights", las=3, xlab=NULL, cex.lab=1, element.color="darkgray", cex.axis=0.8, colorset=NULL, legend.loc="topright", cex.legend=0.8, plot.type="line"){
   if(!inherits(object, "opt.list")) stop("object must be of class 'opt.list'")

@@ -13,12 +13,16 @@ library(ROI)
 require(ROI.plugin.glpk)
 require(ROI.plugin.quadprog)
 data(edhec)
-ret <- edhec[, 1:4]
+ret <- edhec #[, 1:4]
 
 #' Create an initial portfolio object with basic constraints.
 init.portf <- portfolio.spec(assets=colnames(ret))
 init.portf <- add.constraint(portfolio=init.portf, type="full_investment")
+init.portf <- add.constraint(portfolio=init.portf, type = "weight_sum", min_sum= 0.99, max_sum= 1.01) 
 init.portf <- add.constraint(portfolio=init.portf, type="long_only")
+init.portf <- add.objective(portfolio=init.portf, type="risk"
+                               , name="StdDev", multiplier=0)
+
 
 #' Add mean return objective with target return.
 ret.obj.portf <- add.objective(portfolio=init.portf, type="return", 
@@ -46,14 +50,14 @@ ret.constr.opt
 ret.obj.portf$constraints[[1]]$min_sum <- 0.99
 ret.obj.portf$constraints[[1]]$max_sum <- 1.01
 
-ret.constr.portf$constraints[[1]]$min_sum <- 0.99
-ret.constr.portf$constraints[[1]]$max_sum <- 1.01
 
 #' Run the optimizations using DEoptim as the optimization engine.
 set.seed(123)
 opt.obj.de <- optimize.portfolio(R=ret, portfolio=ret.obj.portf, 
                                  optimize_method="DEoptim", search_size=2000, traceDE=5)
 opt.obj.de
+
+chart.RiskReward(object = opt.obj.de, return.col = "mean", risk.col = "StdDev")
 
 # run optimization with DEoptim using ret.constr.portf
 set.seed(123)
