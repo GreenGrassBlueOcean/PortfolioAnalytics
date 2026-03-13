@@ -25,9 +25,9 @@ test_that("colnames(meanvar.ef$frontier) are consistent",
 test_that("meanvar.ef weights are feasible and sum to ~1", {
   wt_cols <- grep("^w\\.", colnames(meanvar.ef$frontier), value = TRUE)
   weights <- meanvar.ef$frontier[, wt_cols]
-  # Weights within box constraints (0.15 to 0.45, relaxed slightly for solver tolerance)
-  expect_true(all(weights >= 0.15 - 1e-6))
-  expect_true(all(weights <= 0.45 + 1e-6))
+  # Weights within box constraints (0.15 to 0.45, relaxed for SCS solver tolerance)
+  expect_true(all(weights >= 0.15 - 1e-3))
+  expect_true(all(weights <= 0.45 + 1e-3))
   # Each row sums to ~1
   row_sums <- rowSums(weights)
   expect_true(all(abs(row_sums - 1) < 0.02))
