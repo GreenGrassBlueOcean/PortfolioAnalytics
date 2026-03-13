@@ -1,5 +1,8 @@
 # PortfolioAnalytics (GreenGrassBlueOcean Fork)
 
+[![R-CMD-check](https://github.com/GreenGrassBlueOcean/PortfolioAnalytics/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/GreenGrassBlueOcean/PortfolioAnalytics/actions/workflows/R-CMD-check.yaml)
+[![test-coverage](https://github.com/GreenGrassBlueOcean/PortfolioAnalytics/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/GreenGrassBlueOcean/PortfolioAnalytics/actions/workflows/test-coverage.yaml)
+
 Portfolio optimization in R with support for complex constraints, multiple objectives, and multiple solver backends.
 
 This is a modernized fork of [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics), adding production-grade error handling, modular solver architecture, comprehensive testing, and modern CI/CD infrastructure — while preserving full backward compatibility with existing code.
