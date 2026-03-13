@@ -52,18 +52,6 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
   constraints <- get_constraints(portfolio)
   min_sum <- constraints$min_sum
   max_sum <- constraints$max_sum
-  # rp_transform will rarely find a feasible portfolio if there is not some 
-  # 'wiggle room' between min_sum and max_sum
-  if((max_sum - min_sum) < 0.02){
-    min_sum <- min_sum - 0.01
-    max_sum <- max_sum + 0.01
-  }
-  
-  weight_seq <- portfolio$weight_seq
-  if(is.null(weight_seq)){
-    weight_seq <- generatesequence(min=min(constraints$min), max=max(constraints$max), by=0.002)
-  }
-  weight_seq <- as.vector(weight_seq)
   
   min <- constraints$min
   max <- constraints$max
@@ -1157,9 +1145,6 @@ rp_position_limit <- function(weights, max_pos=NULL, max_pos_long=NULL, max_pos_
 
 
 ###############################################################################
-# R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
-#
-# Copyright (c) 2004-2021 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 # Deterministic Constraint Repair via Dykstra's Alternating Projection
 #
 # For convex constraint sets (box + weight_sum + group), Dykstra's algorithm
