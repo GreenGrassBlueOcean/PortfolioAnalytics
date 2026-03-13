@@ -144,11 +144,11 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
       if (methods::hasArg(EQSratio)) EQSratio <- match.call(expand.dots = TRUE)$EQSratio else EQSratio <- TRUE
     }
     if (EQSratio) {
-      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(square(CVXR::pos(X %*% wts)) - zeta))
+      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(CVXR::square(CVXR::pos(X %*% wts)) - zeta))
       constraints_cvxr <- list(t(mean_value) %*% wts == 1, sum(wts) >= 0)
       tmpname <- "EQS ratio"
     } else {
-      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(square(CVXR::pos(X %*% wts)) - zeta))
+      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(CVXR::square(CVXR::pos(X %*% wts)) - zeta))
       constraints_cvxr <- list()
       tmpname <- "EQS"
     }
@@ -232,14 +232,26 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   # --- Solve ---
   prob_cvxr <- CVXR::Problem(CVXR::Minimize(obj), constraints = constraints_cvxr)
 
+  # Filter ... to only pass CVXR-compatible args (not our internal ones like
+  # warm_start, optimize_method, etc.)
+  cvxr_solve_args <- intersect(
+    names(dots),
+    c("verbose", "feastol", "reltol", "abstol", "num_iter")
+  )
+  cvxr_dots <- dots[cvxr_solve_args]
+
+  .cvxr_solve <- function(prob, solver) {
+    do.call(CVXR::solve, c(list(a = prob, solver = solver), cvxr_dots))
+  }
+
   if (cvxr_default) {
     if ((risk || maxSR) && !risk_HHI) {
-      result_cvxr <- CVXR::solve(prob_cvxr, solver = "OSQP", ... = ...)
+      result_cvxr <- .cvxr_solve(prob_cvxr, "OSQP")
     } else {
-      result_cvxr <- CVXR::solve(prob_cvxr, solver = "SCS", ... = ...)
+      result_cvxr <- .cvxr_solve(prob_cvxr, "SCS")
     }
   } else {
-    result_cvxr <- CVXR::solve(prob_cvxr, solver = optimize_method, ... = ...)
+    result_cvxr <- .cvxr_solve(prob_cvxr, optimize_method)
   }
 
   # --- Extract results ---

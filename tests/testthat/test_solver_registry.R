@@ -6,6 +6,9 @@ library(PortfolioAnalytics)
 
 context("Solver registry and dispatch")
 
+# Use namespace-qualified get_solver to avoid devtools::load_all() shim issues
+get_solver <- PortfolioAnalytics:::get_solver
+
 # ---- Registry lookup ----
 
 test_that("get_solver finds all built-in solvers", {

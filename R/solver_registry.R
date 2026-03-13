@@ -55,7 +55,9 @@ register_solver <- function(name, fn) {
   if (!is.function(fn)) {
     stop("'fn' must be a function")
   }
-  assign(name, fn, envir = .solver_user_registry)
+  # Always use the namespace's registry to avoid devtools::load_all() shim issues
+  reg <- .get_user_registry()
+  assign(name, fn, envir = reg)
   invisible(NULL)
 }
 
@@ -65,20 +67,26 @@ register_solver <- function(name, fn) {
 #' @return The solver function, or NULL if not found.
 #' @keywords internal
 get_solver <- function(name) {
+  ns <- asNamespace("PortfolioAnalytics")
   # Check built-in dispatch table first
-  if (name %in% names(.solver_dispatch)) {
-    fn_name <- .solver_dispatch[[name]]
-    ns <- asNamespace("PortfolioAnalytics")
+  dispatch <- get(".solver_dispatch", envir = ns, inherits = FALSE)
+  if (name %in% names(dispatch)) {
+    fn_name <- dispatch[[name]]
     if (exists(fn_name, envir = ns, inherits = FALSE)) {
       return(get(fn_name, envir = ns, inherits = FALSE))
     }
   }
   # Check user-registered solvers
-
-  if (exists(name, envir = .solver_user_registry, inherits = FALSE)) {
-    return(get(name, envir = .solver_user_registry, inherits = FALSE))
+  reg <- .get_user_registry()
+  if (exists(name, envir = reg, inherits = FALSE)) {
+    return(get(name, envir = reg, inherits = FALSE))
   }
   NULL
+}
+
+# Always resolve the user registry from the namespace, not the closure
+.get_user_registry <- function() {
+  get(".solver_user_registry", envir = asNamespace("PortfolioAnalytics"), inherits = FALSE)
 }
 
 
