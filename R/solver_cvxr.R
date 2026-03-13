@@ -255,7 +255,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   }
 
   # --- Extract results ---
-  cvxr_wts <- result_cvxr$getValue(wts)
+  cvxr_wts <- CVXR::value(wts)
   if (maxSR | maxSTARR | CSMratio) cvxr_wts <- cvxr_wts / sum(cvxr_wts)
   cvxr_wts <- as.vector(cvxr_wts)
 
@@ -267,6 +267,12 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
       cvxr_wts <- (cvxr_wts / sum(cvxr_wts)) * min_sum
     }
   }
+  # Clamp weights to box constraints to correct for solver tolerance
+  if (!is.null(constraints$min) && !is.null(constraints$max)) {
+    cvxr_wts <- pmax(cvxr_wts, constraints$min)
+    cvxr_wts <- pmin(cvxr_wts, constraints$max)
+  }
+
   names(cvxr_wts) <- colnames(R)
 
   # Build objective measures
@@ -290,10 +296,10 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
       obj_cvxr[["StdDev"]] <- sqrt(t(cvxr_wts) %*% sigma_value %*% cvxr_wts)
       obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["StdDev"]]
     } else if (maxSTARR) {
-      obj_cvxr[["ES"]] <- result_cvxr$value / sum(result_cvxr$getValue(wts))
+      obj_cvxr[["ES"]] <- result_cvxr$value / sum(CVXR::value(wts))
       obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["ES"]]
     } else if (CSMratio) {
-      obj_cvxr[["CSM"]] <- result_cvxr$value / sum(result_cvxr$getValue(wts))
+      obj_cvxr[["CSM"]] <- result_cvxr$value / sum(CVXR::value(wts))
       obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["CSM"]]
     }
   }
