@@ -169,8 +169,13 @@ constraint_v1 <- function(assets=NULL, ... ,min,max,min_mult,max_mult,min_sum=.9
 #' @export constraint
 #' @export constraint_v2
 constraint <- constraint_v2 <- function(type, enabled=TRUE, ..., constrclass="v2_constraint"){
-  if(!hasArg(type)) stop("you must specify a constraint type")
-  if (hasArg(type)) if(is.null(type)) stop("you must specify a constraint type")
+  if(!hasArg(type) || is.null(type)) {
+    # Detect v1-style calls: constraint(assets=..., min=..., max=...) without type
+    if(hasArg(assets)) {
+      return(constraint_v1(...))
+    }
+    stop("you must specify a constraint type")
+  }
   
   ## now structure and return
   return(structure( c(list(type = type,

@@ -77,6 +77,12 @@ chart.RiskBudget(rbStdDev.DE, risk.type="pct_contrib")
 #' Generate random portfolios.
 rp <- random_portfolios(init.portf, 5000)
 
+#' Add objective to maximize mean return with limits on StdDev risk contribution
+#' for the rebalancing backtest.
+SDRB.portf <- add.objective(portfolio=init.portf, type="return", name="mean")
+SDRB.portf <- add.objective(portfolio=SDRB.portf, type="risk_budget",
+                                name="StdDev", max_prisk=0.3)
+
 #' Run out of sample backtest with yearly rebalancing.
 SDRB.opt.bt <- optimize.portfolio.rebalancing(R, SDRB.portf,
                                               optimize_method="random", 

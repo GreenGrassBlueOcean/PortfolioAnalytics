@@ -53,7 +53,7 @@ ret.obj.portf$constraints[[1]]$max_sum <- 1.01
 
 #' Run the optimizations using DEoptim as the optimization engine.
 set.seed(123)
-opt.obj.de <- optimize.portfolio(R=ret, portfolio=ret.obj.portf, 
+opt.obj.de <- optimize.portfolio(R=ret, portfolio=ret.obj.portf, trace=TRUE,
                                  optimize_method="DEoptim", search_size=2000, traceDE=5)
 opt.obj.de
 
