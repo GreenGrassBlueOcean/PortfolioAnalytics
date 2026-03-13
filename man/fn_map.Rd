@@ -4,7 +4,14 @@
 \alias{fn_map}
 \title{mapping function to transform or penalize weights that violate constraints}
 \usage{
-fn_map(weights, portfolio, relax = FALSE, verbose = FALSE, ...)
+fn_map(
+  weights,
+  portfolio,
+  relax = FALSE,
+  verbose = FALSE,
+  method = c("projection", "rp_transform"),
+  ...
+)
 }
 \arguments{
 \item{weights}{vector of weights}
@@ -15,15 +22,25 @@ fn_map(weights, portfolio, relax = FALSE, verbose = FALSE, ...)
 
 \item{verbose}{print error messages for debuggin purposes}
 
+\item{method}{character, one of \code{"projection"} (default) or
+\code{"rp_transform"}. When \code{"projection"}, uses Dykstra's
+alternating projection algorithm for deterministic, nearest-point repair
+of convex constraint sets (box + weight_sum + group). Falls back to
+\code{rp_transform} automatically for non-convex constraints (position
+limits, leverage) or if projection fails to converge. When
+\code{"rp_transform"}, uses the legacy random perturbation method
+exclusively.}
+
 \item{\dots}{any other passthru parameters}
 }
 \value{
+A list with components:
 \describe{
-\item{weights:}{vector of transformed weights meeting constraints.}
-\item{min: }{vector of min box constraints that may have been modified if relax=TRUE.}
-\item{max: }{vector of max box constraints that may have been modified if relax=TRUE.}
-\item{cLO: }{vector of lower bound group constraints that may have been modified if relax=TRUE.}
-\item{cUP: }{vector of upper bound group constraints that may have been modified if relax=TRUE.}
+  \item{weights}{vector of transformed weights meeting constraints.}
+  \item{min}{vector of min box constraints that may have been modified if relax=TRUE.}
+  \item{max}{vector of max box constraints that may have been modified if relax=TRUE.}
+  \item{cLO}{vector of lower bound group constraints that may have been modified if relax=TRUE.}
+  \item{cUP}{vector of upper bound group constraints that may have been modified if relax=TRUE.}
 }
 }
 \description{

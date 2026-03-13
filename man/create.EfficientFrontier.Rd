@@ -54,7 +54,7 @@ Currently there are 4 'types' supported to create an efficient frontier:
   objectives, they will be added using default parameters.
   The efficient frontier will be created via
   \code{\link{meanvar.efficient.frontier}}.}
-  \item{"mean-ETL", "mean-ES", "mean-CVaR", "mean-etl":}{ This is a special 
+  \item{"mean-ETL", "mean-ES", "mean-CVaR", "mean-etl"}{This is a special 
   case for an efficient frontier that can be created by an LP solver.
   The \code{portfolio} object should have two objectives: 1) mean
   and 2) ETL/ES/CVaR. If the portfolio object does not contain these 
@@ -76,7 +76,7 @@ Currently there are 4 'types' supported to create an efficient frontier:
   call \code{\link{optimize.portfolio}} with \code{optimize_method="DEoptim"}
   and then extract the efficient frontier with 
   \code{extract.efficient.frontier}.}
-  \item{"random":}{ This can handle more complex constraints and objectives
+  \item{"random"}{This can handle more complex constraints and objectives
   than the simple mean-var and mean-ETL cases. For this type, we actually 
   call \code{\link{optimize.portfolio}} with \code{optimize_method="random"}
   and then extract the efficient frontier with 

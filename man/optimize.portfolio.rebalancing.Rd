@@ -23,14 +23,15 @@ optimize.portfolio.rebalancing(
   portfolio = NULL,
   constraints = NULL,
   objectives = NULL,
-  optimize_method = c("DEoptim", "random", "ROI", "CVXR"),
+  optimize_method = c("DEoptim", "random", "ROI"),
   search_size = 20000,
   trace = FALSE,
   ...,
   rp = NULL,
   rebalance_on = NULL,
   training_period = NULL,
-  rolling_window = NULL
+  rolling_window = NULL,
+  warm_start = FALSE
 )
 }
 \arguments{
@@ -63,16 +64,21 @@ using the data from inception.}
 and objectives for the optimization}
 
 \item{objectives}{default NULL, a list of objective objects}
+
+\item{warm_start}{logical, default \code{FALSE}. If \code{TRUE}, each
+rebalancing window is seeded with the optimal weights from the previous
+window. This forces sequential execution (overrides parallel) and can
+significantly reduce convergence time for stochastic solvers.}
 }
 \value{
 a list containing the following elements
 \describe{
-  \item{\code{portfolio}:}{ The portfolio object.}
-  \item{\code{R}:}{ The asset returns.}
-  \item{\code{call}:}{ The function call.}
-  \item{\code{elapsed_time:}}{ The amount of time that elapses while the 
+  \item{portfolio}{The portfolio object.}
+  \item{R}{The asset returns.}
+  \item{call}{The function call.}
+  \item{elapsed_time}{The amount of time that elapses while the 
   optimization is run.}
-  \item{\code{opt_rebalancing:}}{ A list of \code{optimize.portfolio} 
+  \item{opt_rebalancing}{A list of \code{optimize.portfolio} 
   objects computed at each rebalancing period.}
 }
 }
@@ -95,26 +101,17 @@ specified, then \code{training_period} is set to the value of
 
 The user should be aware of the following behavior when both 
 \code{training_period} and \code{rolling_window} are specified and have 
-different values
+different values:
 \describe{
-  \item{\code{training_period < rolling_window}: }{For example, if you have 
+  \item{training_period < rolling_window}{For example, if you have 
   \code{rolling_window=60}, \code{training_period=50}, and the periodicity 
   of the data is the same as the rebalance frequency (i.e. monthly data with 
-  \code{rebalance_on="months")} then the returns data used in the optimization 
-  at each iteration are as follows:
-  \itemize{
-  \item 1: R[1:50,]
-  \item 2: R[1:51,]
-  \item ...
-  \item 11: R[1:60,]
-  \item 12: R[1:61,]
-  \item 13: R[2:62,]
-  \item ...
-  }
+  \code{rebalance_on="months"}) then the returns data used in the optimization 
+  at each iteration starts as R[1:50,], then R[1:51,], ..., R[1:60,], 
+  R[1:61,], R[2:62,], etc.
   This results in a growing window for several optimizations initially while
-  the endpoint iterator (i.e. \code{[50, 51, ...]}) is less than the 
-  rolling window width.}
-  \item{\code{training_period > rolling_window}: }{The data used in the initial 
+  the endpoint iterator is less than the rolling window width.}
+  \item{training_period > rolling_window}{The data used in the initial 
   optimization is \code{R[(training_period - rolling_window):training_period,]}. 
   This results in some of the data being "thrown away", i.e. periods 1 to 
   \code{(training_period - rolling_window - 1)} are not used in the optimization.}

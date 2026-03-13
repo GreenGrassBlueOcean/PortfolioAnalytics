@@ -21,6 +21,7 @@ repeatedly calls \code{\link{randomize_portfolio}} to generate an
 arbitrary number of constrained random portfolios.
 }
 \examples{
+\dontrun{
 rpconstraint<-constraint_v1(assets=10, 
                          min_mult=-Inf, 
                          max_mult=Inf, 
@@ -32,6 +33,7 @@ rpconstraint<-constraint_v1(assets=10,
                          
 rp<- random_portfolios_v1(rpconstraints=rpconstraint,permutations=1000)
 head(rp)
+}
 }
 \seealso{
 \code{\link{constraint}}, \code{\link{objective}}, \code{\link{randomize_portfolio}}
