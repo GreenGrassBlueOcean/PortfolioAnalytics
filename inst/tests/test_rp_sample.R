@@ -17,7 +17,7 @@ init.portf <- add.constraint(init.portf, type="box",
 # generate portfolios to satisfy weight_sum and box constraints
 rp1 <- random_portfolios(init.portf, 1000, eliminate=FALSE)
 test_that("we have created at least 1 feasible portfolio to satisfy weight_sum and box constraints", {
-  expect_that(any(apply(rp1, 1, PortfolioAnalytics:::check_constraints, portfolio=group.portf)), is_true())
+  expect_true(any(apply(rp1, 1, PortfolioAnalytics:::check_constraints, portfolio=init.portf)))
 })
 
 # portfolio with group constraints
@@ -30,7 +30,7 @@ group.portf <- add.constraint(init.portf, type="group",
 # generate portfolios to satisfy weight_sum, box, and group constraints
 rp2 <- random_portfolios(group.portf, 1000, eliminate=FALSE)
 test_that("we have created at least 1 feasible portfolio to satisfy weight_sum, box, and group constraints", {
-  expect_that(any(apply(rp2, 1, PortfolioAnalytics:::check_constraints, portfolio=group.portf)), is_true())
+  expect_true(any(apply(rp2, 1, PortfolioAnalytics:::check_constraints, portfolio=group.portf)))
 })
 
 # add leverage exposure constraint
@@ -40,7 +40,7 @@ lev.portf <- add.constraint(init.portf, type="leverage_exposure",
 # generate portfolios to satisfy weight_sum, box, and leverage constraints
 rp3 <- random_portfolios(lev.portf, 1000, eliminate=FALSE)
 test_that("we have created at least 1 feasible portfolio to satisfy weight_sum, box, and leverage constraints", {
-  expect_that(any(apply(rp3, 1, PortfolioAnalytics:::check_constraints, portfolio=group.portf)), is_true())
+  expect_true(any(apply(rp3, 1, PortfolioAnalytics:::check_constraints, portfolio=lev.portf)))
 })
 
 # add position limit constraint
@@ -50,7 +50,7 @@ pos1.portf <- add.constraint(init.portf, type="position_limit",
 # generate portfolios to satisfy weight_sum, box, and position limit constraints
 rp4 <- random_portfolios(pos1.portf, 1000, eliminate=FALSE)
 test_that("we have created at least 1 feasible portfolio to satisfy weight_sum, box, and position limit constraints", {
-  expect_that(any(apply(rp4, 1, PortfolioAnalytics:::check_constraints, portfolio=group.portf)), is_true())
+  expect_true(any(apply(rp4, 1, PortfolioAnalytics:::check_constraints, portfolio=pos1.portf)))
 })
 
 # add position limit constraint with long and short position limits
@@ -60,6 +60,5 @@ pos2.portf <- add.constraint(init.portf, type="position_limit",
 # generate portfolios to satisfy weight_sum, box, and position limit constraints
 rp5 <- random_portfolios(pos2.portf, 1000, eliminate=FALSE)
 test_that("we have created at least 1 feasible portfolio to satisfy weight_sum, box, and long/short position limit constraints", {
-  expect_that(any(apply(rp5, 1, PortfolioAnalytics:::check_constraints, portfolio=group.portf)), is_true())
+  expect_true(any(apply(rp5, 1, PortfolioAnalytics:::check_constraints, portfolio=pos2.portf)))
 })
-
