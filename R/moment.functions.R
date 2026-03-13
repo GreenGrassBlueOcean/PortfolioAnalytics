@@ -1,7 +1,7 @@
 ###############################################################################
 # R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2021 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -117,7 +117,8 @@ set.portfolio.moments_v1 <- function(R, constraints, momentargs=NULL,...){
              },
              var =,
              mVaR =,
-             VaR = {
+             VaR =,
+             CSM = {
                if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(R,2,'mean')),ncol=1);
                if(is.null(momentargs$sigma)) momentargs$sigma = cov(R)
                if(is.null(momentargs$m3)) momentargs$m3 = PerformanceAnalytics::M3.MM(R)
@@ -139,18 +140,82 @@ set.portfolio.moments_v1 <- function(R, constraints, momentargs=NULL,...){
   return(momentargs)
 }
 
+# ---------------------------------------------------------------------------
+# Private helpers for set.portfolio.moments_v2 (Proposal #9)
+# ---------------------------------------------------------------------------
+
+# Objective name -> required moments
+# Known inconsistency (preserved for backward compat): mean/var/sd/StdDev use
+# na.rm=TRUE for mu and use='pairwise.complete.obs' for sigma, while VaR/ES
+# groups do NOT. See .narm_objectives below.
+.moment_needs <- list(
+  mean = "mu",
+  var  = c("mu", "sigma"), sd = c("mu", "sigma"), StdDev = c("mu", "sigma"),
+  mVaR = c("mu", "sigma", "m3", "m4"), VaR = c("mu", "sigma", "m3", "m4"), CSM = c("mu", "sigma", "m3", "m4"),
+  es   = c("mu", "sigma", "m3", "m4"), mES  = c("mu", "sigma", "m3", "m4"),
+  CVaR = c("mu", "sigma", "m3", "m4"), cVaR = c("mu", "sigma", "m3", "m4"),
+  ETL  = c("mu", "sigma", "m3", "m4"), mETL = c("mu", "sigma", "m3", "m4"),
+  ES   = c("mu", "sigma", "m3", "m4")
+)
+
+# Objectives that use na.rm=TRUE for mu and pairwise for sigma
+.narm_objectives <- c("mean", "var", "sd", "StdDev")
+
+# ES/CVaR/ETL aliases — skipped entirely when solving as ROI LP
+.es_aliases <- c("es", "mES", "CVaR", "cVaR", "ETL", "mETL", "ES")
+
+# Returns a named list of lazy closures for computing each moment.
+# Two variants for mu (na.rm vs not) and sigma (pairwise vs not) encode
+# the per-objective-group NA handling inconsistency.
+.moment_provider <- function(method, R, fit = NULL, B = NULL, meucci.model = NULL) {
+  switch(method,
+    sample = list(
+      mu_narm  = function() matrix(as.vector(apply(R, 2, 'mean', na.rm = TRUE)), ncol = 1),
+      mu       = function() matrix(as.vector(apply(R, 2, 'mean')), ncol = 1),
+      sigma_pw = function() cov(R, use = 'pairwise.complete.obs'),
+      sigma    = function() cov(R),
+      m3       = function() PerformanceAnalytics::M3.MM(R),
+      m4       = function() PerformanceAnalytics::M4.MM(R)
+    ),
+    boudt = list(
+      mu_narm  = function() matrix(as.vector(apply(R, 2, 'mean', na.rm = TRUE)), ncol = 1),
+      mu       = function() matrix(as.vector(apply(R, 2, 'mean')), ncol = 1),
+      sigma_pw = function() extractCovariance(fit),
+      sigma    = function() extractCovariance(fit),
+      m3       = function() extractCoskewness(fit),
+      m4       = function() extractCokurtosis(fit)
+    ),
+    black_litterman = list(
+      mu_narm  = function() B$BLMu,
+      mu       = function() B$BLMu,
+      sigma_pw = function() B$BLSigma,
+      sigma    = function() B$BLSigma,
+      m3       = function() PerformanceAnalytics::M3.MM(R),
+      m4       = function() PerformanceAnalytics::M4.MM(R)
+    ),
+    meucci = list(
+      mu_narm  = function() meucci.model$mu,
+      mu       = function() meucci.model$mu,
+      sigma_pw = function() meucci.model$sigma,
+      sigma    = function() meucci.model$sigma,
+      m3       = function() PerformanceAnalytics::M3.MM(R),
+      m4       = function() PerformanceAnalytics::M4.MM(R)
+    )
+  ) # returns NULL for unknown methods (silent fall-through)
+}
+
 #' Portfolio Moments
 #' 
 #' Set portfolio moments for use by lower level optimization functions. Currently
 #' three methods for setting the moments are available
 #' 
 #' \describe{
-#'   \item{sample: }{sample estimates are used for the moments}
-#'   \item{boudt: }{estimate the second, third, and fourth moments using a 
-#'   statistical factor model based on the work of Kris Boudt.}
-#'   See \code{\link{statistical.factor.model}}
-#'   \item{black_litterman: }{estimate the first and second moments using the 
-#'   Black Litterman Formula. See \code{\link{black.litterman}}}.
+#'   \item{sample}{sample estimates are used for the moments}
+#'   \item{boudt}{estimate the second, third, and fourth moments using a 
+#'   statistical factor model based on the work of Kris Boudt.
+#'   See \code{\link{statistical.factor.model}}}
+#'   \item{black_litterman}{estimate the first and second moments using the 
+#'   Black Litterman Formula. See \code{\link{black.litterman}}}
 #' }
 #' 
 #' @param R an xts, vector, matrix, data frame, timeSeries or zoo object of asset returns
@@ -192,6 +257,9 @@ set.portfolio.moments <- set.portfolio.moments_v2 <- function(R,
       tmpR <- R
     }
     
+    # Initialize model variables so they exist on all code paths
+    fit <- B <- meucci.model <- NULL
+    
     # Fit model based on method
     switch(method,
            boudt = {
@@ -225,131 +293,41 @@ set.portfolio.moments <- set.portfolio.moments_v2 <- function(R,
       }
     }
     
-    for (objective in portfolio$objectives){
-      # The returns should already have been cleaned if any objective has
-      # arguments=list(clean=*). One drawback is if different cleaning
-      # methods are being used for different objectives, only the first 
-      # method for cleaning is used. This is mor efficient and avoids "re"-cleaning.
-      # Not sure that anyone would want to use different cleaning methods anyway. 
-      # Another thing is that we don't recalculate the moments. So if a moment 
-      # is set with un-cleaned returns then the next objective may have 
-      # clean="boudt", but the cleaned returns are not used for that moment.
-      # I think this is more consisent with how the objectives are specified
-      # rather than overwriting all moments, but I am open to other ideas or
-      # suggestions.
-      if(!is.null(objective$arguments$clean)){
+    # Extract ROI flag once (used to skip ES objectives when solving as LP)
+    if(hasArg(ROI)) ROI <- match.call(expand.dots=TRUE)$ROI else ROI <- FALSE
+    
+    # Table-driven moment computation (Proposal #9)
+    # Iterates objectives in order; is.null() guards preserve first-writer-wins
+    # semantics. Per-objective tmpR respects the clean argument on each objective.
+    for (objective in portfolio$objectives) {
+      obj_name <- objective$name
+      needs <- .moment_needs[[obj_name]]
+      if (is.null(needs)) next
+      
+      # Skip ES objectives entirely when solving as ROI LP
+      if (obj_name %in% .es_aliases && isTRUE(ROI)) next
+      
+      # Per-objective data: use cleaned returns if this objective requests it
+      if (!is.null(objective$arguments$clean)) {
         tmpR <- cleanR
       } else {
         tmpR <- R
       }
-      switch(objective$name,
-             mean = {
-               switch(method,
-                      sample =,
-                      boudt = {
-                        if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(tmpR, 2, 'mean', na.rm=TRUE)), ncol=1)
-                      },
-                      black_litterman = {
-                        if(is.null(momentargs$mu)) momentargs$mu = B$BLMu
-                      },
-                      meucci = {
-                        if(is.null(momentargs$mu)) momentargs$mu = meucci.model$mu
-                      }
-               ) # end nested switch on method
-             }, # end switch on mean
-             var =,
-             sd =,
-             StdDev = {
-               switch(method,
-                      sample = {
-                        if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(tmpR, 2, 'mean', na.rm=TRUE)), ncol=1);
-                        if(is.null(momentargs$sigma)) momentargs$sigma = cov(tmpR, use='pairwise.complete.obs')
-                      },
-                      boudt = {
-                        if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(tmpR, 2, 'mean', na.rm=TRUE)), ncol=1);
-                        if(is.null(momentargs$sigma)) momentargs$sigma = extractCovariance(fit)
-                      },
-                      black_litterman = {
-                        if(is.null(momentargs$mu)) momentargs$mu = B$BLMu
-                        if(is.null(momentargs$sigma)) momentargs$sigma = B$BLSigma
-                      },
-                      meucci = {
-                        if(is.null(momentargs$mu)) momentargs$mu = meucci.model$mu
-                        if(is.null(momentargs$sigma)) momentargs$sigma = meucci.model$sigma
-                      }
-               ) # end nested switch on method 
-             }, # end switch on var, sd, StdDev
-             mVaR =,
-             VaR = ,
-             CSM = {
-               switch(method,
-                      sample = {
-                        if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(tmpR, 2, 'mean')), ncol=1);
-                        if(is.null(momentargs$sigma)) momentargs$sigma = cov(tmpR)
-                        if(is.null(momentargs$m3)) momentargs$m3 = PerformanceAnalytics::M3.MM(tmpR)
-                        if(is.null(momentargs$m4)) momentargs$m4 = PerformanceAnalytics::M4.MM(tmpR)
-                      },
-                      boudt = {
-                        if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(tmpR, 2, 'mean')), ncol=1);
-                        if(is.null(momentargs$sigma)) momentargs$sigma = extractCovariance(fit)
-                        if(is.null(momentargs$m3)) momentargs$m3 = extractCoskewness(fit)
-                        if(is.null(momentargs$m4)) momentargs$m4 = extractCokurtosis(fit)
-                      },
-                      black_litterman = {
-                        if(is.null(momentargs$mu)) momentargs$mu = B$BLMu
-                        if(is.null(momentargs$sigma)) momentargs$sigma = B$BLSigma
-                        if(is.null(momentargs$m3)) momentargs$m3 = PerformanceAnalytics::M3.MM(tmpR)
-                        if(is.null(momentargs$m4)) momentargs$m4 = PerformanceAnalytics::M4.MM(tmpR)
-                      },
-                      meucci = {
-                        if(is.null(momentargs$mu)) momentargs$mu = meucci.model$mu
-                        if(is.null(momentargs$sigma)) momentargs$sigma = meucci.model$sigma
-                        if(is.null(momentargs$m3)) momentargs$m3 = PerformanceAnalytics::M3.MM(tmpR)
-                        if(is.null(momentargs$m4)) momentargs$m4 = PerformanceAnalytics::M4.MM(tmpR)
-                      }
-               ) # end nested switch on method
-             }, # end switch on mVaR, VaR
-             es =,
-             mES =,
-             CVaR =,
-             cVaR =,
-             ETL=,
-             mETL=,
-             ES = {
-               # We don't want to calculate these moments if we have an ES 
-               # objective and are solving as an LP problem.
-               if(hasArg(ROI)) ROI=match.call(expand.dots=TRUE)$ROI else ROI=FALSE
-               if(!ROI){
-                 switch(method,
-                        sample = {
-                          if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(tmpR, 2, 'mean')), ncol=1);
-                          if(is.null(momentargs$sigma)) momentargs$sigma = cov(tmpR)
-                          if(is.null(momentargs$m3)) momentargs$m3 = PerformanceAnalytics::M3.MM(tmpR)
-                          if(is.null(momentargs$m4)) momentargs$m4 = PerformanceAnalytics::M4.MM(tmpR)
-                        },
-                        boudt = {
-                          if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(tmpR, 2, 'mean')), ncol=1);
-                          if(is.null(momentargs$sigma)) momentargs$sigma = extractCovariance(fit)
-                          if(is.null(momentargs$m3)) momentargs$m3 = extractCoskewness(fit)
-                          if(is.null(momentargs$m4)) momentargs$m4 = extractCokurtosis(fit)
-                        },
-                        black_litterman = {
-                          if(is.null(momentargs$mu)) momentargs$mu = B$BLMu
-                          if(is.null(momentargs$sigma)) momentargs$sigma = B$BLSigma
-                          if(is.null(momentargs$m3)) momentargs$m3 = PerformanceAnalytics::M3.MM(tmpR)
-                          if(is.null(momentargs$m4)) momentargs$m4 = PerformanceAnalytics::M4.MM(tmpR)
-                        },
-                        meucci = {
-                          if(is.null(momentargs$mu)) momentargs$mu = meucci.model$mu
-                          if(is.null(momentargs$sigma)) momentargs$sigma = meucci.model$sigma
-                          if(is.null(momentargs$m3)) momentargs$m3 = PerformanceAnalytics::M3.MM(tmpR)
-                          if(is.null(momentargs$m4)) momentargs$m4 = PerformanceAnalytics::M4.MM(tmpR)
-                        }
-                 ) # end nested switch on method
-               }
-             } # end switch on es, mES, CVaR, cVaR, ETL, mETL, ES
-      ) # end switch on objectives    
-    }    
+      
+      # Build providers for this objective's tmpR (closures are cheap to create)
+      providers <- .moment_provider(method, tmpR, fit, B, meucci.model)
+      if (is.null(providers)) next # unknown method: silent fall-through
+      
+      narm <- obj_name %in% .narm_objectives
+      for (moment in needs) {
+        if (is.null(momentargs[[moment]])) {
+          key <- moment
+          if (moment == "mu" && narm) key <- "mu_narm"
+          if (moment == "sigma" && narm) key <- "sigma_pw"
+          momentargs[[moment]] <- providers[[key]]()
+        }
+      }
+    }
   }
   return(momentargs)
 }
@@ -415,7 +393,7 @@ portfolio.moments.boudt <- function(R, portfolio, momentargs=NULL, k=1, ...){
                if(is.null(momentargs$sigma)) momentargs$sigma = extractCovariance(fit)
              },
              mVaR =,
-             VaR = ,
+             VaR =,
              CSM = {
                if(is.null(momentargs$mu)) momentargs$mu = matrix( as.vector(apply(R,2,'mean')),ncol=1)
                if(is.null(momentargs$sigma)) momentargs$sigma = extractCovariance(fit)
@@ -501,7 +479,7 @@ portfolio.moments.bl <- function(R, portfolio, momentargs=NULL, P, Mu=NULL, Sigm
                if(is.null(momentargs$sigma)) momentargs$sigma = B$BLSigma
              },
              mVaR =,
-             VaR = ,
+             VaR =,
              CSM = {
                if(is.null(momentargs$mu)) momentargs$mu = B$BLMu
                if(is.null(momentargs$sigma)) momentargs$sigma = B$BLSigma
