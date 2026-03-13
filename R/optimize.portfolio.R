@@ -848,14 +848,14 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
     if(inherits(constraints, "v1_constraint")){
       if(is.null(portfolio)){
         # If the user has not passed in a portfolio, we will create one for them
-        tmp_portf <- portfolio.spec(assets=constraints$assets)
+        portfolio <- portfolio.spec(assets=constraints$assets)
       }
       warning("Passing 'v1_constraint' objects to optimize.portfolio() is deprecated ",
               "and will be removed in a future version. ",
               "The constraint has been auto-converted to v2 specification. ",
               "Use portfolio.spec() with add.constraint() and add.objective() instead.",
               call. = FALSE)
-      portfolio <- update_constraint_v1tov2(portfolio=tmp_portf, v1_constraint=constraints)
+      portfolio <- update_constraint_v1tov2(portfolio=portfolio, v1_constraint=constraints)
     }
     if(!inherits(constraints, "v1_constraint")){
       # Insert the constraints into the portfolio object
@@ -1269,14 +1269,14 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
     if(inherits(constraints, "v1_constraint")){
       if(is.null(portfolio)){
         # If the user has not passed in a portfolio, we will create one for them
-        tmp_portf <- portfolio.spec(assets=constraints$assets)
+        portfolio <- portfolio.spec(assets=constraints$assets)
       }
       warning("Passing 'v1_constraint' objects to optimize.portfolio.rebalancing() is deprecated ",
               "and will be removed in a future version. ",
               "The constraint has been auto-converted to v2 specification. ",
               "Use portfolio.spec() with add.constraint() and add.objective() instead.",
               call. = FALSE)
-      portfolio <- update_constraint_v1tov2(portfolio=tmp_portf, v1_constraint=constraints)
+      portfolio <- update_constraint_v1tov2(portfolio=portfolio, v1_constraint=constraints)
     }
     if(!inherits(constraints, "v1_constraint")){
       # Insert the constraints into the portfolio object

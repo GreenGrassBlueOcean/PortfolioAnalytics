@@ -734,6 +734,7 @@ is.constraint <- function( x ) {
 #' @return an object of class 'constraint' which is a flattened list of enabled constraints
 #' @author Ross Bennett
 #' @seealso \code{\link{portfolio.spec}}
+#' @export
 get_constraints <- function(portfolio){
   if(!is.portfolio(portfolio)) stop("portfolio passed in is not of class portfolio")
   

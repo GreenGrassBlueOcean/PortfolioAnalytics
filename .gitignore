@@ -55,3 +55,9 @@ tests/testthat/test_dailydata.r
 .positai
 nul
 tests/testthat/_problems/
+
+# Non-standard top-level files flagged by R CMD check
+MERGE_PLAN.md
+REBASE_PLAN.md
+coverage_report.html
+lib/
