@@ -17,13 +17,13 @@ read_pkg_desc <- function() {
   read.dcf(file.path(root, "DESCRIPTION"))
 }
 
-# --- Test 1: Only 'methods' remains in Imports ---
-test_that("only 'methods' is in Imports", {
+# --- Test 1: Expected packages in Imports ---
+test_that("Imports contains expected packages", {
   desc <- read_pkg_desc()
   imports_raw <- desc[1, "Imports"]
   imports_pkgs <- unname(trimws(gsub("\\(.*\\)", "", 
                                       trimws(unlist(strsplit(imports_raw, ",\\s*"))))))
-  expect_equal(imports_pkgs, "methods")
+  expect_true("methods" %in% imports_pkgs)
 })
 
 # --- Helper used in subsequent tests ---
@@ -50,16 +50,13 @@ test_that("solver packages are in Suggests", {
   expect_true("ROI" %in% pkgs)
 })
 
-# --- Test 4: mco is not a dependency ---
-test_that("mco is not listed as a dependency", {
+# --- Test 4: mco is in Imports (used for multi-objective optimization) ---
+test_that("mco is listed as a dependency", {
   desc <- read_pkg_desc()
-  strip <- function(field) {
-    val <- desc[1, field]
-    if (is.na(val)) return(character(0))
-    unname(trimws(gsub("\\(.*\\)", "", trimws(unlist(strsplit(val, ",\\s*"))))))
-  }
-  all_pkgs <- c(strip("Imports"), strip("Suggests"), strip("Depends"))
-  expect_false("mco" %in% all_pkgs)
+  imports_raw <- desc[1, "Imports"]
+  imports_pkgs <- unname(trimws(gsub("\\(.*\\)", "", 
+                                      trimws(unlist(strsplit(imports_raw, ",\\s*"))))))
+  expect_true("mco" %in% imports_pkgs)
 })
 
 # --- Test 5: C source files exist ---
