@@ -68,6 +68,27 @@ The combinatorial switch cascade in `set.portfolio.moments()` has been replaced 
 
 Legacy v1 API functions (`constraint()`, `optimize.portfolio_v1()`, etc.) issue structured deprecation warnings. Hot-path functions like `constrained_objective_v1()` use `deprecate_once()` to warn once per session instead of flooding the console during optimization.
 
+### Bug Fix: `match.call()` Without `eval.parent()` in `random_portfolios()`
+
+The upstream `random_portfolios()` function uses `match.call(expand.dots=TRUE)$fev` and `match.call(expand.dots=TRUE)$normalize` to extract pass-through arguments from `...`. Because `match.call()` returns unevaluated language objects, these variables are assigned the raw AST node (e.g., the call `` `:`(0, 2) ``) rather than the evaluated value (e.g., `c(0L, 1L, 2L)`). This causes downstream failures such as `"non-numeric argument to binary operator"` when `fev` is used in arithmetic inside `rp_simplex()`.
+
+The bug is latent when using defaults (the `else` branch evaluates normally) and when passing bare literals like `TRUE`/`FALSE` (which are self-evaluating constants). It surfaces when:
+
+- Passing expressions: `random_portfolios(p, rp_method = "simplex", fev = 0:2)`
+- Passing variables: `my_fev <- 0:3; random_portfolios(p, rp_method = "simplex", fev = my_fev)`
+
+The fix wraps both extractions in `eval.parent()`, matching the pattern already used for the `Multicore` parameter in the same function:
+
+```r
+# Before (upstream)
+if(hasArg(fev)) fev = match.call(expand.dots=TRUE)$fev else fev = 0:5
+
+# After (this fork)
+if(hasArg(fev)) fev = eval.parent(match.call(expand.dots=TRUE)$fev) else fev = 0:5
+```
+
+**Note:** The same `match.call()` without `eval.parent()` anti-pattern appears in 30+ other locations across the package (notably in `custom.covRob.R`, `constrained_objective.R`, and `ac_ranking.R`). These are tracked for future fixes. See the upstream source at [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) for the original code.
+
 ## What's Included from braverock
 
 All features from [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) are included:
