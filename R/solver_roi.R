@@ -9,6 +9,15 @@
 solve_roi <- function(R, portfolio, constraints, moments, penalty,
                       N, call, trace, search_size, rp,
                       message = FALSE, optimize_method = "ROI", ...) {
+  # ROI.plugin.symphony registers the symphony solver with ROI on load
+
+  if (optimize_method == "symphony") {
+    if (!requireNamespace("ROI.plugin.symphony", quietly = TRUE)) {
+      stop("Package 'ROI.plugin.symphony' is required for optimize_method='symphony'. ",
+           "Please install it with install.packages('ROI.plugin.symphony').",
+           call. = FALSE)
+    }
+  }
   dots <- list(...)
   out <- list()
 

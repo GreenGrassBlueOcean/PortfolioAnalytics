@@ -17,13 +17,13 @@ read_pkg_desc <- function() {
   read.dcf(file.path(root, "DESCRIPTION"))
 }
 
-# --- Test 1: Expected packages in Imports ---
-test_that("Imports contains expected packages", {
+# --- Test 1: Only 'methods' remains in Imports ---
+test_that("only 'methods' is in Imports", {
   desc <- read_pkg_desc()
   imports_raw <- desc[1, "Imports"]
   imports_pkgs <- unname(trimws(gsub("\\(.*\\)", "", 
                                       trimws(unlist(strsplit(imports_raw, ",\\s*"))))))
-  expect_true("methods" %in% imports_pkgs)
+  expect_equal(imports_pkgs, "methods")
 })
 
 # --- Helper used in subsequent tests ---
@@ -50,13 +50,42 @@ test_that("solver packages are in Suggests", {
   expect_true("ROI" %in% pkgs)
 })
 
-# --- Test 4: mco is in Imports (used for multi-objective optimization) ---
-test_that("mco is listed as a dependency", {
+# --- Test 4: mco is not a dependency (no implementation exists) ---
+test_that("mco is not listed as a dependency", {
+  desc <- read_pkg_desc()
+  strip <- function(field) {
+    val <- desc[1, field]
+    if (is.na(val)) return(character(0))
+    unname(trimws(gsub("\\(.*\\)", "", trimws(unlist(strsplit(val, ",\\s*"))))))
+  }
+  all_pkgs <- c(strip("Imports"), strip("Suggests"), strip("Depends"))
+  expect_false("mco" %in% all_pkgs)
+})
+
+# --- Test 4b: Solver packages (GenSA, pso, ROI.plugin.symphony) are in Suggests, not Imports ---
+test_that("solver packages are in Suggests not Imports", {
   desc <- read_pkg_desc()
   imports_raw <- desc[1, "Imports"]
   imports_pkgs <- unname(trimws(gsub("\\(.*\\)", "", 
                                       trimws(unlist(strsplit(imports_raw, ",\\s*"))))))
-  expect_true("mco" %in% imports_pkgs)
+  expect_false("GenSA" %in% imports_pkgs)
+  expect_false("pso" %in% imports_pkgs)
+  expect_false("ROI.plugin.symphony" %in% imports_pkgs)
+  
+  pkgs <- get_suggests()
+  expect_true("GenSA" %in% pkgs)
+  expect_true("pso" %in% pkgs)
+  expect_true("ROI.plugin.symphony" %in% pkgs)
+})
+
+# --- Test 4c: requireNamespace guard for ROI.plugin.symphony in solver_roi.R ---
+test_that("solver_roi.R has requireNamespace guard for ROI.plugin.symphony", {
+  root <- pkg_source_root()
+  skip_if(is.null(root), "solver_roi.R not found")
+  src_file <- file.path(root, "R", "solver_roi.R")
+  skip_if_not(file.exists(src_file), "solver_roi.R not found")
+  src <- readLines(src_file)
+  expect_true(any(grepl('requireNamespace\\("ROI.plugin.symphony"', src)))
 })
 
 # --- Test 5: C source files exist ---

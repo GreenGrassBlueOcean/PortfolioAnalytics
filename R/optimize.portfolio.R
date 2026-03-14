@@ -587,7 +587,7 @@ optimize.portfolio_v1 <- function(
 #' portfolios that specify constraints and objectives.
 #' 
 #' @details
-#' This function currently supports DEoptim, random portfolios, pso, GenSA, ROI, osqp, Rglpk, mco, and CVXR solvers as back ends.
+#' This function currently supports DEoptim, random portfolios, pso, GenSA, ROI, osqp, Rglpk, and CVXR solvers as back ends.
 #' Additional back end contributions for Rmetrics, ghyp, etc. would be welcome.
 #'
 #' When using random portfolios, search_size is precisely that, how many 
@@ -680,7 +680,7 @@ optimize.portfolio_v1 <- function(
 #' @param portfolio an object of type "portfolio" specifying the constraints and objectives for the optimization
 #' @param constraints default=NULL, a list of constraint objects. An object of class 'v1_constraint' can be passed in here.
 #' @param objectives default=NULL, a list of objective objects.
-#' @param optimize_method one of "DEoptim", "random", "ROI", "pso", "GenSA", "osqp", "Rglpk", "mco", "CVXR", or a vector to specify CVXR solver.
+#' @param optimize_method one of "DEoptim", "random", "ROI", "pso", "GenSA", "osqp", "Rglpk", "CVXR", or a vector to specify CVXR solver.
 #' A solver of ROI or CVXR can also be specified and will be solved via ROI or CVXR. See details.
 #' @param search_size integer, how many portfolios to test, default 20,000
 #' @param trace TRUE/FALSE if TRUE will attempt to return additional information on the path or portfolios searched
@@ -757,7 +757,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   portfolio=NULL,
   constraints=NULL,
   objectives=NULL,
-  optimize_method=c("DEoptim","random","ROI","pso","GenSA", "Rglpk", "osqp", "mco", "CVXR", "cvxr", ...),
+  optimize_method=c("DEoptim","random","ROI","pso","GenSA", "Rglpk", "osqp", "CVXR", "cvxr", ...),
   search_size=20000,
   trace=FALSE, 
   ...,

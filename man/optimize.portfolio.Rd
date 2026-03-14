@@ -22,7 +22,7 @@ optimize.portfolio(
   portfolio = NULL,
   constraints = NULL,
   objectives = NULL,
-  optimize_method = c("DEoptim", "random", "ROI", "pso", "GenSA", "Rglpk", "osqp", "mco",
+  optimize_method = c("DEoptim", "random", "ROI", "pso", "GenSA", "Rglpk", "osqp",
     "CVXR", "cvxr", ...),
   search_size = 20000,
   trace = FALSE,
@@ -40,7 +40,7 @@ optimize.portfolio(
 
 \item{constraints}{default=NULL, a list of constraint objects. An object of class 'v1_constraint' can be passed in here.}
 
-\item{optimize_method}{one of "DEoptim", "random", "ROI", "pso", "GenSA", "osqp", "Rglpk", "mco", "CVXR", or a vector to specify CVXR solver.
+\item{optimize_method}{one of "DEoptim", "random", "ROI", "pso", "GenSA", "osqp", "Rglpk", "CVXR", or a vector to specify CVXR solver.
 A solver of ROI or CVXR can also be specified and will be solved via ROI or CVXR. See details.}
 
 \item{search_size}{integer, how many portfolios to test, default 20,000}
@@ -124,7 +124,7 @@ This function aims to provide a wrapper for constrained optimization of
 portfolios that specify constraints and objectives.
 }
 \details{
-This function currently supports DEoptim, random portfolios, pso, GenSA, ROI, osqp, Rglpk, mco, and CVXR solvers as back ends.
+This function currently supports DEoptim, random portfolios, pso, GenSA, ROI, osqp, Rglpk, and CVXR solvers as back ends.
 Additional back end contributions for Rmetrics, ghyp, etc. would be welcome.
 
 When using random portfolios, search_size is precisely that, how many 
