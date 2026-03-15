@@ -703,9 +703,27 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 |-------|------------|------------|-----------------|
 | 1 (Core optimization & solvers) | 71 | 3 | 1885 |
 | 2 (Efficient frontier & extraction) | 51 | 2 | 2044 |
-| 3–5 | — | — | — |
+| 3 (Charting functions) | 66 | 1 | 2383 |
+| 4–5 | — | — | — |
 
-**Total bugs fixed:** 5 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`)
+**Phase 3 Details:**
+- **3A** (`test_charts_risk_advanced.R`, 17 tests): chart.RiskBudget.optimize.portfolio absolute/percentage risk types, neighbors (single-number, vector indices, matrix), opt.list line/barplot modes with absolute/percentage, rebalancing, no-risk-budget warning path
+- **3B** (`test_charts_ef_advanced.R`, 16 tests): CVXR chart.EfficientFrontier (StdDev, ES, rf=NULL, chart.assets=FALSE), CSM scatterFUN limitation, ROI ES frontier, efficient.frontier rf=NULL/chart.assets=FALSE, chart.EF.Weights legend.loc=NULL, chart.EfficientFrontierCompare with/without guidelines, chart.EfficientFrontierOverlay chart.assets=FALSE + legend
+- **3C** (`test_charts_solver_advanced.R`, 16 tests): DE chart.RiskReward with chart.assets, RP chart.Weights neighbors (single/vector/matrix), chart.Weights.opt.list line/barplot, chart.RiskReward.opt.list with chart.assets, chart.Weights.rebalancing
+- **3D** (`test_backtest_plot.R`, 17 tests): All plotType modes (both/cumRet/drawdown), single+multi-asset, log_return, drawdown_on=NULL/integer, custom styles, plotType aliases (ret/cumret)
+
+**Phase 3 Bug Fixed:**
+
+| File | Line | Bug | Fix |
+|------|------|-----|-----|
+| `applyFUN.R` | 12 | `applyFUN(R, weights, FUN, arguments)` — `arguments` had no default value | Added `arguments=NULL` default; CVXR chart.EF methods called `applyFUN()` without `arguments`, causing "argument missing" error |
+
+**Known Limitations Documented (not fixed):**
+- `scatterFUN` has no CSM/EQS cases (commented out at lines 143–152 of `applyFUN.R`); chart.EfficientFrontier.optimize.portfolio.CVXR with `match.col="CSM"` errors on asset scatter
+- `chart.EfficientFrontier.optimize.portfolio.ROI` with `match.col="ETL"` fails (subscript out of bounds) because `meanetl.efficient.frontier` produces column named "ES", not "ETL"
+- `chart.Scatter.DE` neighbors fail with low `itermax` (extractStats returns insufficient rows)
+
+**Total bugs fixed:** 6 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`, 1 in `applyFUN.R`)
 
 #### Expected Outcome
 
