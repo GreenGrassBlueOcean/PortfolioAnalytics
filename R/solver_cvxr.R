@@ -241,7 +241,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   cvxr_dots <- dots[cvxr_solve_args]
 
   .cvxr_solve <- function(prob, solver) {
-    do.call(CVXR::psolve, c(list(object = prob, solver = solver), cvxr_dots))
+    do.call(CVXR::psolve, c(list(prob, solver = solver), cvxr_dots))
   }
 
   if (cvxr_default) {
