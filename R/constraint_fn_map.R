@@ -199,8 +199,8 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
             }
             # check if max is violated
             if(any(tmp_weights > tmp_max)){
-              # Find which elements of min are violated and increase by a random amount
-              tmp_max[which(tmp_weights < tmp_max)] <- tmp_max[which(tmp_weights < tmp_max)] + runif(1, 0.01, 0.05)
+              # Find which elements of max are violated and increase by a random amount
+              tmp_max[which(tmp_weights > tmp_max)] <- tmp_max[which(tmp_weights > tmp_max)] + runif(1, 0.01, 0.05)
             }
             
             # Now try the transformation again
