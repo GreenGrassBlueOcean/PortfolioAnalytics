@@ -46,7 +46,7 @@ Suggests:
     MASS,
     robustbase,
     osqp,
-    CVXR,
+    CVXR (>= 1.8.1),
     data.table,
     knitr,
     rmarkdown,
