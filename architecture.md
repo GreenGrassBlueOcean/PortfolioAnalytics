@@ -710,14 +710,15 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 
 #### Progress Summary
 
-| Phase | Tests added | Bugs fixed | Cumulative tests |
-|-------|------------|------------|-----------------|
+| Phase | Tests added | Bugs fixed | Cumulative assertions |
+|-------|------------|------------|----------------------|
 | 1 (Core optimization & solvers) | 71 | 3 | 1885 |
 | 2 (Efficient frontier & extraction) | 51 | 2 | 2044 |
 | 3 (Charting functions) | 66 | 1 | 2383 |
-| 4–5 | — | — | — |
+| 4 (Constraints, validation & utilities) | 119 | 1 | 2625 |
+| 5 | — | — | — |
 
-**Total bugs fixed:** 6 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`, 1 in `applyFUN.R`)
+**Total bugs fixed:** 7 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`, 1 in `applyFUN.R`, 1 in `constraint_fn_map.R`)
 
 #### Expected Outcome
 
