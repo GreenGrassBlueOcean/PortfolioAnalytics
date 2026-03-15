@@ -340,13 +340,8 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
   if(try(!is.null(constraints$groups), silent=TRUE)){
     n.groups <- length(constraints$groups)
     Amat.group <- matrix(0, nrow=n.groups, ncol=N)
-    k <- 1
-    l <- 0
     for(i in 1:n.groups){
-      j <- constraints$groups[i] 
-      Amat.group[i, k:(l+j)] <- 1
-      k <- l + j + 1
-      l <- k - 1
+      Amat.group[i, constraints$groups[[i]]] <- 1
     }
     if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
     if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
@@ -778,10 +773,11 @@ gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, s
     rhs <- c(rhs, constraints$lower, -constraints$upper)
   }
   
-  # Remove the rows of Amat and elements of rhs.vec where rhs is Inf or -Inf
-  Amat <- Amat[!is.infinite(rhs), ]
-  rhs <- rhs[!is.infinite(rhs)]
-  dir <- dir[!is.infinite(rhs)]
+  # Remove the rows of Amat and elements of rhs/dir where rhs is Inf or -Inf
+  finite_idx <- !is.infinite(rhs)
+  Amat <- Amat[finite_idx, ]
+  dir <- dir[finite_idx]
+  rhs <- rhs[finite_idx]
   
   ROI_objective <- ROI::Q_objective(Q=corpcor::make.positive.definite(2*lambda*V), 
                                L=rep(-tmp_means, 3))
@@ -877,7 +873,7 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
   }
   Amat <- c(tmp_means, rep(0, 2 * N))
   dir <- "=="
-  rhs <- 1 + target
+  rhs <- target
   meq <- 1
   
   # separate the weights into w, w^+, and w^-
@@ -947,10 +943,11 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
   }
   d <- c(-tmp_means, rep(0, 2 * N))
   
-  # Remove the rows of Amat and elements of rhs where rhs is Inf or -Inf
-  Amat <- Amat[!is.infinite(rhs), ]
-  rhs <- rhs[!is.infinite(rhs)]
-  dir <- dir[!is.infinite(rhs)]
+  # Remove the rows of Amat and elements of rhs/dir where rhs is Inf or -Inf
+  finite_idx <- !is.infinite(rhs)
+  Amat <- Amat[finite_idx, ]
+  dir <- dir[finite_idx]
+  rhs <- rhs[finite_idx]
   
   ROI_objective <- ROI::Q_objective(Q=corpcor::make.positive.definite(2*lambda*V), L=d)
   
@@ -1099,10 +1096,11 @@ gmv_opt_leverage <- function(R, constraints, moments, lambda, target, solver="qu
     rhs <- c(rhs, constraints$lower, -constraints$upper)
   }
   
-  # Remove the rows of Amat and elements of rhs.vec where rhs is Inf or -Inf
-  Amat <- Amat[!is.infinite(rhs), ]
-  rhs <- rhs[!is.infinite(rhs)]
-  dir <- dir[!is.infinite(rhs)]
+  # Remove the rows of Amat and elements of rhs/dir where rhs is Inf or -Inf
+  finite_idx <- !is.infinite(rhs)
+  Amat <- Amat[finite_idx, ]
+  dir <- dir[finite_idx]
+  rhs <- rhs[finite_idx]
   
   ROI_objective <- ROI::Q_objective(Q=corpcor::make.positive.definite(2*lambda*V), 
                                L=rep(-tmp_means, 3))

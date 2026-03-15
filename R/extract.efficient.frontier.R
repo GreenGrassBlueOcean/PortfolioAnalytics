@@ -181,8 +181,9 @@ meanvar.efficient.frontier <- function(portfolio, R, optimize_method='CVXR', n.p
       portfolio$objectives[[var_idx]]$risk_aversion <- lambda
       extractStats(optimize.portfolio(R=R, portfolio=portfolio, optimize_method=optimize_method, ...=...))
     }
-    out <- cbind(out, risk_aversion)
-    colnames(out) <- c(names(stats), "lambda")
+    # Ensure out is a matrix (foreach returns a vector when length(risk_aversion)==1)
+    if(!is.matrix(out)) out <- matrix(out, nrow=1, dimnames=list(NULL, names(out)))
+    out <- cbind(out, lambda = risk_aversion)
   } else {
     # Enable the return constraint
     portfolio$constraints[[ret_constr_idx]]$enabled <- TRUE

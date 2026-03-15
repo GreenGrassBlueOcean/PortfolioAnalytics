@@ -625,6 +625,92 @@ Target: **62–65%** (from 48.59%), recovering ~1,800 of the 3,864 originally mi
 - **`set.portfolio.moments(method = "black_litterman")`** uses `match.call(expand.dots=TRUE)$P` to extract the `P` argument, but this returns an unevaluated language object (symbol/call) rather than the evaluated matrix. When passed to `black.litterman()`, the matrix multiplication `P %*% Sigma` fails with "requires numeric/complex matrix/vector arguments." The standalone `portfolio.moments.bl()` function, which takes `P` as a normal argument, works correctly. This is a pre-existing bug.
 - **`gmv_opt_ptc` (proportional transaction cost via ROI)** produces NA weights — potential solver formulation issue (not yet resolved)
 
+### Coverage Improvement Plan — Phase 2 (15 New Test Files)
+
+After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a second round of analysis identified **1,987 uncovered lines out of 5,452** remaining. This plan targets ~1,000 of those lines across 15 new test files, aiming to bring coverage to **~82%**.
+
+**Key principles:**
+1. **Skip deprecated code** — Don't test v1 API (~250 lines); not worth the investment
+2. **Bug-fix-then-test** — `gmv_opt_ptc`, `maxret_milp`, and `constraint_fn_map.R` line 203 need fixes before coverage tests
+3. **Chart tests are smoke tests** — Wrap in `pdf(NULL)`, assert no error, don't validate pixels
+4. **Optional package tests** — Use `skip_if_not_installed()` guards for fGarch, RobStatTM, robustbase, GSE, etc.
+5. **One file per phase step** — Independent, committable test files
+6. **Run full suite after each phase** — Verify no regressions
+
+#### Known Bugs to Fix First
+
+| Location | Bug | Impact |
+|----------|-----|--------|
+| `optFUN.R` — `gmv_opt_ptc` | Proportional transaction cost formulation produces NA weights | ROI PTC path untestable |
+| `optFUN.R` — `maxret_milp` | Group constraint matrix construction incorrect | MILP group constraint path untestable |
+| `constraint_fn_map.R` — line 203 | Comparison operator likely inverted | Relaxation loop may not behave correctly |
+
+#### Phase 1: Core Optimization & Solver (~200 lines) ✅ COMPLETED
+
+| Step | Target file(s) | Test file | Tests | Status |
+|------|----------------|-----------|-------|--------|
+| 1A | `optimize.portfolio.R` | `test_optimize_edge_cases.R` | 27 | ✅ Single-asset limits, R column subsetting, regime switching, normalize_weights edge cases, training_period defaults, empty rebalancing, trace flag, optimize_method edge cases, parallel nodes=1, warm-start unnamed vector |
+| 1B | `optFUN.R` | `test_optFUN_advanced.R` | 22 | ✅ Fixed 4 bugs (see below), then tested: gmv_opt_ptc constraint feasibility, maxret_milp with group constraints, gmv_opt_toc/leverage with groups, max Sharpe/STARR ratio, etl_milp with groups+position limits, target return, factor exposures |
+| 1C | `solver_cvxr.R` | `test_solver_cvxr_advanced.R` | 22 | ✅ Max Sharpe, HHI concentration, max STARR/ES ratio, min/max CSM, min/max EQS, turnover+StdDev, group constraints, infeasible problem handling, alpha normalization, solver selection (OSQP vs SCS), target return |
+
+**Bugs fixed in Phase 1B:**
+1. `optFUN.R` line 880: `rhs <- 1 + target` → `rhs <- target` in `gmv_opt_ptc` (return target constraint had wrong RHS, creating infeasible system when target=NA)
+2. `optFUN.R` lines 345-349: `constraints$groups[i]` → `constraints$groups[[i]]` in `maxret_milp_opt` (list subsetting instead of element extraction caused "non-numeric argument to binary operator")
+3. `optFUN.R` lines 782-784, 951-953, 1103-1105: `dir` filtering bug in `gmv_opt_toc`, `gmv_opt_ptc`, `gmv_opt_leverage` — `dir` was filtered using already-modified `rhs` (after infinite values removed), so `dir` kept all elements while `Amat`/`rhs` had rows removed. Fixed with `finite_idx` mask applied to all three vectors.
+4. **Known remaining issue**: `gmv_opt_ptc` still produces NA weights due to rank-deficient Q matrix (the 3N×3N covariance of `[R, 0, 0]` has rank N). This is a pre-existing numerical limitation of the PTC formulation, separate from the `rhs` bug.
+
+#### Phase 2: Efficient Frontier & Extraction (~170 lines) ✅ COMPLETED
+
+| Step | Target file(s) | Test file | Tests | Status |
+|------|----------------|-----------|-------|--------|
+| 2A | `extract.efficient.frontier.R` | `test_efficient_frontier_advanced.R` | 28 | ✅ `risk_aversion` quadratic utility path (previously untested), `meancsm.efficient.frontier()`, `meaneqs.efficient.frontier()`, `meanrisk.efficient.frontier()` (multi-risk comparison), `create.EfficientFrontier()` dispatch for all 7 type aliases + random, `extractEfficientFrontier()` from ROI/random/GenSA, HHI concentration w/ `conc_aversion`, return_constraint disabling, edge case validation |
+| 2B | `extractstats.R` | `test_extractstats_advanced.R` | 23 | ✅ `name.replace()` utility, `extractStats` for ROI/CVXR/DEoptim/GenSA/random/rebalancing classes, DEoptim empty-trace fallback (parallel path), regime switching extraction (`extractStatsRegime`, `extractObjRegime`), `extractObjectiveMeasures` for identical and divergent objectives in `opt.list`, `extractWeights` for rebalancing and `opt.list`, `extractGroups` with group+category labels, `extractFeasibility` for rebalancing with `as.data.frame`, PSO normalization, class validation, prefix labeling |
+
+**Bugs fixed in Phase 2A:**
+1. `extract.efficient.frontier.R` lines 184–185: `colnames(out) <- c(names(stats), "lambda")` in `meanvar.efficient.frontier()` — the `stats` variable came from the min-variance optimization (mean objective disabled), but `out` from the `risk_aversion` foreach loop included the mean objective (enabled on line 177), creating a column count mismatch. Fixed by replacing with `cbind(out, lambda = risk_aversion)` so column names come from the foreach output directly.
+2. `extract.efficient.frontier.R` line 183: single-element `risk_aversion` vector — `foreach` with `.combine=rbind` returns a plain vector (not a 1-row matrix) when iterating over a single value. `cbind(vector, scalar)` then created an N×2 matrix instead of a 1×(N+1) matrix. Fixed with `if(!is.matrix(out)) out <- matrix(out, nrow=1, dimnames=list(NULL, names(out)))` guard.
+
+**Known limitation documented:** HHI objective with CVXR requires `conc_aversion` to be set (via `weight_concentration_objective`). If added as a plain risk objective (`name="HHI"`) without `conc_aversion`, the CVXR solver receives `NULL` for `lambda_hhi`, causing a CVXR expression error.
+
+#### Phase 3: Charting Functions (~300 lines)
+
+| Step | Target file(s) | Test file | Focus |
+|------|----------------|-----------|-------|
+| 3A | `charts.risk.R` | `test_charts_risk.R` | Absolute risk type, neighbors parameter, barplot mode, long asset names |
+| 3B | `charts.efficient.frontier.R` | `test_charts_ef.R` | `chart.EfficientFrontierCompare()`, CSM/EQS frontier types, rf/tangent line options |
+| 3C | `charts.DE.R`, `charts.RP.R` | `test_charts_solver.R` | Neighbors display, `chart.assets` toggle, custom risk metrics, barplot mode |
+| 3D | `backtest.plot.R` | `test_backtest_plot.R` | From 0% → ~80%: all plot types (cumulative, drawdown), log returns, multi-asset overlay |
+
+#### Phase 4: Constraints, Validation & Utilities (~180 lines)
+
+| Step | Target file(s) | Test file | Focus |
+|------|----------------|-----------|-------|
+| 4A | `constraint_fn_map.R` | `test_constraint_fn_map_advanced.R` | Relaxation loops, Dykstra fallback paths, fix line 203 comparison operator bug, group constraint repair |
+| 4B | `constraints.R` | `test_constraints_advanced.R` | `filter_constraint()`, `null_constraint()`, `transaction_cost_constraint()`, `min_mult`/`max_mult` parameters, `group_pos` constraint |
+| 4C | `validate_solution.R` | `test_validate_solution_advanced.R` | `classify_constraint_status()` helpers, NA weight guards, `as.data.frame.feasibility_report()` edge cases |
+| 4D | `generics.R` | `test_generics_advanced.R` | Disabled constraints in print output, category labels display, risk budget summary formatting |
+
+#### Phase 5: Moment Functions & Robust Covariance (~130 lines)
+
+| Step | Target file(s) | Test file | Focus |
+|------|----------------|-----------|-------|
+| 5A | `moment.functions.R` | `test_moments_advanced.R` | GARCH moment estimation (`CCCgarch.MM`), ROI-specific moment branches, error handling for missing packages |
+| 5B | `custom.covRob.R` | `test_custom_covRob.R` | From 0% → ~80%: `custom.covRob.MM()`, `.Rocke()`, `.Mcd()`, `.TSGS()` wrappers, `MycovRobMcd()`, `MycovRobTSGS()` |
+
+#### Progress Summary
+
+| Phase | Tests added | Bugs fixed | Cumulative tests |
+|-------|------------|------------|-----------------|
+| 1 (Core optimization & solvers) | 71 | 3 | 1885 |
+| 2 (Efficient frontier & extraction) | 51 | 2 | 2044 |
+| 3–5 | — | — | — |
+
+**Total bugs fixed:** 5 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`)
+
+#### Expected Outcome
+
+~1,000 lines recovered → coverage **~64% → ~82%** (realistic target that skips deprecated code and incomplete implementations). Remaining uncovered lines will be concentrated in deprecated v1 code, incomplete feature stubs, and deep error-handling paths in stochastic solvers.
+
 ---
 
 ## Load-Bearing API Contracts
