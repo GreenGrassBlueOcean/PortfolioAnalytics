@@ -241,7 +241,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   cvxr_dots <- dots[cvxr_solve_args]
 
   .cvxr_solve <- function(prob, solver) {
-    do.call(solve, c(list(a = prob, solver = solver), cvxr_dots))
+    do.call(CVXR::psolve, c(list(object = prob, solver = solver), cvxr_dots))
   }
 
   if (cvxr_default) {
@@ -254,8 +254,17 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
     result_cvxr <- .cvxr_solve(prob_cvxr, optimize_method)
   }
 
+  # --- Check solver status ---
+  if (!isTRUE(result_cvxr$status %in% c("optimal", "optimal_inaccurate"))) {
+    return(optimization_failure(
+      message = paste("CVXR solver returned status:", result_cvxr$status),
+      solver  = result_cvxr$solver %||% "CVXR",
+      call    = call
+    ))
+  }
+
   # --- Extract results ---
-  cvxr_wts <- CVXR::value(wts)
+  cvxr_wts <- result_cvxr$getValue(wts)
   if (maxSR | maxSTARR | CSMratio) cvxr_wts <- cvxr_wts / sum(cvxr_wts)
   cvxr_wts <- as.vector(cvxr_wts)
 
@@ -296,10 +305,10 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
       obj_cvxr[["StdDev"]] <- sqrt(t(cvxr_wts) %*% sigma_value %*% cvxr_wts)
       obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["StdDev"]]
     } else if (maxSTARR) {
-      obj_cvxr[["ES"]] <- result_cvxr$value / sum(CVXR::value(wts))
+      obj_cvxr[["ES"]] <- result_cvxr$value / sum(result_cvxr$getValue(wts))
       obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["ES"]]
     } else if (CSMratio) {
-      obj_cvxr[["CSM"]] <- result_cvxr$value / sum(CVXR::value(wts))
+      obj_cvxr[["CSM"]] <- result_cvxr$value / sum(result_cvxr$getValue(wts))
       obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["CSM"]]
     }
   }

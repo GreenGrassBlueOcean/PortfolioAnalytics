@@ -7,6 +7,9 @@ require(PortfolioAnalytics)
 context("test meucci_ffv.R")
 
 test_that("meucci_ffv.R runs succesfully", {
+  tmp <- tempfile(fileext = ".pdf")
+  pdf(tmp, width = 10, height = 8)
+  on.exit({ dev.off(); unlink(tmp) })
   expect_error(source(system.file("demo/meucci_ffv.R", package="PortfolioAnalytics")), NA)
 })
 
