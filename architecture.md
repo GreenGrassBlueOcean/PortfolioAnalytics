@@ -20,10 +20,10 @@ PortfolioAnalytics is an R package for numerical optimization of portfolios with
 
 ```
 PortfolioAnalytics/
-├── R/                          # 52 source files — core package logic
+├── R/                          # 58 source files — core package logic
 ├── src/                        # C code for higher-order moment computation
 ├── man/                        # 154 .Rd documentation files (roxygen2)
-├── tests/testthat/             # Unit tests (50 files, integrated with R CMD check)
+├── tests/testthat/             # Unit tests (68 files, integrated with R CMD check)
 ├── demo/                       # 36 demonstration scripts
 ├── vignettes/                  # 6 vignettes (pre-built PDFs via R.rsp::asis)
 ├── data/                       # Sample datasets (DailyReturns, indexes)
@@ -473,7 +473,7 @@ chart.EfficientFrontierCompare(list(ef1, ef2))
 - ~~**Stray debug code in production:**~~ ✅ Fixed — Removed bare `print(weights)` debug call; replaced other bare `print()` calls with `message()`/`warning()`/`.Deprecated()`. Added `.lintr` with `print_linter()` and CI lint job. See Proposal #2.
 - ~~**Type-unsafe failure returns:**~~ ✅ Fixed — All solver failure paths now return `optimization_failure` S3 objects instead of bare character strings. Constructor, predicate, and print method exported. See Proposal #1.
 - ~~**Non-reentrant tracing:**~~ ✅ Fixed — Replaced global `.storage` environment with per-call local `storage_env` (Proposal #8). Trace accumulation for DEoptim is now fully reentrant.
-- ~~**Absent automated tests:**~~ ✅ Fixed — 50 test files in `tests/testthat/` integrated with `R CMD check`. Proposals 1–14 added 14 test files (559 assertions). Coverage improvement campaign (Phases 1–6) added 8 more test files (288 tests). Dead CPLEX test files removed. Stale golden-value tests replaced with structural property checks (see Test Quality section below).
+- ~~**Absent automated tests:**~~ ✅ Fixed — 68 test files in `tests/testthat/` integrated with `R CMD check` (2,383 assertions total). Proposals 1–14 added 14 test files (559 assertions). Initial coverage campaign (Phases 1–6) added 8 test files (288 tests). Phase 2 coverage plan (Phases 1–3 of 5) added 11 test files (188 tests, 6 bugs fixed). Dead CPLEX test files removed. Stale golden-value tests replaced with structural property checks (see Test Quality section below).
 - ~~**Result validation missing:**~~ ✅ Fixed — `check_portfolio_feasibility()` validates returned weights against all constraints post-optimization, with binding detection and solver diagnostics. Integrated into `optimize.portfolio_v2()` via `check_feasibility=TRUE`. See Proposals #3 and #12.
 
 #### Structural Issues
@@ -526,10 +526,10 @@ These add capabilities needed for robust production deployment.
 
 PortfolioAnalytics is an excellent **research tool** and **specification framework** with unmatched breadth: no other R package covers this many solver backends, constraint types, and risk measures in a single API. The specification-then-solve design is sound and the v2.0 CVXR/CSM additions are genuinely novel.
 
-**All 14 improvement proposals have been implemented and tested** (559 assertions from proposals, plus 288 from the coverage improvement campaign — 847+ total). The original production risks have been addressed:
+**All 14 improvement proposals have been implemented and tested** (559 assertions from proposals, plus 288 from the initial coverage campaign + 188 from the Phase 2 plan — 1,035+ total). The original production risks have been addressed:
 
 1. ~~Type-unsafe error handling~~ → Structured `optimization_failure` S3 objects (Proposal #1)
-2. ~~Absent automated testing~~ → 50 test files with 847+ assertions (14 from proposals + 8 from coverage campaign)
+2. ~~Absent automated testing~~ → 68 test files with 2,383 assertions (14 from proposals + 8 from initial coverage campaign + 11 from Phase 2 plan)
 3. ~~No post-optimization feasibility validation~~ → `check_portfolio_feasibility()` with binding detection and solver diagnostics (Proposals #3, #12)
 4. ~~Global mutable state breaking reentrancy~~ → Per-call local `storage_env` (Proposal #8)
 5. ~~Monolithic solver dispatch~~ → Modular dispatch registry with `register_solver()` extensibility (Proposal #6)
@@ -612,12 +612,12 @@ Largest absolute gaps: `optFUN.R` (495 misses), `generics.R` (432), `optimize.po
 
 - `test_demo_max_return.R`, `test_demo_max_STARR.R`, `test_demo_min_expected_shortfall.R`, `test_demo_min_StdDev.R`, `test_demo_return_target.R`, `test_demo_risk_budgets.R`, `test_demo_weight_concentration.R`, `test_max_Sharpe.R`, `test_demo_efficient_frontier.R`
 
-### Estimated Coverage After All Phases
+### Estimated Coverage After Initial 6 Phases
 
 Target: **62–65%** (from 48.59%), recovering ~1,800 of the 3,864 originally missed lines. The remaining gaps are concentrated in:
 
 - `optimize.portfolio.R` — Complex solver dispatch paths that require full end-to-end optimization runs
-- `charts.risk.R` / `charts.efficient.frontier.R` — Visualization code requiring graphical device testing
+- `charts.risk.R` / `charts.efficient.frontier.R` — Visualization code requiring graphical device testing (largely addressed in Phase 2 Plan, Phase 3)
 - `constraint_fn_map.R` — Deep `rp_transform()` paths with edge-case random portfolio repair logic
 
 ### Bugs Uncovered
@@ -625,9 +625,9 @@ Target: **62–65%** (from 48.59%), recovering ~1,800 of the 3,864 originally mi
 - **`set.portfolio.moments(method = "black_litterman")`** uses `match.call(expand.dots=TRUE)$P` to extract the `P` argument, but this returns an unevaluated language object (symbol/call) rather than the evaluated matrix. When passed to `black.litterman()`, the matrix multiplication `P %*% Sigma` fails with "requires numeric/complex matrix/vector arguments." The standalone `portfolio.moments.bl()` function, which takes `P` as a normal argument, works correctly. This is a pre-existing bug.
 - **`gmv_opt_ptc` (proportional transaction cost via ROI)** produces NA weights — potential solver formulation issue (not yet resolved)
 
-### Coverage Improvement Plan — Phase 2 (15 New Test Files)
+### Coverage Improvement Plan — Phase 2 (15 New Test Files, 11 Completed)
 
-After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a second round of analysis identified **1,987 uncovered lines out of 5,452** remaining. This plan targets ~1,000 of those lines across 15 new test files, aiming to bring coverage to **~82%**.
+After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a second round of analysis identified **1,987 uncovered lines out of 5,452** remaining. This plan targets ~1,000 of those lines across 15 new test files, aiming to bring coverage to **~82%**. Phases 1–3 are complete (188 tests, 6 bugs fixed); Phases 4–5 remain.
 
 **Key principles:**
 1. **Skip deprecated code** — Don't test v1 API (~250 lines); not worth the investment
@@ -672,14 +672,25 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 
 **Known limitation documented:** HHI objective with CVXR requires `conc_aversion` to be set (via `weight_concentration_objective`). If added as a plain risk objective (`name="HHI"`) without `conc_aversion`, the CVXR solver receives `NULL` for `lambda_hhi`, causing a CVXR expression error.
 
-#### Phase 3: Charting Functions (~300 lines)
+#### Phase 3: Charting Functions (~300 lines) ✅ COMPLETED
 
-| Step | Target file(s) | Test file | Focus |
-|------|----------------|-----------|-------|
-| 3A | `charts.risk.R` | `test_charts_risk.R` | Absolute risk type, neighbors parameter, barplot mode, long asset names |
-| 3B | `charts.efficient.frontier.R` | `test_charts_ef.R` | `chart.EfficientFrontierCompare()`, CSM/EQS frontier types, rf/tangent line options |
-| 3C | `charts.DE.R`, `charts.RP.R` | `test_charts_solver.R` | Neighbors display, `chart.assets` toggle, custom risk metrics, barplot mode |
-| 3D | `backtest.plot.R` | `test_backtest_plot.R` | From 0% → ~80%: all plot types (cumulative, drawdown), log returns, multi-asset overlay |
+| Step | Target file(s) | Test file | Tests | Status |
+|------|----------------|-----------|-------|--------|
+| 3A | `charts.risk.R` | `test_charts_risk_advanced.R` | 17 | ✅ chart.RiskBudget absolute/percentage risk types, neighbors (single-number, vector indices, matrix), opt.list line/barplot modes, rebalancing absolute, no-risk-budget warning path, class validation |
+| 3B | `charts.efficient.frontier.R` | `test_charts_ef_advanced.R` | 16 | ✅ CVXR chart.EF (StdDev, ES, rf=NULL, chart.assets=FALSE), CSM scatterFUN limitation, ROI ES frontier, efficient.frontier rf=NULL/chart.assets=FALSE, chart.EF.Weights legend.loc=NULL, chart.EfficientFrontierCompare with/without guidelines, chart.EfficientFrontierOverlay chart.assets=FALSE + legend |
+| 3C | `charts.DE.R`, `charts.RP.R`, `charts.multiple.R` | `test_charts_solver_advanced.R` | 16 | ✅ DE chart.RiskReward with chart.assets, RP chart.Weights neighbors (single/vector/matrix), chart.Weights.opt.list line/barplot, chart.RiskReward.opt.list with chart.assets, chart.Weights.rebalancing |
+| 3D | `backtest.plot.R` | `test_backtest_plot.R` | 17 | ✅ All plotType modes (both/cumRet/drawdown), single+multi-asset, log_return, drawdown_on=NULL/integer, custom styles (colorSet/ltySet/lwdSet), plotType aliases (ret/cumret) |
+
+**Bug fixed in Phase 3:**
+
+| File | Line | Bug | Fix |
+|------|------|-----|-----|
+| `applyFUN.R` | 12 | `applyFUN(R, weights, FUN, arguments)` — `arguments` had no default value | Added `arguments=NULL` default; CVXR chart.EF methods called `applyFUN()` without `arguments`, causing "argument missing" error |
+
+**Known limitations documented (not fixed):**
+- `scatterFUN` has no CSM/EQS cases (commented out at lines 143–152 of `applyFUN.R`); `chart.EfficientFrontier.optimize.portfolio.CVXR` with `match.col="CSM"` errors on asset scatter
+- `chart.EfficientFrontier.optimize.portfolio.ROI` with `match.col="ETL"` fails (subscript out of bounds) because `meanetl.efficient.frontier` produces column named "ES", not "ETL"
+- `chart.Scatter.DE` neighbors fail with low `itermax` (extractStats returns insufficient rows)
 
 #### Phase 4: Constraints, Validation & Utilities (~180 lines)
 
@@ -705,23 +716,6 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 | 2 (Efficient frontier & extraction) | 51 | 2 | 2044 |
 | 3 (Charting functions) | 66 | 1 | 2383 |
 | 4–5 | — | — | — |
-
-**Phase 3 Details:**
-- **3A** (`test_charts_risk_advanced.R`, 17 tests): chart.RiskBudget.optimize.portfolio absolute/percentage risk types, neighbors (single-number, vector indices, matrix), opt.list line/barplot modes with absolute/percentage, rebalancing, no-risk-budget warning path
-- **3B** (`test_charts_ef_advanced.R`, 16 tests): CVXR chart.EfficientFrontier (StdDev, ES, rf=NULL, chart.assets=FALSE), CSM scatterFUN limitation, ROI ES frontier, efficient.frontier rf=NULL/chart.assets=FALSE, chart.EF.Weights legend.loc=NULL, chart.EfficientFrontierCompare with/without guidelines, chart.EfficientFrontierOverlay chart.assets=FALSE + legend
-- **3C** (`test_charts_solver_advanced.R`, 16 tests): DE chart.RiskReward with chart.assets, RP chart.Weights neighbors (single/vector/matrix), chart.Weights.opt.list line/barplot, chart.RiskReward.opt.list with chart.assets, chart.Weights.rebalancing
-- **3D** (`test_backtest_plot.R`, 17 tests): All plotType modes (both/cumRet/drawdown), single+multi-asset, log_return, drawdown_on=NULL/integer, custom styles, plotType aliases (ret/cumret)
-
-**Phase 3 Bug Fixed:**
-
-| File | Line | Bug | Fix |
-|------|------|-----|-----|
-| `applyFUN.R` | 12 | `applyFUN(R, weights, FUN, arguments)` — `arguments` had no default value | Added `arguments=NULL` default; CVXR chart.EF methods called `applyFUN()` without `arguments`, causing "argument missing" error |
-
-**Known Limitations Documented (not fixed):**
-- `scatterFUN` has no CSM/EQS cases (commented out at lines 143–152 of `applyFUN.R`); chart.EfficientFrontier.optimize.portfolio.CVXR with `match.col="CSM"` errors on asset scatter
-- `chart.EfficientFrontier.optimize.portfolio.ROI` with `match.col="ETL"` fails (subscript out of bounds) because `meanetl.efficient.frontier` produces column named "ES", not "ETL"
-- `chart.Scatter.DE` neighbors fail with low `itermax` (extractStats returns insufficient rows)
 
 **Total bugs fixed:** 6 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`, 1 in `applyFUN.R`)
 
