@@ -735,6 +735,22 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 
 All 5 phases complete. ~1,000 lines recovered → coverage **~64% → ~82%** (realistic target that skips deprecated code and incomplete implementations). Remaining uncovered lines are concentrated in deprecated v1 code, incomplete feature stubs, deep error-handling paths in stochastic solvers, and `match.call()` bug paths.
 
+#### Deprecated Code Excluded from Coverage (`# nocov`)
+
+All deprecated v1 functions are marked with `# nocov start` / `# nocov end` so `covr` excludes them from coverage metrics. `optimize.portfolio.parallel` is also excluded (requires parallel backend). Total: **~1,031 code lines** excluded across 9 functions in 7 files:
+
+| Function | File | Code lines |
+|----------|------|------------|
+| `optimize.portfolio_v1` | `optimize.portfolio.R` | 433 |
+| `constrained_objective_v1` | `constrained_objective.R` | 197 |
+| `constraint_v1` | `constraints.R` | 109 |
+| `randomize_portfolio_v1` | `random_portfolios.R` | 72 |
+| `set.portfolio.moments_v1` | `moment.functions.R` | 71 |
+| `add.objective_v1` | `objective.R` | 63 |
+| `optimize.portfolio.rebalancing_v1` | `optimize.portfolio.R` | 37 |
+| `optimize.portfolio.parallel` | `optimize.portfolio.R` | 31 |
+| `random_portfolios_v1` | `random_portfolios.R` | 18 |
+
 ---
 
 ## Load-Bearing API Contracts

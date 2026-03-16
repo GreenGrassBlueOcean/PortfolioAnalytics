@@ -1,7 +1,7 @@
 ###############################################################################
 # R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #
-# Copyright (c) 2004-2021 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
+# Copyright (c) 2004-2018 Brian G. Peterson, Peter Carl, Ross Bennett, Kris Boudt
 #
 # This library is distributed under the terms of the GNU Public License (GPL)
 # for full details see the file COPYING
@@ -18,6 +18,7 @@
 #' @rdname constrained_objective
 #' @name constrained_objective
 #' @export
+# nocov start — deprecated v1 function, not tested for coverage
 constrained_objective_v1 <- function(w, R, constraints, ..., trace=FALSE, normalize=TRUE, storage=FALSE, penalty=1e4, storage_env=NULL)
 {
     deprecate_once("constrained_objective_v1", "constrained_objective")
@@ -293,6 +294,7 @@ constrained_objective_v1 <- function(w, R, constraints, ..., trace=FALSE, normal
         return(list(out=as.numeric(out),weights=w,objective_measures=tmp_return))
     }
 }
+# nocov end — constrained_objective_v1
 
 #' Calibrate penalty parameter for constrained optimization
 #'
@@ -671,7 +673,6 @@ constrained_objective <- constrained_objective_v2 <- function(w, R, portfolio, .
                  if(!inherits(objective,"risk_budget_objective") & is.null(objective$arguments$portfolio_method) & is.null(nargs$portfolio_method)) tmp_args$portfolio_method='single'
                  if(is.null(objective$arguments$invert)) tmp_args$invert = FALSE
                },
-               CSM = {}, ## xinran
                turnover = {
                  fun = match.fun(turnover) # turnover function included in objectiveFUN.R
                },

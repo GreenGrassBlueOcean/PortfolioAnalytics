@@ -57,6 +57,7 @@ is.objective <- function( x ) {
 #' @rdname add.objective
 #' @name add.objective
 #' @export
+# nocov start — deprecated v1 function, not tested for coverage
 add.objective_v1 <- function(constraints, type, name, arguments=NULL, enabled=TRUE, ..., indexnum=NULL)
 {
     .Deprecated("add.objective", package = "PortfolioAnalytics",
@@ -127,6 +128,7 @@ add.objective_v1 <- function(constraints, type, name, arguments=NULL, enabled=TR
     }
     return(constraints)
 }
+# nocov end — add.objective_v1
 
 #' General interface for adding optimization objectives, including risk, return, and risk budget
 #' 

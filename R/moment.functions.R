@@ -65,6 +65,7 @@ CCCgarch.MM = function(R, momentargs = NULL , ... )
 #' @param constraints an object of type "constraints" specifying the constraints for the optimization, see \code{\link{constraint}}
 #' @param momentargs list containing arguments to be passed down to lower level functions, default NULL
 #' @param \dots any other passthru parameters
+# nocov start — deprecated v1 function, not tested for coverage
 set.portfolio.moments_v1 <- function(R, constraints, momentargs=NULL,...){
   deprecate_once("set.portfolio.moments_v1", "set.portfolio.moments",
                  msg = paste("'set.portfolio.moments_v1' is deprecated.",
@@ -143,6 +144,7 @@ set.portfolio.moments_v1 <- function(R, constraints, momentargs=NULL,...){
   }    
   return(momentargs)
 }
+# nocov end — set.portfolio.moments_v1
 
 # ---------------------------------------------------------------------------
 # Private helpers for set.portfolio.moments_v2 (Proposal #9)

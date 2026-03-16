@@ -58,6 +58,7 @@ generatesequence <- function (min=.01, max=1, by=min/max, rounding=3 )
 #' @return named weights vector
 #' @author Peter Carl, Brian G. Peterson, (based on an idea by Pat Burns)
 #' @export
+# nocov start — deprecated v1 function, not tested for coverage
 randomize_portfolio_v1 <- function (rpconstraints, max_permutations=200, rounding=3)
 {
   deprecate_once("randomize_portfolio_v1", "randomize_portfolio")
@@ -151,6 +152,7 @@ randomize_portfolio_v1 <- function (rpconstraints, max_permutations=200, roundin
   }
   return(portfolio)
 }
+# nocov end — randomize_portfolio_v1
 
 #' deprecated random portfolios wrapper until we write a random trades function
 #' 
@@ -189,6 +191,7 @@ random_walk_portfolios <-function(...) {
 #' head(rp)
 #' }
 #' @export
+# nocov start — deprecated v1 function, not tested for coverage
 random_portfolios_v1 <- function (rpconstraints,permutations=100,...)
 {
   .Deprecated("random_portfolios", package = "PortfolioAnalytics")
@@ -212,6 +215,7 @@ random_portfolios_v1 <- function (rpconstraints,permutations=100,...)
   colnames(result)<-names(seed)
   return(result)
 }
+# nocov end — random_portfolios_v1
 
 #' version 2 generate random permutations of a portfolio seed meeting your constraints on the weights of each asset
 #' 

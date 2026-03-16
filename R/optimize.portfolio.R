@@ -14,6 +14,7 @@
 #' @rdname optimize.portfolio
 #' @name optimize.portfolio
 #' @export optimize.portfolio_v1
+# nocov start — deprecated v1 function, not tested for coverage
 optimize.portfolio_v1 <- function(
 		R,
 		constraints,
@@ -578,6 +579,7 @@ optimize.portfolio_v1 <- function(
     class(out)<-c(paste("optimize.portfolio",optimize_method,sep='.'),"optimize.portfolio")
     return(out)
 }
+# nocov end — optimize.portfolio_v1
 
 
 
@@ -1039,6 +1041,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
 #' @rdname optimize.portfolio.rebalancing
 #' @name optimize.portfolio.rebalancing
 #' @export
+# nocov start — deprecated v1 function, not tested for coverage
 optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("DEoptim","random","ROI"), search_size=20000, trace=FALSE, ..., rp=NULL, rebalance_on=NULL, training_period=NULL, rolling_window=NULL)
 {
     .Deprecated("optimize.portfolio.rebalancing", package = "PortfolioAnalytics",
@@ -1089,6 +1092,7 @@ optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("D
     class(out_list)<-c("optimize.portfolio.rebalancing")
     return(out_list)
 }
+# nocov end — optimize.portfolio.rebalancing_v1
 
 #' Portfolio Optimization with Rebalancing Periods
 #' 
@@ -1430,6 +1434,7 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
 #' @return a list containing the optimal weights, some summary statistics, the function call, and optionally trace information 
 #' @author Kris Boudt, Peter Carl, Brian G. Peterson
 #' @export
+# nocov start — requires parallel backend, not tested for coverage
 optimize.portfolio.parallel <- function(R,
                                         portfolio,
                                         optimize_method=c("DEoptim","random","ROI","pso","GenSA"),
@@ -1468,6 +1473,7 @@ optimize.portfolio.parallel <- function(R,
     class(out) <- c("optimize.portfolio.parallel")
     return(out)
 }
+# nocov end — optimize.portfolio.parallel
 
 
 #TODO write function to compute an efficient frontier of optimal portfolios

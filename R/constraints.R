@@ -12,6 +12,7 @@
 
 #' @rdname constraint
 #' @export
+# nocov start — deprecated v1 function, not tested for coverage
 constraint_v1 <- function(assets=NULL, ... ,min,max,min_mult,max_mult,min_sum=.99,max_sum=1.01,weight_seq=NULL)
 {
   .Deprecated("portfolio.spec", package = "PortfolioAnalytics",
@@ -142,6 +143,7 @@ constraint_v1 <- function(assets=NULL, ... ,min,max,min_mult,max_mult,min_sum=.9
     class=c("v1_constraint","constraint")
   ))
 }
+# nocov end — constraint_v1
 
 
 #' constructors for class constraint
