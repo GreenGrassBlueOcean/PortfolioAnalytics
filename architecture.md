@@ -22,9 +22,9 @@ PortfolioAnalytics is an R package for numerical optimization of portfolios with
 PortfolioAnalytics/
 ├── R/                          # 58 source files — core package logic
 ├── src/                        # C code for higher-order moment computation
-├── man/                        # 154 .Rd documentation files (roxygen2)
-├── tests/testthat/             # Unit tests (68 files, integrated with R CMD check)
-├── demo/                       # 36 demonstration scripts
+├── man/                        # 167 .Rd documentation files (roxygen2)
+├── tests/testthat/             # Unit tests (79 files, integrated with R CMD check)
+├── demo/                       # 37 demonstration scripts
 ├── vignettes/                  # 6 vignettes (pre-built PDFs via R.rsp::asis)
 ├── data/                       # Sample datasets (DailyReturns, indexes)
 ├── sandbox/                    # Experimental/development scripts
@@ -102,8 +102,10 @@ portfolio.spec()
 
 | File | Key exports | Role |
 |------|-------------|------|
-| `optimize.portfolio.R` | `optimize.portfolio()`, `optimize.portfolio.parallel()`, `optimize.portfolio.rebalancing()` | Main entry point; solver dispatch, parallel execution, rolling-window rebalancing. Handles DEoptim, ROI, CVXR, random, PSO, GenSA, mco |
-| `constrained_objective.R` | `constrained_objective()` | Evaluates objectives with constraint penalties — the function minimized by stochastic solvers |
+| `optimize.portfolio.R` | `optimize.portfolio()`, `optimize.portfolio.parallel()`, `optimize.portfolio.rebalancing()` | Main entry point; solver dispatch via registry, parallel execution, rolling-window rebalancing with warm-start. v1 functions deprecated and excluded from coverage (`# nocov`) |
+| `solver_registry.R` | `get_solver()`, `register_solver()` | Dispatch registry mapping solver names to dedicated handler functions. User-extensible |
+| `solver_deoptim.R`, `solver_roi.R`, `solver_cvxr.R`, `solver_random.R`, `solver_pso.R`, `solver_gensa.R` | `solve_deoptim()`, etc. | Individual solver handlers with uniform contract |
+| `constrained_objective.R` | `constrained_objective()`, `calibrate_penalty()` | Evaluates objectives with constraint penalties — the function minimized by stochastic solvers. Auto-calibrated penalty via `calibrate_penalty()`. v1 version deprecated (`# nocov`) |
 | `optFUN.R` | `gmv_opt()`, `etl_opt()`, `maxret_opt()`, `maxSR_opt()`, etc. | Solver-specific formulations for ROI (LP, QP, MILP) |
 | `constraint_fn_map.R` | `fn_map()`, `rp_transform()` | Weight normalization/transformation to enforce hard constraints |
 | `constraints_ROI.R` | `constraint_ROI()` | Translates constraints into ROI's native representation |
@@ -120,7 +122,7 @@ portfolio.spec()
 
 | File | Key exports | Role |
 |------|-------------|------|
-| `moment.functions.R` | `set.portfolio.moments()`, `CCCgarch.MM()` | Compute and cache 1st–4th moments; GARCH-based estimation |
+| `moment.functions.R` | `set.portfolio.moments()`, `CCCgarch.MM()`, `portfolio.moments.boudt()`, `portfolio.moments.bl()` | Compute and cache 1st–4th moments; methods: sample, boudt (factor model), black_litterman, meucci; GARCH-based estimation. `set.portfolio.moments_v1` deprecated. |
 | `custom.covRob.R` | `custom.covRob.MM()`, `.Rocke()`, `.Mcd()`, `.TSGS()`, `MycovRobMcd()`, `MycovRobTSGS()` | **[v2.0+]** Outlier-robust covariance matrix estimators for robust minimum-variance portfolios |
 | `black_litterman.R` | `black.litterman()` | Black-Litterman prior returns |
 | `stat.factor.model.R` | `statistical.factor.model()` | PCA-based factor model for dimensionality reduction |
@@ -174,7 +176,16 @@ portfolio.spec()
 
 Performance-critical higher-order moment calculations are implemented in C and accessed via `.Call()`.
 
-### I. Utilities
+### I. Validation & Safety
+
+| File | Key exports | Role |
+|------|-------------|------|
+| `validate.R` | `validate_portfolio()` | 14 error checks + 2 warning checks before optimization |
+| `validate_solution.R` | `check_portfolio_feasibility()`, `extractFeasibility()` | Post-optimization constraint feasibility checking with binding detection |
+| `optimization_failure.R` | `optimization_failure()`, `is.optimization_failure()` | Structured error objects for solver failures |
+| `deprecation.R` | `deprecate_once()` | Once-per-session deprecation warnings for hot-path v1 functions |
+
+### J. Utilities
 
 | File | Key exports | Role |
 |------|-------------|------|
@@ -341,10 +352,12 @@ Six root causes were identified and fixed:
 
 The package maintains two internal API versions for backward compatibility:
 
-- **v1**: Constraints stored as a single `constraint` object. Functions suffixed `_v1`.
+- **v1** (deprecated): Constraints stored as a single `constraint` object. Functions suffixed `_v1`. All v1 functions emit deprecation warnings and are excluded from code coverage via `# nocov` markers (~1,031 code lines). Full removal planned for the next major release.
 - **v2** (current): Constraints stored as a list within the `portfolio.spec` object. Functions suffixed `_v2`.
 
-`add.constraint()` detects the version and dispatches accordingly. `update_constraint_v1tov2()` provides migration.
+`add.constraint()` detects the version and dispatches accordingly. `update_constraint_v1tov2()` provides migration (intentionally NOT deprecated — still needed during the transition period).
+
+Deprecated v1 functions: `optimize.portfolio_v1`, `optimize.portfolio.rebalancing_v1`, `constrained_objective_v1`, `constraint_v1`, `add.objective_v1`, `set.portfolio.moments_v1`, `randomize_portfolio_v1`, `random_portfolios_v1`.
 
 ---
 
@@ -360,11 +373,13 @@ The package maintains two internal API versions for backward compatibility:
 
 **Hard (Depends):** `R (>= 4.0.0)`, `zoo`, `xts (>= 0.10-1)`, `foreach`, `PerformanceAnalytics (>= 1.5.1)`
 
-**Imports:** `methods`, `GenSA`, `ROI.plugin.symphony`, `mco`, `pso`
+**Imports:** `methods`
 
-**Optional solvers (Suggests):** `DEoptim`, `ROI`, `ROI.plugin.glpk`, `ROI.plugin.quadprog`, `Rglpk`, `quadprog`, `nloptr`, `CVXR`, `osqp`
+**Optional solvers (Suggests):** `DEoptim`, `GenSA`, `pso`, `ROI`, `ROI.plugin.glpk`, `ROI.plugin.quadprog`, `ROI.plugin.symphony`, `Rglpk`, `quadprog`, `nloptr`, `CVXR`, `osqp`
 
-**Other Suggests:** `quantmod`, `fGarch`, `corpcor`, `robustbase`, `MASS`, `data.table`, `Matrix`, `GSE`, `RobStatTM`, `PCRA`, `RPESE`, `TTR`, `testthat`, `knitr`, `rmarkdown`, `R.rsp`, `doParallel`, `doMC`, `iterators`
+**Parallel (Suggests):** `doParallel`, `doMC`, `iterators`
+
+**Other Suggests:** `quantmod`, `fGarch`, `corpcor`, `robustbase`, `MASS`, `data.table`, `Matrix`, `GSE`, `RobStatTM`, `PCRA`, `RPESE`, `TTR`, `testthat`, `knitr`, `rmarkdown`, `R.rsp`, `lintr`
 
 ---
 
@@ -478,12 +493,12 @@ chart.EfficientFrontierCompare(list(ef1, ef2))
 
 #### Structural Issues
 
-- **Massive code duplication (partially mitigated):** `optimize.portfolio_v1`/`_v2` are near-complete copies; `constrained_objective_v1`/`_v2` similarly duplicated. v1 functions now deprecated via Proposal #7; moment estimation refactored to table-driven approach via Proposal #9. Duplication will be fully eliminated upon v1 removal in the next major release.
+- **Massive code duplication (partially mitigated):** `optimize.portfolio_v1`/`_v2` are near-complete copies; `constrained_objective_v1`/`_v2` similarly duplicated. All v1 functions now deprecated via Proposal #7, excluded from coverage via `# nocov` markers (~1,031 lines), and `set.portfolio.moments_v1` additionally deprecated. Moment estimation refactored to table-driven approach via Proposal #9. Duplication will be fully eliminated upon v1 removal in the next major release.
 - ~~**Heuristic constraint repair without guarantee:**~~ ✅ Fixed — New `project_weights()` uses Dykstra's alternating projection algorithm for deterministic, guaranteed-convergent constraint repair on convex sets (box, weight-sum, group-sum). Falls back to `rp_transform()` only for non-convex constraints (position_limit, leverage). See Proposal #14.
 - ~~**Magic penalty numbers:**~~ ✅ Fixed — `calibrate_penalty()` auto-scales the penalty relative to objective magnitude. Default `penalty="auto"` in `optimize.portfolio()`. See Proposal #5.
 - ~~**Dependency bloat (partially mitigated):**~~ ✅ Mitigated — `doParallel`, `snow`, `doSNOW` moved from `Imports` to `Suggests` with `requireNamespace()` guards. Checked-in `src/PortfolioAnalytics.dll` removed from git. GenSA/pso/ROI.plugin.symphony were already in `Suggests` (original claim was incorrect). `mco` was never used and was not in DESCRIPTION. See Proposal #10.
 - ~~**No input validation:**~~ ✅ Fixed — `validate_portfolio()` performs 14 error checks and 2 warning checks at the API boundary before optimization begins. Integrated into `optimize.portfolio_v2()`. See Proposal #11.
-- ~~**Dead weight from v1/v2 versioning:**~~ ✅ Mitigated — All v1 functions now emit deprecation warnings (Proposal #7). V1 functions remain functional but users are directed to v2 equivalents. Full removal planned for the next major release.
+- ~~**Dead weight from v1/v2 versioning:**~~ ✅ Mitigated — All 8 v1 functions emit deprecation warnings (Proposal #7) and are excluded from code coverage via `# nocov` markers (~1,031 lines). `set.portfolio.moments_v1` additionally deprecated via `deprecate_once()`. V1 functions remain functional but users are directed to v2 equivalents. Full removal planned for the next major release.
 
 ---
 
@@ -506,7 +521,7 @@ These reduce technical debt and make the codebase maintainable. Each can be done
 | # | Proposal | Rationale | Files affected |
 |---|----------|-----------|----------------|
 | 6 | ~~**Extract solvers into separate functions with dispatch table**~~ ✅ | **Implemented.** Replaced the monolithic `if/else if` chain in `optimize.portfolio_v2()` (~600 lines of inline solver logic) with a dispatch registry mapping solver names to dedicated functions. Each solver lives in its own file with a uniform contract: `(R, portfolio, constraints, moments, penalty, N, call, trace, ...) → list(weights, objective_measures, opt_values, out, call)`. The dispatch registry (`solver_registry.R`) provides `get_solver()` for lookup and `register_solver()` (exported) for user-extensible custom solvers. ROI sub-solver aliasing (quadprog/glpk/symphony/ipop all → `solve_roi`) handled via explicit map rather than naming convention. Inline `normalize_weights` closure extracted to `normalize_portfolio_weights(weights, constraints)`. 21 test assertions in `test_solver_registry.R`. | `R/optimize.portfolio.R`, `R/solver_registry.R` (new), `R/solver_deoptim.R` (new), `R/solver_random.R` (new), `R/solver_roi.R` (new), `R/solver_pso.R` (new), `R/solver_gensa.R` (new), `NAMESPACE`, `tests/testthat/test_solver_registry.R` (new) |
-| 7 | ~~**Deprecate v1 functions**~~ ✅ | **Implemented.** All 7 exported v1 functions now emit deprecation warnings. Entry-point functions (`constraint_v1`, `add.objective_v1`, `optimize.portfolio_v1`, `optimize.portfolio.rebalancing_v1`, `random_portfolios_v1`) use standard `.Deprecated()`. Hot-path functions (`constrained_objective_v1`, `randomize_portfolio_v1`) use a once-per-session `deprecate_once()` utility to avoid flooding the console during optimization loops. The v2 dispatchers (`optimize.portfolio()`, `optimize.portfolio.rebalancing()`) now emit deprecation `warning()` instead of `message()` when auto-converting `v1_constraint` objects. Bridge function `update_constraint_v1tov2()` is intentionally NOT deprecated (still needed during migration). All v1 functions remain fully functional. 15 test assertions in `test_v1_deprecation.R`. | `R/deprecation.R` (new), `R/constraints.R`, `R/objective.R`, `R/optimize.portfolio.R`, `R/random_portfolios.R`, `R/constrained_objective.R`, `tests/testthat/test_v1_deprecation.R` (new), `tests/testthat/test_backwards_compat.R` |
+| 7 | ~~**Deprecate v1 functions**~~ ✅ | **Implemented.** All 8 exported v1 functions now emit deprecation warnings and are excluded from code coverage (`# nocov`, ~1,031 lines total). Entry-point functions (`constraint_v1`, `add.objective_v1`, `optimize.portfolio_v1`, `optimize.portfolio.rebalancing_v1`, `random_portfolios_v1`) use standard `.Deprecated()`. Hot-path functions (`constrained_objective_v1`, `randomize_portfolio_v1`) use a once-per-session `deprecate_once()` utility to avoid flooding the console during optimization loops. `set.portfolio.moments_v1` also deprecated via `deprecate_once()` (Phase 5). The v2 dispatchers (`optimize.portfolio()`, `optimize.portfolio.rebalancing()`) now emit deprecation `warning()` instead of `message()` when auto-converting `v1_constraint` objects. Bridge function `update_constraint_v1tov2()` is intentionally NOT deprecated (still needed during migration). All v1 functions remain fully functional. 15 test assertions in `test_v1_deprecation.R`. | `R/deprecation.R` (new), `R/constraints.R`, `R/objective.R`, `R/optimize.portfolio.R`, `R/random_portfolios.R`, `R/constrained_objective.R`, `tests/testthat/test_v1_deprecation.R` (new), `tests/testthat/test_backwards_compat.R` |
 | 8 | ~~**Replace global `.storage` with local environment**~~ ✅ | **Implemented.** Replaced the global `.storage` environment (created via `<<-` in `.onLoad()`) with a per-call local `storage_env` (`new.env(parent = emptyenv())`) created inside each DEoptim solver call. Added `storage_env` parameter to `constrained_objective` (v1 and v2); defaults to `NULL` (disabled) for backward compatibility. DEoptim passes `storage_env` through `...` to the objective function. Removed `.onLoad()` `.storage` creation. Uses defensive `tryCatch(get(..., inherits = FALSE))` pattern. 18 test assertions in `test_local_storage.R` covering isolation, accumulation, no-leakage, and sequential independence. Note: SNOW parallel DEoptim (`parallelType=2`) cannot accumulate trace results because workers receive serialized copies — this is a pre-existing limitation, not a regression. | `R/constrained_objective.R`, `R/solver_deoptim.R`, `R/optimize.portfolio.R`, `tests/testthat/test_local_storage.R` (new) |
 | 9 | ~~**Refactor moment computation to eliminate combinatorial switch**~~ ✅ | **Implemented.** Replaced the doubly nested `switch(objective$name, switch(method, ...))` block (~190 lines, ~20 copy-pasted branches) in `set.portfolio.moments_v2()` with a table-driven approach. Three private lookup structures (`.moment_needs` maps objective names to required moments, `.narm_objectives` identifies objectives using `na.rm=TRUE`, `.es_aliases` lists ES/CVaR/ETL variants) plus a `.moment_provider()` closure factory that returns per-method moment computation functions. The refactored loop iterates objectives in order, preserving first-writer-wins semantics via `is.null()` guards and per-objective `tmpR` switching (cleaned vs raw returns). Known NA-handling inconsistency (mean/StdDev use `na.rm=TRUE`; VaR/ES do not) preserved exactly and documented. ROI+ES skip, unknown-method silent fall-through, and GARCH pre-processing all preserved. Adding a new objective or estimation method now requires updating only the lookup tables. 39 test assertions in `test_moment_refactor.R`. | `R/moment.functions.R`, `tests/testthat/test_moment_refactor.R` (new) |
 | 10 | ~~**Move optional packages to Suggests; remove build artifacts from repo**~~ ✅ | **Implemented.** The original proposal's claim that GenSA/pso/ROI.plugin.symphony/mco were in `Imports` was incorrect — they were already in `Suggests` with proper `requireNamespace()` guards. The actual packages in `Imports` that were optional were `doParallel`, `snow`, and `doSNOW` (parallel computing packages only needed when users explicitly request parallel execution). Moved all three from `Imports` to `Suggests`, leaving only `methods` in `Imports`. Added `requireNamespace()` guards with informative error messages at all call sites: `solver_deoptim.R` (snow+doSNOW for `parallelType=2`), `optimize.portfolio.R` (legacy DEoptim parallel), and `random_portfolios.R` (doParallel for `Multicore=TRUE`). Removed `src/PortfolioAnalytics.dll` (128 KB build artifact) from git tracking via `git rm --cached`; `.gitignore` already had rules to prevent re-addition. The `.o` object files were already properly gitignored and untracked. `mco` was never used anywhere in the codebase and was not in DESCRIPTION. 15 test assertions in `test_optional_packages.R`. | `DESCRIPTION`, `R/solver_deoptim.R`, `R/optimize.portfolio.R`, `R/random_portfolios.R`, `src/PortfolioAnalytics.dll` (removed from git), `tests/testthat/test_optional_packages.R` (new) |
@@ -526,7 +541,7 @@ These add capabilities needed for robust production deployment.
 
 PortfolioAnalytics is an excellent **research tool** and **specification framework** with unmatched breadth: no other R package covers this many solver backends, constraint types, and risk measures in a single API. The specification-then-solve design is sound and the v2.0 CVXR/CSM additions are genuinely novel.
 
-**All 14 improvement proposals have been implemented and tested** (559 assertions from proposals, plus 288 from the initial coverage campaign + 188 from the Phase 2 plan — 1,035+ total). The original production risks have been addressed:
+**All 14 improvement proposals have been implemented and tested** (559 assertions from proposals, plus 288 from the initial coverage campaign + 373 from the Phase 2 coverage plan — 1,220+ total). All deprecated v1 code is excluded from coverage via `# nocov` markers (~1,031 lines). The original production risks have been addressed:
 
 1. ~~Type-unsafe error handling~~ → Structured `optimization_failure` S3 objects (Proposal #1)
 2. ~~Absent automated testing~~ → 79 test files with 2,776 assertions (14 from proposals + 8 from initial coverage campaign + 13 from Phase 2 plan)
