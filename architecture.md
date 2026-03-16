@@ -473,7 +473,7 @@ chart.EfficientFrontierCompare(list(ef1, ef2))
 - ~~**Stray debug code in production:**~~ ✅ Fixed — Removed bare `print(weights)` debug call; replaced other bare `print()` calls with `message()`/`warning()`/`.Deprecated()`. Added `.lintr` with `print_linter()` and CI lint job. See Proposal #2.
 - ~~**Type-unsafe failure returns:**~~ ✅ Fixed — All solver failure paths now return `optimization_failure` S3 objects instead of bare character strings. Constructor, predicate, and print method exported. See Proposal #1.
 - ~~**Non-reentrant tracing:**~~ ✅ Fixed — Replaced global `.storage` environment with per-call local `storage_env` (Proposal #8). Trace accumulation for DEoptim is now fully reentrant.
-- ~~**Absent automated tests:**~~ ✅ Fixed — 68 test files in `tests/testthat/` integrated with `R CMD check` (2,383 assertions total). Proposals 1–14 added 14 test files (559 assertions). Initial coverage campaign (Phases 1–6) added 8 test files (288 tests). Phase 2 coverage plan (Phases 1–3 of 5) added 11 test files (188 tests, 6 bugs fixed). Dead CPLEX test files removed. Stale golden-value tests replaced with structural property checks (see Test Quality section below).
+- ~~**Absent automated tests:**~~ ✅ Fixed — 79 test files in `tests/testthat/` integrated with `R CMD check` (2,776 assertions total). Proposals 1–14 added 14 test files (559 assertions). Initial coverage campaign (Phases 1–6) added 8 test files (288 tests). Phase 2 coverage plan (Phases 1–5 of 5) added 13 test files (373 tests, 7 bugs fixed, 1 deprecation). Dead CPLEX test files removed. Stale golden-value tests replaced with structural property checks (see Test Quality section below).
 - ~~**Result validation missing:**~~ ✅ Fixed — `check_portfolio_feasibility()` validates returned weights against all constraints post-optimization, with binding detection and solver diagnostics. Integrated into `optimize.portfolio_v2()` via `check_feasibility=TRUE`. See Proposals #3 and #12.
 
 #### Structural Issues
@@ -529,7 +529,7 @@ PortfolioAnalytics is an excellent **research tool** and **specification framewo
 **All 14 improvement proposals have been implemented and tested** (559 assertions from proposals, plus 288 from the initial coverage campaign + 188 from the Phase 2 plan — 1,035+ total). The original production risks have been addressed:
 
 1. ~~Type-unsafe error handling~~ → Structured `optimization_failure` S3 objects (Proposal #1)
-2. ~~Absent automated testing~~ → 68 test files with 2,383 assertions (14 from proposals + 8 from initial coverage campaign + 11 from Phase 2 plan)
+2. ~~Absent automated testing~~ → 79 test files with 2,776 assertions (14 from proposals + 8 from initial coverage campaign + 13 from Phase 2 plan)
 3. ~~No post-optimization feasibility validation~~ → `check_portfolio_feasibility()` with binding detection and solver diagnostics (Proposals #3, #12)
 4. ~~Global mutable state breaking reentrancy~~ → Per-call local `storage_env` (Proposal #8)
 5. ~~Monolithic solver dispatch~~ → Modular dispatch registry with `register_solver()` extensibility (Proposal #6)
@@ -701,12 +701,21 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 | 4C | `validate_solution.R` | `test_validate_solution_advanced.R` | `classify_constraint_status()` helpers, NA weight guards, `as.data.frame.feasibility_report()` edge cases |
 | 4D | `generics.R` | `test_generics_advanced.R` | Disabled constraints in print output, category labels display, risk budget summary formatting |
 
-#### Phase 5: Moment Functions & Robust Covariance (~130 lines)
+#### Phase 5: Moment Functions & Robust Covariance (~130 lines) ✅ COMPLETED
 
-| Step | Target file(s) | Test file | Focus |
-|------|----------------|-----------|-------|
-| 5A | `moment.functions.R` | `test_moments_advanced.R` | GARCH moment estimation (`CCCgarch.MM`), ROI-specific moment branches, error handling for missing packages |
-| 5B | `custom.covRob.R` | `test_custom_covRob.R` | From 0% → ~80%: `custom.covRob.MM()`, `.Rocke()`, `.Mcd()`, `.TSGS()` wrappers, `MycovRobMcd()`, `MycovRobTSGS()` |
+| Step | Target file(s) | Test file | Tests | Status |
+|------|----------------|-----------|-------|--------|
+| 5A | `moment.functions.R` | `test_moments_advanced.R` | 36 | ✅ CCCgarch.MM (full GARCH moment estimation: sigma PD, m3/m4 dimensions, mu default/custom, momentargs preservation), GARCH detection loop documented as dead code in v2, per-objective clean switching (mixed clean/raw, outlier detection), v2 boudt method (CSM, k parameter, clean fit), v2 meucci method (custom posterior_p match.call bug, ES moments, ROI=TRUE skip), v2 black_litterman match.call bug, portfolio.moments.bl (ES aliases, CSM, custom Mu/Sigma, multiple clean warning), portfolio.moments.boudt (CSM, na.rm consistency, ETL+ROI skip), garch.mm edge cases, set.portfolio.moments_v1 deprecation, v2 edge cases (no objectives, unknown objective, pre-existing momentargs, first-writer-wins) |
+| 5B | `custom.covRob.R` | `test_custom_covRob.R` | 30 | ✅ MycovRobMcd control defaults (11 params, integer coercion, beta fallback), MycovRobTSGS control defaults (match.arg for filter/loss/init, unnamed 6th element quirk), custom.covRob.MM (mu/sigma structure, PD check, plausible estimates, custom tol/maxit), custom.covRob.Rocke (mu/sigma structure, PD, custom params), custom.covRob.Mcd (mu/sigma structure, PD, do.call for custom control, direct-call match.call bug documented, alpha via do.call), custom.covRob.TSGS (mu/sigma structure, do.call for custom control, plausible estimates), integration test (custom.covRob.Mcd as momentFUN in optimize.portfolio) |
+
+**Deprecation in Phase 5:** `set.portfolio.moments_v1` deprecated via `deprecate_once()` (fires once per session). It was only used as the default `momentFUN` for the already-deprecated `optimize.portfolio_v1`. Standalone functions `portfolio.moments.boudt` and `portfolio.moments.bl` are NOT deprecated (they are v2-compatible and user-callable as custom `momentFUN`).
+
+**Known bugs documented (not fixed — pre-existing `match.call()` pattern):**
+- `CCCgarch.MM(R, mu = custom_mu)` — `match.call(expand.dots=TRUE)$mu` returns unevaluated symbol; errors on `rep(mu, T)`
+- `set.portfolio.moments(method="black_litterman", P=P_mat)` — same `match.call` issue with `$P`
+- `set.portfolio.moments(method="meucci", posterior_p=pp)` — same `match.call` issue with `$posterior_p`
+- `custom.covRob.Mcd(R, control=ctrl)` / `custom.covRob.TSGS(R, control=ctrl)` — `match.call()$control` returns symbol; `control$alpha` fails. Workaround: use `do.call()` (which is how `optimize.portfolio` calls these functions internally, so production path works).
+- GARCH detection loop in `set.portfolio.moments_v2` (lines 282-294) — `grep('garch', portfolio)` + `unlist()` produces prefixed names (e.g., `"objectives.arguments.garch"`), making `objective$garch` always NULL. Effectively dead code; `CCCgarch.MM` must be called directly or via custom `momentFUN`.
 
 #### Progress Summary
 
@@ -716,13 +725,15 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 | 2 (Efficient frontier & extraction) | 51 | 2 | 2044 |
 | 3 (Charting functions) | 66 | 1 | 2383 |
 | 4 (Constraints, validation & utilities) | 119 | 1 | 2625 |
-| 5 | — | — | — |
+| 5 (Moment functions & robust covariance) | 66 | 0 | 2776 |
 
 **Total bugs fixed:** 7 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`, 1 in `applyFUN.R`, 1 in `constraint_fn_map.R`)
 
+**Total known bugs documented (pre-existing, not fixed):** 5 `match.call()` pattern bugs + 1 dead-code GARCH loop
+
 #### Expected Outcome
 
-~1,000 lines recovered → coverage **~64% → ~82%** (realistic target that skips deprecated code and incomplete implementations). Remaining uncovered lines will be concentrated in deprecated v1 code, incomplete feature stubs, and deep error-handling paths in stochastic solvers.
+All 5 phases complete. ~1,000 lines recovered → coverage **~64% → ~82%** (realistic target that skips deprecated code and incomplete implementations). Remaining uncovered lines are concentrated in deprecated v1 code, incomplete feature stubs, deep error-handling paths in stochastic solvers, and `match.call()` bug paths.
 
 ---
 

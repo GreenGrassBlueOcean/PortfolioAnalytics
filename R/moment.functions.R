@@ -66,6 +66,10 @@ CCCgarch.MM = function(R, momentargs = NULL , ... )
 #' @param momentargs list containing arguments to be passed down to lower level functions, default NULL
 #' @param \dots any other passthru parameters
 set.portfolio.moments_v1 <- function(R, constraints, momentargs=NULL,...){
+  deprecate_once("set.portfolio.moments_v1", "set.portfolio.moments",
+                 msg = paste("'set.portfolio.moments_v1' is deprecated.",
+                             "Use 'set.portfolio.moments()' with a 'portfolio.spec' object instead.",
+                             sep = "\n"))
   
   if(!hasArg(momentargs) | is.null(momentargs)) momentargs<-list()
   if(is.null(constraints$objectives)) {
