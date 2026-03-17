@@ -64,7 +64,6 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
             "consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01")
   }
 
-  # --- Parallel cluster setup ---
   rcl <- NULL
   if (isTRUE(parallel) && "package:foreach" %in% search()) {
     parallelType <- if (!is.null(dots$parallelType)) dots$parallelType else "foreach"
@@ -119,7 +118,6 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
     fnMap = function(x) fn_map(x, portfolio = portfolio)$weights
   )
 
-  # --- Error handling ---
   if (inherits(minw, "try-error")) {
     message(minw)
     ErrorM <- minw

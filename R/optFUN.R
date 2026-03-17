@@ -21,7 +21,7 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   # Number of assets
   N <- ncol(R)
@@ -72,8 +72,8 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     Amat <- rbind(Amat, Amat.group, -Amat.group)
     dir.vec <- c(dir.vec, rep(">=", (n.groups + n.groups)))
     rhs.vec <- c(rhs.vec, constraints$cLO, -constraints$cUP)
@@ -134,7 +134,7 @@ gmv_opt <- function(R, constraints, moments, lambda, target, lambda_hhi, conc_gr
   result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
 
   # result <- try(solve.QP(Dmat=Dmat, dvec=dvec, Amat=t(Amat), bvec=rhs.vec, meq=meq), silent=TRUE)
-  if(inherits(x=result, "try-error")) stop(paste("No solution found:", result)) # nocov
+  if(inherits(x=result, "try-error")) stop(paste("No solution found:", result))
 
   weights <- result$solution[1:N]
   names(weights) <- colnames(R)
@@ -184,7 +184,7 @@ maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=N
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   N <- ncol(R)
   # Applying box constraints
@@ -219,8 +219,8 @@ maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=N
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     Amat <- rbind(Amat, Amat.group, -Amat.group)
     dir.vec <- c(dir.vec, rep(">=", (n.groups + n.groups)))
     rhs.vec <- c(rhs.vec, constraints$cLO, -constraints$cUP)
@@ -243,17 +243,17 @@ maxret_opt <- function(R, moments, constraints, target, solver="glpk", control=N
                  constraints=ROI::L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
                  bounds=bnds)
   roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
-  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result)) # nocov
+  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
 
   # roi.result <- Rglpk_solve_LP(obj=objL, mat=Amat, dir=dir.vec, rhs=rhs.vec, bounds=bnds)
 
   # The Rglpk solvers status returns an an integer with status information
   # about the solution returned: 0 if the optimal solution was found, a
   #non-zero value otherwise.
-  if(roi.result$status$code != 0) { # nocov start
+  if(roi.result$status$code != 0) {
     message(roi.result$status$msg$message)
     stop("No solution")
-  } # nocov end
+  }
 
   weights <- roi.result$solution[1:N]
   names(weights) <- colnames(R)
@@ -292,7 +292,7 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   # Number of assets
   N <- ncol(R)
@@ -342,8 +342,8 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     zeros <- matrix(data=0, nrow=nrow(Amat.group), ncol=ncol(Amat.group))
     Amat <- rbind(Amat, cbind(Amat.group, zeros), cbind(-Amat.group, zeros))
     dir <- c(dir, rep(">=", (n.groups + n.groups)))
@@ -375,7 +375,7 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
                  constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs),
                  bounds=bnds, types=types)
   roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
-  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result)) # nocov
+  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
 
   # Weights
   weights <- roi.result$solution[1:N]
@@ -415,7 +415,7 @@ etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", contr
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   N <- ncol(R)
   T <- nrow(R)
@@ -445,8 +445,8 @@ etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", contr
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     zeros <- matrix(0, nrow=n.groups, ncol=(T+1))
     Amat <- rbind(Amat, cbind(Amat.group, zeros), cbind(-Amat.group, zeros))
     dir.vec <- c(dir.vec, rep(">=", (n.groups + n.groups)))
@@ -466,7 +466,7 @@ etl_opt <- function(R, constraints, moments, target, alpha, solver="glpk", contr
                        constraints=ROI::L_constraint(L=Amat, dir=dir.vec, rhs=rhs.vec),
                        bounds=bnds)
   roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
-  if(inherits(x=roi.result, "try-error")) stop(paste("No solution found:", roi.result)) # nocov
+  if(inherits(x=roi.result, "try-error")) stop(paste("No solution found:", roi.result))
 
   weights <- roi.result$solution[1:N]
   names(weights) <- colnames(R)
@@ -516,7 +516,7 @@ etl_milp_opt <- function(R, constraints, moments, target, alpha, solver="glpk", 
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   # Number of rows
   n <- nrow(R)
@@ -587,8 +587,8 @@ etl_milp_opt <- function(R, constraints, moments, target, alpha, solver="glpk", 
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     zeros <- matrix(0, nrow=n.groups, ncol=(m + n + 2))
     tmpAmat <- rbind(tmpAmat, cbind(Amat.group, zeros), cbind(-Amat.group, zeros))
     dir <- c(dir, rep(">=", (n.groups + n.groups)))
@@ -618,15 +618,15 @@ etl_milp_opt <- function(R, constraints, moments, target, alpha, solver="glpk", 
                  constraints=ROI::L_constraint(L=tmpAmat, dir=dir, rhs=rhs),
                  bounds=bnds, types=types)
   roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
-  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result)) # nocov
+  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
 
   # The Rglpk solvers status returns an an integer with status information
   # about the solution returned: 0 if the optimal solution was found, a
   #non-zero value otherwise.
-  if(roi.result$status$code != 0) { # nocov start
+  if(roi.result$status$code != 0) {
     message("Undefined Solution")
     return(NULL)
-  } # nocov end
+  }
 
   weights <- roi.result$solution[1:m]
   names(weights) <- colnames(R)
@@ -679,7 +679,7 @@ gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, s
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   # Modify the returns matrix. This is done because there are 3 sets of
   # variables 1) w.initial, 2) w.buy, and 3) w.sell
@@ -754,8 +754,8 @@ gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, s
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     Amat <- rbind(Amat, cbind(Amat.group, zeros, zeros))
     Amat <- rbind(Amat, cbind(-Amat.group, zeros, zeros))
     dir <- c(dir, rep(">=", (n.groups + n.groups)))
@@ -785,7 +785,7 @@ gmv_opt_toc <- function(R, constraints, moments, lambda, target, init_weights, s
                  constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs))
 
   roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
-  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result)) # nocov
+  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
 
   wts <- roi.result$solution
   wts.final <- wts[1:N]
@@ -841,7 +841,7 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   # proportional transaction costs
   ptc <- constraints$ptc
@@ -924,8 +924,8 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     Amat <- rbind(Amat, cbind(Amat.group, Amat.group, Amat.group))
     Amat <- rbind(Amat, cbind(-Amat.group, -Amat.group, -Amat.group))
     dir <- c(dir, rep(">=", (n.groups + n.groups)))
@@ -953,7 +953,7 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
   opt.prob <- ROI::OP(objective=ROI_objective,
                  constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs))
   roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
-  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result)) # nocov
+  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
 
   wts <- roi.result$solution
   weights <- wts[1:N]
@@ -1004,7 +1004,7 @@ gmv_opt_leverage <- function(R, constraints, moments, lambda, target, solver="qu
   stopifnot(paste0("package:", plugin) %in% search() || requireNamespace(plugin, quietly=TRUE))
 
   # Check for cleaned returns in moments
-  if(!is.null(moments$cleanR)) R <- moments$cleanR # nocov
+  if(!is.null(moments$cleanR)) R <- moments$cleanR
 
   # Modify the returns matrix. This is done because there are 3 sets of
   # variables 1) w.initial, 2) w.buy, and 3) w.sell
@@ -1077,8 +1077,8 @@ gmv_opt_leverage <- function(R, constraints, moments, lambda, target, solver="qu
     for(i in 1:n.groups){
       Amat.group[i, constraints$groups[[i]]] <- 1
     }
-    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups) # nocov
-    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups) # nocov
+    if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+    if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
     Amat <- rbind(Amat, cbind(Amat.group, zeros, zeros))
     Amat <- rbind(Amat, cbind(-Amat.group, zeros, zeros))
     dir <- c(dir, rep(">=", (n.groups + n.groups)))
@@ -1108,7 +1108,7 @@ gmv_opt_leverage <- function(R, constraints, moments, lambda, target, solver="qu
                  constraints=ROI::L_constraint(L=Amat, dir=dir, rhs=rhs))
 
   roi.result <- try(ROI::ROI_solve(x=opt.prob, solver=solver, control=control), silent=TRUE)
-  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result)) # nocov
+  if(inherits(roi.result, "try-error")) stop(paste("No solution found:", roi.result))
 
   wts <- roi.result$solution
   wts.final <- wts[1:N]
@@ -1170,9 +1170,9 @@ mean_etl_opt <- function(R, constraints, moments, alpha, solver, control){
                       lower=min_mean, upper=max_mean, control=control,
                       maximum=TRUE, tol=.Machine$double.eps),
              silent=TRUE)
-  if(inherits(opt, "try-error")){ # nocov start
+  if(inherits(opt, "try-error")){
     stop(paste("Objective function failed with message\n", opt))
-  } # nocov end
+  }
   return(opt$maximum)
 }
 
@@ -1367,9 +1367,9 @@ max_sr_opt <- function(R, constraints, moments, lambda_hhi, conc_groups, solver,
                       lower=min_mean, upper=max_mean,
                       maximum=TRUE, tol=.Machine$double.eps),
              silent=TRUE)
-  if(inherits(opt, "try-error")){ # nocov start
+  if(inherits(opt, "try-error")){
     stop(paste("Objective function failed with message\n", opt))
-  } # nocov end
+  }
   return(opt$maximum)
 }
 

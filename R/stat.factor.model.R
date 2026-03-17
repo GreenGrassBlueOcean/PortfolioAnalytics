@@ -478,7 +478,6 @@ extractCovariance <- function(model, ...){
   } else if(k > 1){
     out <- covarianceMF(beta, stockM2, factorM2)
   } else {
-    # invalid k
     message("invalid k, returning NULL")
     out <- NULL
   }
@@ -524,7 +523,6 @@ extractCoskewness <- function(model, ...){
     # Multi-factor model
     out <- coskewnessMF(beta, stockM3, factorM3)
   } else {
-    # invalid k
     message("invalid k, returning NULL")
     out <- NULL
   }
@@ -572,7 +570,6 @@ extractCokurtosis <- function(model, ...){
     # Multi-factor model
     out <- cokurtosisMF(beta, stockM2, stockM4, factorM2, factorM4)
   } else {
-    # invalid k
     message("invalid k, returning NULL")
     out <- NULL
   }

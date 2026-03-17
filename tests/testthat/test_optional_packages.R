@@ -99,24 +99,28 @@ test_that("C source files exist in src/", {
 })
 
 # --- Test 6: requireNamespace guard in solver_deoptim.R ---
-test_that("solver_deoptim.R has requireNamespace guard for snow/doSNOW", {
+test_that("solver_deoptim.R has requireNamespace guard for doSNOW", {
   root <- pkg_source_root()
   skip_if(is.null(root), "solver_deoptim.R not found")
   src_file <- file.path(root, "R", "solver_deoptim.R")
   skip_if_not(file.exists(src_file), "solver_deoptim.R not found")
   src <- readLines(src_file)
-  expect_true(any(grepl('requireNamespace\\("snow"', src)))
+  # snow is used indirectly via doSNOW; only doSNOW guard is needed
   expect_true(any(grepl('requireNamespace\\("doSNOW"', src)))
 })
 
 # --- Test 7: requireNamespace guard in random_portfolios.R ---
-test_that("random_portfolios.R has requireNamespace guard for doParallel", {
+test_that("random_portfolios.R does not require doParallel directly", {
+  # After refactoring, random_portfolios.R no longer has active parallel code;
+  # parallel support is handled by the caller (optimize.portfolio) via foreach.
   root <- pkg_source_root()
   skip_if(is.null(root), "random_portfolios.R not found")
   src_file <- file.path(root, "R", "random_portfolios.R")
   skip_if_not(file.exists(src_file), "random_portfolios.R not found")
   src <- readLines(src_file)
-  expect_true(any(grepl('requireNamespace\\("doParallel"', src)))
+  # No active requireNamespace("doParallel") needed
+
+  expect_false(any(grepl('^[^#]*requireNamespace\\("doParallel"', src)))
 })
 
 # --- Test 8: requireNamespace guard in optimize.portfolio.R ---

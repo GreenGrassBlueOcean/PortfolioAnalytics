@@ -64,6 +64,21 @@ Trace accumulation uses a per-call local environment (`storage_env`) instead of 
 
 The combinatorial switch cascade in `set.portfolio.moments()` has been replaced with lookup tables (`.moment_needs`, `.moment_provider`), making it straightforward to add new risk measures or estimation methods.
 
+### Parallelism Changes
+
+Parallel execution for DEoptim has been redesigned to be safe and CRAN-compliant:
+
+- **Parallel is opt-in** (`parallel = FALSE` by default). Upstream defaults to `parallel = TRUE`, which causes immediate SOCK cluster failures on Windows when no `foreach` backend is registered. Pass `parallel = TRUE` explicitly to enable parallel DEoptim.
+- **Self-contained cluster lifecycle** — When `parallel = TRUE`, `solve_deoptim()` creates a PSOCK cluster via base R's `parallel::makeCluster()`, registers it with `doSNOW`, and tears it down in `on.exit()` — guaranteeing cleanup even on error. Upstream uses `snow::makeSOCKcluster()` and only cleans up on the happy path.
+- **No global `foreach` side effects** — `random_portfolios()` no longer calls `registerDoSEQ()` or uses `%dopar%`. All random portfolio generation (simplex, grid, sample) runs sequentially. Users who need to parallelize large portfolio generation (`permutations > 50,000`) should register a `foreach` backend before calling `optimize.portfolio()`.
+- **Nested parallelism safe** — An outer user-level `foreach` cluster survives inner `solve_deoptim(parallel = TRUE)` calls. Each inner call creates and destroys its own cluster independently.
+
+**Known difference from upstream:** The DEoptim `strategy` parameter defaults to `2` (DE/rand/1/bin) in this fork, whereas upstream uses `6` (DE/current-to-p-best/1, JADE-style). Strategy 6 generally converges faster for portfolio problems. To match upstream behavior, pass `strategy = 6` explicitly:
+
+```r
+optimize.portfolio(R, portfolio, optimize_method = "DEoptim", strategy = 6)
+```
+
 ### Deprecation System
 
 Legacy v1 API functions (`constraint()`, `optimize.portfolio_v1()`, etc.) issue structured deprecation warnings. Hot-path functions like `constrained_objective_v1()` use `deprecate_once()` to warn once per session instead of flooding the console during optimization.
@@ -112,7 +127,7 @@ All features from [braverock/PortfolioAnalytics](https://github.com/braverock/Po
 
 ## Testing
 
-The package includes 79 test files with 2,776+ passing assertions:
+The package includes 97 test files with 2,776+ passing assertions:
 
 ```r
 devtools::test()

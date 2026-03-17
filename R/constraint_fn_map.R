@@ -43,7 +43,7 @@
 #' @export
 fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
                    method=c("projection", "rp_transform"), ...){
-  if(!is.portfolio(portfolio)) stop("portfolio passed in is not of class 'portfolio'") # nocov
+  if(!is.portfolio(portfolio)) stop("portfolio passed in is not of class 'portfolio'")
   method <- match.arg(method)
   
   nassets <- length(portfolio$assets)
@@ -93,7 +93,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
                   leverage = leverage))
     }
     # Projection failed to converge — fall through to rp_transform path
-    if (verbose) message("Dykstra projection did not converge; falling back to rp_transform") # nocov
+    if (verbose) message("Dykstra projection did not converge; falling back to rp_transform")
   }
   
   # --- Legacy rp_transform path ---
@@ -155,10 +155,10 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
                                       weight_seq=weight_seq,
                                       max_permutations=500), 
                          silent=TRUE) # FALSE for testing
-      if(inherits(tmp_weights, "try-error")){ # nocov start
+      if(inherits(tmp_weights, "try-error")){
         # Default to initial weights
         tmp_weights <- weights
-      } # nocov end
+      }
     } # end check for leverage constraint violation
   } # end check for NULL arguments
   
@@ -182,7 +182,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
                                       weight_seq=weight_seq,
                                       max_permutations=500), 
                          silent=TRUE) # FALSE for testing
-      if(inherits(tmp_weights, "try-error")){ # nocov start
+      if(inherits(tmp_weights, "try-error")){
         if(verbose) message(tmp_weights)
         # Default to initial weights
         tmp_weights <- weights
@@ -232,7 +232,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
             tmp_max <- max
           }
         } # end if(relax) statement
-      } # nocov end
+      }
     } # end check for box constraint violation
   } # end check for NULL arguments
   
@@ -256,7 +256,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
                                       weight_seq=weight_seq,
                                       max_permutations=500), 
                          silent=TRUE) # FALSE for testing
-      if(inherits(tmp_weights, "try-error")){ # nocov start
+      if(inherits(tmp_weights, "try-error")){
         if(verbose) message(tmp_weights)
         # Default to initial weights
         tmp_weights <- weights
@@ -301,7 +301,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
             tmp_cUP <- cUP
           }
         } # end if(relax) statement
-      } # nocov end
+      }
     } # end check for group constraint violation
   } # end check for NULL arguments
   
@@ -325,7 +325,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
                                       weight_seq=weight_seq,
                                       max_permutations=500), 
                          silent=TRUE) # FALSE for testing
-      if(inherits(tmp_weights, "try-error")){ # nocov start
+      if(inherits(tmp_weights, "try-error")){
         if(verbose) message(tmp_weights)
         # Default to initial weights
         tmp_weights <- weights
@@ -357,7 +357,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
             i <- i + 1
           }
         } # end if(relax) statement
-      } # nocov end
+      }
     } # end check for position limit constraint violation
   } # end check for NULL arguments
   
@@ -381,7 +381,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
                                       weight_seq=weight_seq,
                                       max_permutations=500), 
                          silent=TRUE) # FALSE for testing
-      if(inherits(tmp_weights, "try-error")){ # nocov start
+      if(inherits(tmp_weights, "try-error")){
         if(verbose) message(tmp_weights)
         # Default to initial weights
         tmp_weights <- weights
@@ -411,7 +411,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
             i <- i + 1
           }
         } # end if(relax) statement
-      } # nocov end
+      }
     } # end check for leverage exposure violation
   } # end check for NULL arguments
 
@@ -1051,9 +1051,9 @@ rp_decrease_leverage <- function(weights, max_box, min_box, leverage, weight_seq
       if(n_tmp_seq > 1) {
         # randomly sample one of the weights
         tmp_w[cur_index] <- tmp_seq[sample.int(n=n_tmp_seq, size=1L, replace=FALSE, prob=NULL)]
-      } else if(n_tmp_seq == 1){  # nocov start
+      } else if(n_tmp_seq == 1){
         tmp_w[cur_index] <- tmp_seq
-      }  # nocov end
+      }
     }
     i <- i + 1 # increment our counter
   } # end leverage violation loop
@@ -1087,9 +1087,9 @@ rp_position_limit <- function(weights, max_pos=NULL, max_pos_long=NULL, max_pos_
           n_tmp_seq <- length(tmp_seq)
           if(n_tmp_seq > 1){
             tmp_w[cur_index] <- tmp_seq[sample.int(n=n_tmp_seq, size=1L, replace=FALSE, prob=NULL)]
-          } else if(n_tmp_seq == 1){  # nocov start
+          } else if(n_tmp_seq == 1){
             tmp_w[cur_index] <- tmp_seq
-          }  # nocov end
+          }
         }
       } # end max_pos_long violation loop
     }
@@ -1105,9 +1105,9 @@ rp_position_limit <- function(weights, max_pos=NULL, max_pos_long=NULL, max_pos_
           n_tmp_seq <- length(tmp_seq)
           if(n_tmp_seq > 1){
             tmp_w[cur_index] <- tmp_seq[sample.int(n=n_tmp_seq, size=1L, replace=FALSE, prob=NULL)]
-          } else if(n_tmp_seq == 1){  # nocov start
+          } else if(n_tmp_seq == 1){
             tmp_w[cur_index] <- tmp_seq
-          }  # nocov end
+          }
         }
       } # end max_pos_short violation loop
     }
@@ -1306,7 +1306,7 @@ project_weights <- function(w,
   # max_iter reached — return result if feasible, NULL otherwise
   if (.is_projection_feasible(x, min_sum, max_sum, min_box, max_box,
                               groups, cLO, cUP)) {
-    return(x) # nocov
+    return(x)
   }
   NULL
 }

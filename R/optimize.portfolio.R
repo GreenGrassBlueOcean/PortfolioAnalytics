@@ -1433,7 +1433,6 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
 #' @return a list containing the optimal weights, some summary statistics, the function call, and optionally trace information 
 #' @author Kris Boudt, Peter Carl, Brian G. Peterson
 #' @export
-# nocov start — requires parallel backend, not tested for coverage
 optimize.portfolio.parallel <- function(R,
                                         portfolio,
                                         optimize_method=c("DEoptim","random","ROI","pso","GenSA"),
@@ -1472,7 +1471,6 @@ optimize.portfolio.parallel <- function(R,
     class(out) <- c("optimize.portfolio.parallel")
     return(out)
 }
-# nocov end — optimize.portfolio.parallel
 
 
 #TODO write function to compute an efficient frontier of optimal portfolios

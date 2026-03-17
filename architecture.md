@@ -783,6 +783,8 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 - Removed global `foreach` state mutations from `random_portfolios.R` (the unconditional `registerDoSEQ()` call, the `Multicore` parameter, all `%dopar%` blocks)
 - Replaced `%dopar%` in `solver_random.R` with simple `apply`
 
+**DEoptim strategy default**: The fork uses `strategy=2` (DE/rand/1/bin) while upstream uses `strategy=6` (DE/current-to-p-best/1, JADE-style). Strategy 6 generally converges faster. Keeping `strategy=2` for now as it was in the fork; documented in README with workaround (`strategy=6`). Revert to `6` if no specific reason for the change is found.
+
 **`constrained_objective.R` roxygen and code fixes:**
 - Fixed duplicate `median` switch case: `mean` and `median` were both routed to `port.mean()` via fallthrough. The second (correct) `median` handler was unreachable dead code. Now `mean` dispatches to `port.mean()` and `median` dispatches to `median(R %*% w)`.
 - Fixed broken `\link{portfolio}` → `\link{portfolio.spec}` in roxygen docs
