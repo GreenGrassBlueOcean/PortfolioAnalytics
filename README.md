@@ -112,7 +112,7 @@ All features from [braverock/PortfolioAnalytics](https://github.com/braverock/Po
 
 ## Testing
 
-The package includes 50 test files with 1,088+ passing assertions:
+The package includes 79 test files with 2,776+ passing assertions:
 
 ```r
 devtools::test()
@@ -147,7 +147,6 @@ chart.EfficientFrontier(ef, match.col = "StdDev")
 ## Links
 
 - **Upstream**: [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics)
-- **Original**: [R-Finance/PortfolioAnalytics](https://github.com/R-Finance/PortfolioAnalytics) (no longer actively developed)
 - **Architecture docs**: See `architecture.md` in this repository
 
 ## License

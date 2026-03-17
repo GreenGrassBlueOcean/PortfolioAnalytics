@@ -24,7 +24,7 @@ PortfolioAnalytics/
 ├── src/                        # C code for higher-order moment computation
 ├── man/                        # 167 .Rd documentation files (roxygen2)
 ├── tests/testthat/             # Unit tests (79 files, integrated with R CMD check)
-├── demo/                       # 37 demonstration scripts
+├── demo/                       # 38 demonstration scripts
 ├── vignettes/                  # 6 vignettes (pre-built PDFs via R.rsp::asis)
 ├── data/                       # Sample datasets (DailyReturns, indexes)
 ├── sandbox/                    # Experimental/development scripts
@@ -105,7 +105,7 @@ portfolio.spec()
 | `optimize.portfolio.R` | `optimize.portfolio()`, `optimize.portfolio.parallel()`, `optimize.portfolio.rebalancing()` | Main entry point; solver dispatch via registry, parallel execution, rolling-window rebalancing with warm-start. v1 functions deprecated and excluded from coverage (`# nocov`) |
 | `solver_registry.R` | `get_solver()`, `register_solver()` | Dispatch registry mapping solver names to dedicated handler functions. User-extensible |
 | `solver_deoptim.R`, `solver_roi.R`, `solver_cvxr.R`, `solver_random.R`, `solver_pso.R`, `solver_gensa.R` | `solve_deoptim()`, etc. | Individual solver handlers with uniform contract |
-| `constrained_objective.R` | `constrained_objective()`, `calibrate_penalty()` | Evaluates objectives with constraint penalties — the function minimized by stochastic solvers. Auto-calibrated penalty via `calibrate_penalty()`. v1 version deprecated (`# nocov`) |
+| `constrained_objective.R` | `constrained_objective()`, `calibrate_penalty()` | Evaluates objectives with constraint penalties — the function minimized by stochastic solvers. Auto-calibrated penalty via `calibrate_penalty()`. `mean` and `median` objectives dispatch to distinct handlers (`port.mean` vs `median(R %*% w)`). v1 version deprecated (`# nocov`) |
 | `optFUN.R` | `gmv_opt()`, `etl_opt()`, `maxret_opt()`, `maxSR_opt()`, etc. | Solver-specific formulations for ROI (LP, QP, MILP) |
 | `constraint_fn_map.R` | `fn_map()`, `rp_transform()` | Weight normalization/transformation to enforce hard constraints |
 | `constraints_ROI.R` | `constraint_ROI()` | Translates constraints into ROI's native representation |
@@ -344,6 +344,17 @@ Six root causes were identified and fixed:
 | `TTR` demo dependency | Note | Added to `Suggests` |
 | S3 false-positive NOTE (`chart.Weights.DE` et al.) | Note | Renamed 15 internal chart helpers from `chart.Weights.DE` → `.chart_weights_DE` pattern (leading dot + underscores breaks `generic.class` S3 pattern). All exported S3 methods unchanged. |
 
+**Additional R CMD check fixes (Mar 2026):**
+
+| Issue | Category | Fix |
+|-------|----------|-----|
+| 4 stale demo INDEX entries (`demo_ROI`, `demo_group_ROI`, `demo_maxret_ROI`, `risk_budget_backtesting`) | Warning | Removed from `demo/00Index` — no corresponding `.R` files exist |
+| `foreach:::.foreachGlobals` triple-colon usage in `solver_deoptim.R` | Note | Replaced `foreach` globals snapshot/restore with `registerDoSEQ()` on exit (public API only) |
+| `hasArg(assets)` bare symbol in `constraints.R` | Note | Changed to `hasArg("assets")` (string form avoids global variable binding NOTE) |
+| Undefined `.storage` reference in `optimize.portfolio_v1` | Note | Removed dead `assign('.objectivestorage', list(), as.environment(.storage))` — `.storage` was never defined; the correct `storage_env`-based assign already existed |
+| Hand-written `man/indexes.Rd` skipped by roxygen2 | Warning | Deleted hand-written file; roxygen2 now generates it from the roxygen block in `R/data.r` |
+| `PCRA`/`RPESE` used in demos but not declared | Note | Added to `Suggests` in DESCRIPTION |
+
 **Final state:** 0 errors, 0 warnings, 0 notes (the only remaining NOTE — "unable to verify current time" — is a transient network check, not a package issue).
 
 ---
@@ -363,9 +374,25 @@ Deprecated v1 functions: `optimize.portfolio_v1`, `optimize.portfolio.rebalancin
 
 ## Parallelism
 
-- `optimize.portfolio.parallel()` distributes optimization runs across cores using `foreach` with `doParallel` or `doMC` backends.
-- `optimize.portfolio.rebalancing()` parallelizes across rebalance dates via `foreach`.
-- `random_portfolios()` can generate portfolios in parallel.
+### Current Design (v2 solver path)
+
+The v2 solver path (`solve_deoptim()`) manages parallelism explicitly via **PSOCK clusters** using base R's `parallel` package. Key design decisions:
+
+1. **`parallel=FALSE` by default** — Parallel execution requires explicit opt-in. This is CRAN-compliant (packages must not spawn processes without user request) and avoids the SOCK cluster serialization failures that plagued the previous `parallel=TRUE` default on Windows/RStudio.
+
+2. **Self-contained cluster lifecycle** — When `parallel=TRUE`, `solve_deoptim()` creates its own PSOCK cluster, registers it with `doSNOW`, passes it to DEoptim, and tears it down in `on.exit()`. The caller's `foreach` backend is restored to `doSEQ` on exit so a dead cluster is never left registered globally.
+
+3. **No global `foreach` side effects** — `random_portfolios()` and `solver_random.R` no longer call `registerDoSEQ()` or use `%dopar%`. All former `foreach`/`%dopar%` blocks in `rp_sample()`, `rp_simplex()`, `rp_grid()`, and `solve_random()` have been replaced with sequential equivalents (`for` loops, `apply`, `vapply`). These never actually ran in parallel — they depended on a prior `registerDoSEQ()` call.
+
+4. **Nested parallelism support** — An outer user-level `foreach` cluster (e.g., distributing multiple portfolio optimizations across workers) survives inner `solve_deoptim(parallel=TRUE)` calls. Each inner call creates and destroys its own cluster independently. Verified across 5 scenarios: no prior backend, existing doSNOW backend, outer foreach with inner sequential DEoptim, true double nesting (outer foreach + inner parallel DEoptim), and sequential DEoptim with existing backend.
+
+5. **Base R `parallel` over `snow`** — Replaced `snow::makeSOCKcluster()` with `parallel::makeCluster(type = "PSOCK")`. The `snow` package is still needed for `doSNOW::registerDoSNOW()` (required by DEoptim's `parallelType="foreach"`) but cluster creation/cleanup uses only base R.
+
+### Legacy paths
+
+- `optimize.portfolio.parallel()` distributes optimization runs across cores using `foreach` with `doParallel` or `doMC` backends. Excluded from coverage (`# nocov`).
+- `optimize.portfolio.rebalancing()` parallelizes across rebalance dates via `foreach` (unless `warm_start=TRUE`, which forces sequential execution).
+- The deprecated v1 DEoptim path in `optimize.portfolio_v1()` still contains the original parallel setup with `snow::makeSOCKcluster()` and global `registerDoSEQ()` calls. This code is deprecated and excluded from coverage.
 
 ---
 
@@ -377,9 +404,9 @@ Deprecated v1 functions: `optimize.portfolio_v1`, `optimize.portfolio.rebalancin
 
 **Optional solvers (Suggests):** `DEoptim`, `GenSA`, `pso`, `ROI`, `ROI.plugin.glpk`, `ROI.plugin.quadprog`, `ROI.plugin.symphony`, `Rglpk`, `quadprog`, `nloptr`, `CVXR`, `osqp`
 
-**Parallel (Suggests):** `doParallel`, `doMC`, `iterators`
+**Parallel (Suggests):** `doParallel`, `doMC` (Unix only), `doSNOW`, `snow`, `iterators`
 
-**Other Suggests:** `quantmod`, `fGarch`, `corpcor`, `robustbase`, `MASS`, `data.table`, `Matrix`, `GSE`, `RobStatTM`, `PCRA`, `RPESE`, `TTR`, `testthat`, `knitr`, `rmarkdown`, `R.rsp`, `lintr`
+**Other Suggests:** `quantmod`, `fGarch`, `corpcor`, `robustbase`, `MASS`, `data.table`, `Matrix`, `GSE`, `RobStatTM`, `PCRA`, `RPESE`, `FRAPO`, `Rsolnp`, `TTR`, `testthat`, `knitr`, `rmarkdown`, `R.rsp`, `lintr`
 
 ---
 
@@ -745,6 +772,27 @@ After the initial 6-phase campaign brought coverage from ~48.6% to ~64%, a secon
 **Total bugs fixed:** 7 (3 in `optFUN.R`, 2 in `extract.efficient.frontier.R`, 1 in `applyFUN.R`, 1 in `constraint_fn_map.R`)
 
 **Total known bugs documented (pre-existing, not fixed):** 5 `match.call()` pattern bugs + 1 dead-code GARCH loop
+
+#### Bug Fixes (Mar 17, 2026 session)
+
+**DEoptim parallel backend:**
+- `solve_deoptim()` default changed from `parallel=TRUE` to `parallel=FALSE` (CRAN-compliant, avoids SOCK cluster serialization failures)
+- Replaced `snow::makeSOCKcluster()` with `parallel::makeCluster(type = "PSOCK")` (base R)
+- Added `on.exit()` cleanup that stops the cluster and resets `foreach` backend to `doSEQ`
+- Removed fragile `clusterExport(parent.frame())` that exported non-existent variables
+- Removed global `foreach` state mutations from `random_portfolios.R` (the unconditional `registerDoSEQ()` call, the `Multicore` parameter, all `%dopar%` blocks)
+- Replaced `%dopar%` in `solver_random.R` with simple `apply`
+
+**`constrained_objective.R` roxygen and code fixes:**
+- Fixed duplicate `median` switch case: `mean` and `median` were both routed to `port.mean()` via fallthrough. The second (correct) `median` handler was unreachable dead code. Now `mean` dispatches to `port.mean()` and `median` dispatches to `median(R %*% w)`.
+- Fixed broken `\link{portfolio}` → `\link{portfolio.spec}` in roxygen docs
+- Fixed unclosed parenthesis in `@details` section
+- Corrected `@param env` description ("environment" → "list of pre-computed moments")
+- Clarified `@param storage` default description
+- Capitalized title per R documentation conventions
+
+**`optimize.portfolio_v1` cleanup:**
+- Removed dead `assign('.objectivestorage', list(), as.environment(.storage))` where `.storage` was never defined (the `storage_env` assign on the next line was the correct replacement)
 
 #### Expected Outcome
 

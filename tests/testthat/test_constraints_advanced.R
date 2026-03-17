@@ -379,8 +379,9 @@ test_that("insert_constraints errors on non-portfolio", {
 # ============================================================================
 
 test_that("constraint_v1 issues deprecation warning", {
-  lifecycle::expect_deprecated(
-    result <- constraint_v1(assets = 4, min = 0, max = 1)
+  expect_warning(
+    result <- constraint_v1(assets = 4, min = 0, max = 1),
+    "deprecated"
   )
 })
 

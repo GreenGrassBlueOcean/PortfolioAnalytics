@@ -173,7 +173,7 @@ constraint_v1 <- function(assets=NULL, ... ,min,max,min_mult,max_mult,min_sum=.9
 constraint <- constraint_v2 <- function(type, enabled=TRUE, ..., constrclass="v2_constraint"){
   if(!hasArg(type) || is.null(type)) {
     # Detect v1-style calls: constraint(assets=..., min=..., max=...) without type
-    if(hasArg(assets)) {
+    if(hasArg("assets")) {
       return(constraint_v1(...))
     }
     stop("you must specify a constraint type")

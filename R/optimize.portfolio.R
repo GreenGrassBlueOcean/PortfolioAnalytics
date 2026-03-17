@@ -169,7 +169,6 @@ optimize.portfolio_v1 <- function(
     if(isTRUE(trace)) { 
         #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
         tmptrace=trace 
-        assign('.objectivestorage', list(), as.environment(.storage))
 		if(!hasArg(strategy) || is.na(eval.parent(match.call(expand.dots = TRUE)$strategy))) {
 		  # use DE/current-to-p-best/1
 		  strategy=6

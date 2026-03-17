@@ -29,10 +29,7 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
   }
 
   parallel <- dots$parallel
-  if (is.null(parallel) || is.na(parallel)) parallel <- TRUE
-  if (!isTRUE(parallel) && "package:foreach" %in% search()) {
-    foreach::registerDoSEQ()
-  }
+  if (is.null(parallel) || is.na(parallel)) parallel <- FALSE
 
   # --- DEoptim control setup ---
   DEcformals <- as.list(formals(DEoptim::DEoptim.control))
@@ -70,24 +67,23 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
   # --- Parallel cluster setup ---
   rcl <- NULL
   if (isTRUE(parallel) && "package:foreach" %in% search()) {
-    parallelType <- if (!is.null(dots$parallelType)) dots$parallelType else 2
+    parallelType <- if (!is.null(dots$parallelType)) dots$parallelType else "foreach"
     DEcformals$parallelType <- parallelType
-    if (parallelType == 2) {
-      if (!requireNamespace("snow", quietly = TRUE) ||
-          !requireNamespace("doSNOW", quietly = TRUE)) {
-        stop("Packages 'snow' and 'doSNOW' are required for parallelType=2. ",
-             "Install them with install.packages(c('snow', 'doSNOW'))",
+    if (parallelType %in% c(2, "foreach")) {
+      if (!requireNamespace("doSNOW", quietly = TRUE)) {
+        stop("Package 'doSNOW' is required for parallelType='foreach'. ",
+             "Install it with install.packages('doSNOW')",
              call. = FALSE)
       }
       nC <- parallel::detectCores()
-      rcl <- snow::makeSOCKcluster(ifelse(nC <= 15, nC, 15))
-      snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs),
-                                     require, character.only = TRUE))
-      snow::clusterExport(rcl,
-                          list("R", "portfolio", "constraints", "objectives",
-                               "optimize_method", "search_size", "trace",
-                               "momentFUN", "rp"),
-                          envir = parent.frame())
+      rcl <- parallel::makeCluster(min(nC, 15), type = "PSOCK")
+      on.exit({
+        if (!is.null(rcl)) parallel::stopCluster(rcl)
+        # Reset to sequential so we never leave a dead cluster registered
+        foreach::registerDoSEQ()
+      }, add = TRUE)
+      parallel::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs),
+                                         require, character.only = TRUE))
       doSNOW::registerDoSNOW(rcl)
       DEcformals$cluster <- rcl
     }
@@ -137,11 +133,6 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
       call = call,
       error = if (exists("ErrorM")) ErrorM else NULL
     ))
-  }
-
-  # --- Cleanup ---
-  if (!is.null(rcl)) {
-    snow::stopCluster(rcl)
   }
   if (isTRUE(tmptrace)) trace <- tmptrace
 

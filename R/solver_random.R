@@ -32,21 +32,10 @@ solve_random <- function(R, portfolio, constraints, moments, penalty,
   if (isTRUE(trace)) out$random_portfolios <- rp
 
   # Evaluate objective for each portfolio
-  use_parallel <- "package:foreach" %in% search() && is.null(dots$parallel)
-  if (use_parallel) {
-    ii <- 1
-    rp_objective_results <- foreach::foreach(
-      ii = 1:nrow(rp), .errorhandling = "pass"
-    ) %dopar% constrained_objective(
-      w = rp[ii, ], R = R, portfolio = portfolio,
-      trace = trace, env = moments, normalize = FALSE, penalty = penalty
-    )
-  } else {
-    rp_objective_results <- apply(rp, 1, constrained_objective,
-                                  R = R, portfolio = portfolio,
-                                  trace = trace, normalize = FALSE,
-                                  env = moments, penalty = penalty)
-  }
+  rp_objective_results <- apply(rp, 1, constrained_objective,
+                                R = R, portfolio = portfolio,
+                                trace = trace, normalize = FALSE,
+                                env = moments, penalty = penalty)
 
   if (isTRUE(trace)) out$random_portfolio_objective_results <- rp_objective_results
 

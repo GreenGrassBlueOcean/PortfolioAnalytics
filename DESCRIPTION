@@ -59,7 +59,9 @@ Suggests:
     Rsolnp,
     snow,
     doSNOW,
-    lintr
+    lintr,
+    PCRA,
+    RPESE
 VignetteBuilder: R.rsp
 Imports:
     methods

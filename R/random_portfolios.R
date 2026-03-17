@@ -434,27 +434,7 @@ randomize_portfolio <- randomize_portfolio_v2 <- function (portfolio, max_permut
 random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=100, rp_method="sample", eliminate=TRUE, ...){
   if(hasArg(fev)) fev=eval.parent(match.call(expand.dots=TRUE)$fev) else fev=0:5
   if(hasArg(normalize)) normalize=eval.parent(match.call(expand.dots=TRUE)$normalize) else normalize = TRUE
-  if(hasArg(Multicore)) Multicore= eval.parent(match.call(expand.dots=TRUE)$Multicore) else Multicore = FALSE
-    
-    
-  if(Multicore){ 
-    if (!requireNamespace("doParallel", quietly = TRUE)) {
-      stop("Package 'doParallel' is required for Multicore=TRUE. ",
-           "Install it with install.packages('doParallel')",
-           call. = FALSE)
-    }
-    NCores <- max(2,ceiling(0.3*(parallel::detectCores())))
-    rcl <- parallel::makeCluster(NCores)
-    doParallel::registerDoParallel(rcl)
-  } else{ 
-    foreach::registerDoSEQ()
-    rcl <- NULL
-  }
-    
-  workers <- foreach::getDoParWorkers()
-  message("Parallel workers = ", workers)
-  
-  
+
   switch(rp_method,
          sample = {rp <- rp_sample(portfolio, permutations)
                    },
@@ -464,39 +444,12 @@ random_portfolios <- random_portfolios_v2 <- function( portfolio, permutations=1
          }
   )
   if(eliminate){
-    # eliminate portfolios that do not satisfy constraints
-    check <- vector("numeric", nrow(rp))
-    # for(i in 1:nrow(rp)){
-    #   check[i] <- check_constraints(weights=rp[i,], portfolio=portfolio)
-    # }
-    # We probably don't need or want to do this part in parallel. It could
-    # also interfere with optimize.portfolio.parallel since this function 
-    # will likely be called. Not sure how foreach handles nested loops 
-    # in parallel so it is best to avoid that altogether.
-    stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
-    
-    i <- NULL
-    check <- foreach::foreach(i=1:nrow(rp), .combine=c, .multicombine = TRUE, .packages = c("PortfolioAnalytics")) %dopar% {
-    #  # check_constraint returns TRUE if all constraints are satisfied
-      check_constraints(weights = rp[i,], portfolio=portfolio)
-    }
-    # We probably don't need or want to do this part in parallel. It could
-    # also interfere with optimize.portfolio.parallel since this function 
-    # will likely be called. Not sure how foreach handles nested loops 
-    # in parallel so it is best to avoid that altogether.
-    #stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
-    #check <- foreach(i=1:nrow(rp), .combine=c) %dopar% {
-    #  # check_constraint returns TRUE if all constraints are satisfied
-    #  check_constraints(weights=rp[i,], portfolio=portfolio)
-    #}
-    rp <- rp[which(check==TRUE),]
+    check <- vapply(seq_len(nrow(rp)), function(i) {
+      check_constraints(weights = rp[i, ], portfolio = portfolio)
+    }, logical(1))
+    rp <- rp[which(check == TRUE), , drop = FALSE]
   }
-  
-  if (!is.null(rcl)){
-    parallel::stopCluster(rcl)
-    foreach::registerDoSEQ()
-  }
-  
+
   return(rp)
 }
 
@@ -523,23 +476,8 @@ rp_sample <- function(portfolio, permutations, max_permutations=200){
   # rownames(result)[1]<-"seed.portfolio"
   # rownames(result)[2]<-"equal.weight"
   
-  if("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE)){
-  
-    
-  result[3:permutations,] <- foreach::foreach(i=1:(permutations-2), .combine="rbind", .inorder = FALSE, .multicombine = TRUE, .packages = c("PortfolioAnalytics")) %dopar% {
-     #  # check_constraint returns TRUE if all constraints are satisfied
-     randomize_portfolio_v2(portfolio=portfolio, max_permutations=max_permutations)
-   }
-    
-   
-   
-  # 
-  } else{
-    for(i in 3:permutations) {
-      #result[i,] <- as.matrix(randomize_portfolio_v2(portfolio=portfolio, ...))
-      result[i,] <- randomize_portfolio_v2(portfolio=portfolio, max_permutations=max_permutations)
-    }
-   
+  for(i in 3:permutations) {
+    result[i,] <- randomize_portfolio_v2(portfolio=portfolio, max_permutations=max_permutations)
   }
   
   # i <- nrow(result)
@@ -602,16 +540,16 @@ rp_simplex <- function(portfolio, permutations, fev=0:5){
   U <- runif(n=k*nassets, 0, 1)
   Umat <- matrix(data=U, nrow=k, ncol=nassets)
   
-  # do the transformation to the set of weights to satisfy lower bounds
-  stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
-  j <- 1
-  i <- 1
-  out <- foreach::foreach(j = 1:length(fev), .combine=c) %:% foreach::foreach(i=1:nrow(Umat)) %dopar% {
+  # Transform weights to satisfy lower bounds
+  out <- vector("list", length(fev) * nrow(Umat))
+  idx <- 1L
+  for (j in seq_along(fev)) {
     q <- 2^fev[j]
-    tmp <- L + (1 - sum(L)) * log(Umat[i,])^q / sum(log(Umat[i,])^q)
-    tmp
+    for (i in seq_len(nrow(Umat))) {
+      out[[idx]] <- L + (1 - sum(L)) * log(Umat[i, ])^q / sum(log(Umat[i, ])^q)
+      idx <- idx + 1L
+    }
   }
-  # the foreach loop returns a list of each random portfolio
   out <- do.call(rbind, out)
   return(out)
 }
@@ -708,12 +646,8 @@ rp_grid <- function(portfolio, permutations=2000, normalize=TRUE){
       return(weights)
     }
     
-    stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly = TRUE))
-    out <- foreach::foreach(i=1:nrow(rp)) %dopar% {
-      tmp <- normalize_weights(weights=rp[i,])
-      tmp
-    }
-    out <- do.call(rbind, out)
+    out <- t(apply(rp, 1, normalize_weights))
+    out <- unname(out)
     out <- na.omit(out)
   }
   if(normalize) return(out) else return(rp)

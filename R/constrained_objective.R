@@ -356,10 +356,12 @@ calibrate_penalty <- function(R, portfolio, env = NULL, ...,
   max(min_penalty, scaling_factor * obj_scale)
 }
 
-#' calculate a numeric return value for a portfolio based on a set of constraints and objectives
+#' Constrained objective function for portfolio optimization
 #'
-#' Function to calculate a numeric return value for a portfolio based on a set of constraints and objectives.
-#' We'll try to make as few assumptions as possible and only run objectives that are enabled by the user.
+#' Evaluate a portfolio's objective value given a weight vector, applying
+#' constraint penalties and (optionally) weight normalization. This is the
+#' inner objective function called by all numeric solvers in
+#' \code{\link{optimize.portfolio}}.
 #'
 #' If the user has passed in either min_sum or max_sum constraints for the portfolio, or both,
 #' and are using a numerical optimization method like DEoptim, and normalize=TRUE,
@@ -386,25 +388,28 @@ calibrate_penalty <- function(R, portfolio, env = NULL, ...,
 #' When you are optimizing a return objective, you must specify a negative multiplier
 #' for the return objective so that the function will maximize return.  If you specify a target return,
 #' any return that deviates from your target will be penalized.  If you do not specify a target return,
-#' you may need to specify a negative VTR (value to reach) , or the function will not converge.
+#' you may need to specify a negative VTR (value to reach), or the function will not converge.
 #' Try the maximum expected return times the multiplier (e.g. -1 or -10).
 #' Adding a return objective defaults the multiplier to -1.
 #'
 #' Additional parameters for other solvers
 #' (e.g. random portfolios or
-#' \code{\link[DEoptim]{DEoptim.control}} or pso or GenSA
+#' \code{\link[DEoptim]{DEoptim.control}} or pso or GenSA)
 #' may be passed in via \dots
-#'
 #'
 #' @param R an xts, vector, matrix, data frame, timeSeries or zoo object of asset returns.
 #' @param w a vector of weights to test.
-#' @param portfolio an object of class \code{portfolio} specifying the constraints and objectives for the optimization, see \code{\link{portfolio}}.
+#' @param portfolio an object of class \code{portfolio} specifying the constraints and objectives for the optimization, see \code{\link{portfolio.spec}}.
 #' @param \dots any other passthru parameters.
 #' @param trace TRUE/FALSE whether to include debugging and additional detail in the output list. The default is FALSE. Several charting functions require that \code{trace=TRUE}.
-#' @param normalize TRUE/FALSE whether to normalize results to min/max sum (TRUE), or let the optimizer penalize portfolios that do not conform (FALSE)
-#' @param storage TRUE/FALSE default TRUE for DEoptim with trace, otherwise FALSE. not typically user-called.
+#' @param normalize TRUE/FALSE whether to normalize results to min/max sum (TRUE), or let the optimizer penalize portfolios that do not conform (FALSE).
+#' @param storage logical; whether to accumulate per-iteration objective values
+#'   (default \code{FALSE}). Set to \code{TRUE} internally by the DEoptim solver
+#'   when \code{trace=TRUE}. Not typically user-called.
 #' @param constraints a v1_constraint object for backwards compatibility with \code{constrained_objective_v1}.
-#' @param env environment of moments calculated in \code{optimize.portfolio}
+#' @param env list of pre-computed moments (mu, sigma, etc.) as returned by
+#'   \code{\link{set.portfolio.moments}} via \code{\link{optimize.portfolio}}.
+#'   If \code{NULL}, moments are recomputed internally.
 #' @param penalty numeric penalty value for constraint violations (default 1e4).
 #'   Use \code{\link{calibrate_penalty}} or \code{penalty="auto"} in
 #'   \code{\link{optimize.portfolio}} to auto-scale this relative to the
@@ -641,15 +646,12 @@ constrained_objective <- constrained_objective_v2 <- function(w, R, portfolio, .
         multiplier <- objective$multiplier
         #if(is.null(objective$arguments) | !is.list(objective$arguments)) objective$arguments<-list()
         switch(objective$name,
-               mean =,
-               median = {
+               mean = {
                  fun = match.fun(port.mean)
-                 # would it be better to do crossprod(w, moments$mu)?
-                 # tmp_args$x <- ( R %*% w ) #do the multivariate mean/median with Kroneker product
                },
                median = {
-                 fun = match.fun(objective$name)
-                 tmp_args$x <- ( R %*% w ) #do the multivariate mean/median with Kroneker product
+                 fun = match.fun("median")
+                 tmp_args$x <- ( R %*% w )
                },
                sd =,
                var =,
