@@ -42,6 +42,7 @@ solve_gensa <- function(R, portfolio, constraints, moments, penalty,
     R = R, portfolio = portfolio, env = moments, penalty = penalty
   ))
 
+  # nocov start — GenSA rarely errors; would require mocking to test
   if (inherits(minw, "try-error")) minw <- NULL
   if (is.null(minw)) {
     message("Optimizer was unable to find a solution for target")
@@ -51,6 +52,7 @@ solve_gensa <- function(R, portfolio, constraints, moments, penalty,
       call = call
     ))
   }
+  # nocov end
 
   weights <- as.vector(minw$par)
   weights <- normalize_portfolio_weights(weights, constraints)

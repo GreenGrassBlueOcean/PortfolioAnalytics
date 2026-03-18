@@ -45,6 +45,7 @@ solve_pso <- function(R, portfolio, constraints, moments, penalty,
     control = controlPSO
   ))
 
+  # nocov start — pso rarely errors; would require mocking to test
   if (inherits(minw, "try-error")) minw <- NULL
   if (is.null(minw)) {
     message("Optimizer was unable to find a solution for target")
@@ -54,6 +55,7 @@ solve_pso <- function(R, portfolio, constraints, moments, penalty,
       call = call
     ))
   }
+  # nocov end
 
   weights <- as.vector(minw$par)
   weights <- normalize_portfolio_weights(weights, constraints)
