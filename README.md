@@ -102,7 +102,29 @@ if(hasArg(fev)) fev = match.call(expand.dots=TRUE)$fev else fev = 0:5
 if(hasArg(fev)) fev = eval.parent(match.call(expand.dots=TRUE)$fev) else fev = 0:5
 ```
 
-**Note:** The same `match.call()` without `eval.parent()` anti-pattern appeared in 30+ other locations across the package. The `custom.covRob.R` instances (27 occurrences across `custom.covRob.MM`, `custom.covRob.Rocke`, `custom.covRob.Mcd`, and `custom.covRob.TSGS`) have now been fixed with the same `eval.parent()` wrapper. Remaining unfixed instances exist in `constrained_objective.R` and `ac_ranking.R`. See the upstream source at [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) for the original code.
+**Note:** Remaining unfixed `match.call()` without `eval.parent()` instances exist in `constrained_objective.R` and `ac_ranking.R`. See the upstream source at [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) for the original code.
+
+### Bug Fix: `match.call()` Without `eval.parent()` in `custom.covRob.R`
+
+The same `match.call()` anti-pattern from `random_portfolios()` (see above) appeared in all four robust covariance wrapper functions: `custom.covRob.MM` (2 instances), `custom.covRob.Rocke` (6), `custom.covRob.Mcd` (12), and `custom.covRob.TSGS` (7) — 27 instances total.
+
+Each function extracts optional parameters from `...` using `match.call(expand.dots = TRUE)$param` without wrapping in `eval.parent()`. This causes direct calls with variable arguments to fail:
+
+```r
+# Before (upstream) — returns unevaluated AST node, fails with "not subsettable"
+ctrl <- MycovRobMcd(alpha = 0.75)
+custom.covRob.Mcd(R, control = ctrl)  # ERROR
+
+# After (this fork) — eval.parent() evaluates the expression correctly
+ctrl <- MycovRobMcd(alpha = 0.75)
+custom.covRob.Mcd(R, control = ctrl)  # Works
+```
+
+The bug was latent in production because `optimize.portfolio()` calls these functions via `do.call()`, which pre-evaluates all arguments before `match.call()` sees them. The fix applies `eval.parent()` to all 27 instances, matching the `random_portfolios()` fix.
+
+### Bug Fix: Duplicate `barplotWeights` Definition in `chart.Weights.R`
+
+`chart.Weights.R` contained two identical definitions of `barplotWeights()` — the second immediately shadowed the first. In R, when a file is sourced, the last definition wins, so the first definition (lines 37-65) was dead code that could never be called. Coverage tools reported these lines as uncovered. The fix deletes the first duplicate definition.
 
 ### Bug Fix: Unused Fallback Variables in Group Constraint Setup (`optFUN.R`)
 
