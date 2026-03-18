@@ -102,7 +102,7 @@ SEXP  residualcokurtosisMF(SEXP NN, SEXP sstockM2, SEXP sstockM4, SEXP bbetacov)
                                             pos =i*N+i;
                                             kijkl = betacov[pos]*stockM2[j];
                                             pos = j*N+j;
-                                            kijkl = betacov[pos]*stockM2[i]+stockM2[i]*stockM2[j];
+                                            kijkl = kijkl + betacov[pos]*stockM2[i]+stockM2[i]*stockM2[j];
                                         } else
                                             if( (i==l) && (j==k) ) {
                                                 // biSbi E[ej^2] + bjSbj E[ei^2] + E[ei^2]E[ej^2]

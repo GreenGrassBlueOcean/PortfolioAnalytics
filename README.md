@@ -104,6 +104,52 @@ if(hasArg(fev)) fev = eval.parent(match.call(expand.dots=TRUE)$fev) else fev = 0
 
 **Note:** The same `match.call()` without `eval.parent()` anti-pattern appears in 30+ other locations across the package (notably in `custom.covRob.R`, `constrained_objective.R`, and `ac_ranking.R`). These are tracked for future fixes. See the upstream source at [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) for the original code.
 
+### Bug Fix: Unused Fallback Variables in Group Constraint Setup (`optFUN.R`)
+
+Eight ROI optimization functions (`gmv_opt`, `maxret_opt`, `gmv_opt_toc`, `gmv_opt_ptc`, `etl_opt_toc`, `etl_opt_ptc`, `gmv_opt_leverage`, `gmv_opt_leverage_toc`) contained identical dead-fallback code for group constraints:
+
+```r
+# Before (upstream) — local cLO/cUP created but constraints$cLO used
+if(is.null(constraints$cLO)) cLO <- rep(-Inf, n.groups)
+if(is.null(constraints$cUP)) cUP <- rep(Inf, n.groups)
+...
+rhs.vec <- c(rhs.vec, constraints$cLO, -constraints$cUP)  # ignores local cLO/cUP
+
+# After (this fork) — local variables always assigned, then used
+cLO <- if(is.null(constraints$cLO)) rep(-Inf, n.groups) else constraints$cLO
+cUP <- if(is.null(constraints$cUP)) rep(Inf, n.groups) else constraints$cUP
+...
+rhs.vec <- c(rhs.vec, cLO, -cUP)
+```
+
+If `constraints$cLO` was NULL, `c(rhs.vec, NULL, ...)` would silently drop the NULL, making `rhs.vec` too short for the constraint matrix. If `constraints$cUP` was NULL, `-NULL` would throw `"invalid argument to unary operator"`. The bug was dormant because `group_constraint()` requires non-NULL `group_min`/`group_max`, but it would surface if anyone constructed a constraints list manually.
+
+### Bug Fix: Missing Accumulation in Multi-Factor Residual Cokurtosis
+
+The C function `residualcokurtosisMF()` (in `src/residualcokurtosisMF.c`) computes the residual cokurtosis tensor for statistical factor models with k > 1 factors. The residual tensor element `kijkl` for the case where two pairs of indices match (`i==k && j==l`, with `i != j`) requires three terms:
+
+```
+kijkl = betacov[i,i] * stockM2[j] + betacov[j,j] * stockM2[i] + stockM2[i] * stockM2[j]
+```
+
+The upstream code splits this across two statements using an accumulator pattern, but the second assignment overwrites the first term instead of adding to it:
+
+```c
+// Before (upstream) — drops first term
+kijkl = betacov[pos]*stockM2[j];       // term 1
+pos = j*N+j;
+kijkl = betacov[pos]*stockM2[i]+stockM2[i]*stockM2[j];  // overwrites term 1
+
+// After (this fork) — accumulates correctly
+kijkl = betacov[pos]*stockM2[j];       // term 1
+pos = j*N+j;
+kijkl = kijkl + betacov[pos]*stockM2[i]+stockM2[i]*stockM2[j];  // adds to term 1
+```
+
+The other two symmetric cases (`i==j && k==l` and `i==l && j==k`) correctly use `kijkl = kijkl + ...`. The single-factor specialization (`residualcokurtosisSF.c`) is also correct — it computes all three terms in a single expression.
+
+The bug affects `N * (N-1)` elements per cokurtosis matrix (the off-diagonal positions of the `i==k && j==l` symmetry class). Each affected element is underestimated by exactly `betacov[i,i] * stockM2[j]`. This impacts any code path that calls `extractCokurtosis()` on a statistical factor model with k >= 2.
+
 ## What's Included from braverock
 
 All features from [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) are included:
