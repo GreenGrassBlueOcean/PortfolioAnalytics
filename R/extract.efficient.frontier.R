@@ -471,6 +471,10 @@ meaneqs.efficient.frontier <- function(portfolio, R, optimize_method='CVXR', n.p
 #' @export
 meanrisk.efficient.frontier <- function(portfolio, R, optimize_method='CVXR', n.portfolios=25, risk_type="StdDev", compare_port = c("StdDev", "ES"),...){
   if(!is.portfolio(portfolio)) stop("portfolio object must be of class 'portfolio'")
+  if(length(risk_type) != 1 || !is.character(risk_type))
+    stop("risk_type must be a single character string")
+  if(!all(compare_port %in% c("StdDev", "ES", "CSM", "EQS")))
+    stop("compare_port must be a character vector of risk types (StdDev, ES, CSM, EQS)")
   # step 1: mean-StdDev efficient frontier
   # step 2: calculate minimum ES with target return
   
@@ -537,7 +541,12 @@ meanrisk.efficient.frontier <- function(portfolio, R, optimize_method='CVXR', n.
     }
     res
   }
-  colnames(out) <- c(names(stats), paste(risk_compare, 'portfolio', risk_type))
+  extra_names <- if(length(risk_compare) > 0) {
+    paste(risk_compare, 'portfolio', risk_type)
+  } else {
+    character(0)
+  }
+  colnames(out) <- c(names(stats), extra_names)
   out <- na.omit(out)
   return(structure(out, class="frontier"))
 }

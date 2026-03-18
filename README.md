@@ -171,6 +171,30 @@ The other two symmetric cases (`i==j && k==l` and `i==l && j==k`) correctly use 
 
 The bug affects `N * (N-1)` elements per cokurtosis matrix (the off-diagonal positions of the `i==k && j==l` symmetry class). Each affected element is underestimated by exactly `betacov[i,i] * stockM2[j]`. This impacts any code path that calls `extractCokurtosis()` on a statistical factor model with k >= 2.
 
+### Bug Fix: `dimnames` Mismatch in `meanrisk.efficient.frontier`
+
+`meanrisk.efficient.frontier()` (in `extract.efficient.frontier.R`) computes a multi-risk efficient frontier by optimizing portfolios for each risk measure in `compare_port`, then assembles the results into a matrix. The column-naming step on line 540 has a bug caused by R's `paste()` recycling behavior with zero-length vectors:
+
+```r
+# Line 477: remove risk_type from compare_port to get the "comparison" set
+risk_compare <- compare_port[-which(compare_port == risk_type)]
+
+# Line 540: name the extra columns — one per comparison risk measure
+colnames(out) <- c(names(stats), paste(risk_compare, 'portfolio', risk_type))
+```
+
+When `risk_compare` is `character(0)` (i.e. nothing left to compare), `paste(character(0), 'portfolio', risk_type)` does **not** return `character(0)`. Instead, R recycles the zero-length first argument to `""` against the non-zero-length `risk_type` argument, producing phantom column names like `" portfolio StdDev"`. The `colnames<-` assignment then fails with `"length of 'dimnames' [2] not equal to array extent"` because the matrix has no extra data columns to match these phantom names.
+
+**Triggers:**
+- `compare_port = c("StdDev")` with `risk_type = "StdDev"` — all entries removed, `risk_compare = character(0)`
+- `risk_type` passed as a vector (e.g. `c("StdDev", "ES")`) — element-wise `==` removes all entries, and the multi-element `risk_type` amplifies the phantom names
+
+The function also lacked input validation: `risk_type` is documented as a single string but was not checked, and downstream code (`which(... == risk_type)`, `extract_risk(...)[[risk_type]]`) assumes scalar semantics.
+
+**Impact:** `chart.EfficientFrontierCompare()` calls `meanrisk.efficient.frontier()` via `create.EfficientFrontier(type = "mean-risk")`. The bug didn't surface with the most common parameter combination (`risk_type = "StdDev"`, `compare_port = c("StdDev", "ES")`), but would crash on degenerate inputs.
+
+The fix adds input validation (`risk_type` must be a single character string, `compare_port` entries must be valid risk types) and guards the `colnames` assignment so that an empty `risk_compare` produces `character(0)` instead of phantom names.
+
 ## What's Included from braverock
 
 All features from [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) are included:
@@ -194,7 +218,7 @@ All features from [braverock/PortfolioAnalytics](https://github.com/braverock/Po
 
 ## Testing
 
-The package includes 97 test files with 2,776+ passing assertions:
+The package includes 103 test files with 3,046+ passing assertions:
 
 ```r
 devtools::test()

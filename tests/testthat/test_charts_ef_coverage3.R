@@ -61,11 +61,12 @@ test_that("chart.EfficientFrontierOverlay draws multiple frontiers", {
 # ===========================================================================
 
 test_that("chart.EfficientFrontierCompare with guideline draws annotations", {
-  skip("meanrisk.efficient.frontier has colnames dimnames mismatch — pre-existing issue")
+  skip_if_not_installed("CVXR")
   pdf(NULL); on.exit(dev.off(), add = TRUE)
   result <- chart.EfficientFrontierCompare(
     R4, portf,
-    risk_type = c("StdDev", "ES"),
+    risk_type = "StdDev",
+    match.col = c("StdDev", "ES"),
     guideline = TRUE,
     n.portfolios = 10,
     legend.loc = "bottomright"

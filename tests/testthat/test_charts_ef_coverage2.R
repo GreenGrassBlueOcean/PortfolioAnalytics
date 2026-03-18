@@ -36,29 +36,20 @@ test_that("chart.EF.Weights with by.groups=TRUE", {
 # ===========================================================================
 
 test_that("chart.EfficientFrontierCompare guideline with labels", {
-  skip("chart.EfficientFrontierCompare requires portfolio attribute on frontier objects")
+  skip_if_not_installed("CVXR")
   portf1 <- portfolio.spec(assets = colnames(R4))
   portf1 <- add.constraint(portf1, type = "full_investment")
   portf1 <- add.constraint(portf1, type = "box", min = 0.05, max = 0.65)
   portf1 <- add.objective(portf1, type = "risk", name = "StdDev")
   portf1 <- add.objective(portf1, type = "return", name = "mean")
 
-  portf2 <- portfolio.spec(assets = colnames(R4))
-  portf2 <- add.constraint(portf2, type = "full_investment")
-  portf2 <- add.constraint(portf2, type = "box", min = 0.10, max = 0.60)
-  portf2 <- add.objective(portf2, type = "risk", name = "StdDev")
-  portf2 <- add.objective(portf2, type = "return", name = "mean")
-
-  ef1 <- create.EfficientFrontier(R4, portf1, type = "mean-StdDev",
-                                  n.portfolios = 10)
-  ef2 <- create.EfficientFrontier(R4, portf2, type = "mean-StdDev",
-                                  n.portfolios = 10)
-
   pdf(NULL); on.exit(dev.off(), add = TRUE)
   expect_no_error(
-    chart.EfficientFrontierCompare(ef1, ef2,
-                                   match.col = "StdDev",
+    chart.EfficientFrontierCompare(R4, portf1,
+                                   risk_type = "StdDev",
+                                   match.col = c("StdDev", "ES"),
                                    guideline = TRUE,
-                                   labels.assets = TRUE)
+                                   labels.assets = TRUE,
+                                   n.portfolios = 10)
   )
 })

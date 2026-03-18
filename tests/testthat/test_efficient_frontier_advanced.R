@@ -313,6 +313,27 @@ test_that("create.EfficientFrontier dispatches mean-risk type", {
   expect_s3_class(ef, "efficient.frontier")
 })
 
+test_that("meanrisk.efficient.frontier rejects vector risk_type", {
+  mr_portf <- add.objective(lo_portf, type = "risk", name = "StdDev")
+  mr_portf <- add.objective(mr_portf, type = "return", name = "mean")
+  
+  expect_error(
+    meanrisk.efficient.frontier(mr_portf, R_ef, risk_type = c("StdDev", "ES")),
+    "single character string"
+  )
+})
+
+test_that("meanrisk.efficient.frontier rejects invalid compare_port", {
+  mr_portf <- add.objective(lo_portf, type = "risk", name = "StdDev")
+  mr_portf <- add.objective(mr_portf, type = "return", name = "mean")
+  
+  expect_error(
+    meanrisk.efficient.frontier(mr_portf, R_ef, risk_type = "StdDev",
+                                 compare_port = c("StdDev", "invalid")),
+    "compare_port"
+  )
+})
+
 ###############################################################################
 # 7. extractEfficientFrontier from optimize.portfolio objects
 ###############################################################################
