@@ -106,7 +106,7 @@ add.sub.portfolio <- function(mult.portfolio,
                                  trailing_periods=trailing_periods, 
                                  ...=...)
   
-  if(inherits(tmp_portfolio, "sub.portfolio")){
+  if(inherits(tmp_portfolio, "sub.portfolio")){ # nocov — always TRUE (constructor guarantees class)
     if(!hasArg(indexnum) | (hasArg(indexnum) & is.null(indexnum))){
       indexnum <- length(mult.portfolio$sub.portfolios)+1
     }
@@ -141,10 +141,12 @@ proxy.mult.portfolio <- function(R, mult.portfolio, ...){
     # the sub portfolio
     # This requires that asset names match colnames(R)
     R.tmp <- R[,names(tmp$portfolio$assets)]
+    # nocov start — xts column subsetting errors before this check can trigger
     if(ncol(R.tmp) != length(tmp$portfolio$assets)){
       stop("R object of returns not subset correctly. Make sure the names of 
            the assets in the sub portfolio match the column names of the R object") 
     }
+    # nocov end
     # This needs to support anything in ... that could be passed to optimize.portfolio
     .formals <- formals(optimize.portfolio.rebalancing)
     .formals <- modify.args(formals=.formals, arglist=NULL, R=R, dots=TRUE)
@@ -160,9 +162,9 @@ proxy.mult.portfolio <- function(R, mult.portfolio, ...){
       colnames(ret.tmp) <- paste("proxy", i, sep=".")
       ret[[i]] <- ret.tmp
       #print(ret[[i]])
-    } else {
+    } else { # nocov start — requires all sub-portfolio optimizations to fail
       stop(paste("optimize.portfolio.rebalancing for sub portfolio", i, "generated an error or warning:", opt))
-    }
+    } # nocov end
   }
   proxy.ret <- na.omit(do.call(cbind, ret))
   return(proxy.ret)

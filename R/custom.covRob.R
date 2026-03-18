@@ -28,8 +28,8 @@
 #'
 custom.covRob.MM <- function(R, ...){
   out <- list()
-  if(hasArg(tol)) tol = match.call(expand.dots = TRUE)$tol else tol = 1e-4
-  if(hasArg(maxit)) maxit = match.call(expand.dots = TRUE)$maxit else maxit = 50
+  if(hasArg(tol)) tol = eval.parent(match.call(expand.dots = TRUE)$tol) else tol = 1e-4
+  if(hasArg(maxit)) maxit = eval.parent(match.call(expand.dots = TRUE)$maxit) else maxit = 50
   
   robustCov <- RobStatTM::covRobMM(X = R, tolpar = tol, maxit = maxit)
   
@@ -56,12 +56,12 @@ custom.covRob.MM <- function(R, ...){
 #'
 custom.covRob.Rocke <- function(R, ...){
   out <- list()
-  if(hasArg(tol)) tol = match.call(expand.dots = TRUE)$tol else tol = 1e-4
-  if(hasArg(maxit)) maxit = match.call(expand.dots = TRUE)$maxit else maxit = 50
-  if(hasArg(initial)) initial = match.call(expand.dots = TRUE)$initial else initial = 'K'
-  if(hasArg(maxsteps)) maxsteps = match.call(expand.dots = TRUE)$maxsteps else maxsteps = 5
-  if(hasArg(propmin)) propmin = match.call(expand.dots = TRUE)$propmin else propmin = 2
-  if(hasArg(qs)) qs = match.call(expand.dots = TRUE)$qs else qs = 50
+  if(hasArg(tol)) tol = eval.parent(match.call(expand.dots = TRUE)$tol) else tol = 1e-4
+  if(hasArg(maxit)) maxit = eval.parent(match.call(expand.dots = TRUE)$maxit) else maxit = 50
+  if(hasArg(initial)) initial = eval.parent(match.call(expand.dots = TRUE)$initial) else initial = 'K'
+  if(hasArg(maxsteps)) maxsteps = eval.parent(match.call(expand.dots = TRUE)$maxsteps) else maxsteps = 5
+  if(hasArg(propmin)) propmin = eval.parent(match.call(expand.dots = TRUE)$propmin) else propmin = 2
+  if(hasArg(qs)) qs = eval.parent(match.call(expand.dots = TRUE)$qs) else qs = 50
   
   robustCov <- RobStatTM::covRobRocke(X = R, initial = initial, maxsteps = maxsteps, propmin = propmin, 
                                       qs = qs, tol = tol, maxit = maxit)
@@ -87,18 +87,18 @@ custom.covRob.Rocke <- function(R, ...){
 #' @export
 custom.covRob.Mcd <- function(R, ...){
   
-  if(hasArg(control)) control = match.call(expand.dots = TRUE)$control else control = MycovRobMcd()
-  if(hasArg(alpha)) alpha = match.call(expand.dots = TRUE)$alpha else alpha = control$alpha
-  if(hasArg(nsamp)) nsamp = match.call(expand.dots = TRUE)$nsamp else nsamp = control$nsamp
-  if(hasArg(nmini)) nmini = match.call(expand.dots = TRUE)$nmini else nmini = control$nmini
-  if(hasArg(kmini)) kmini = match.call(expand.dots = TRUE)$kmini else kmini = control$kmini
-  if(hasArg(scalefn)) scalefn = match.call(expand.dots = TRUE)$scalefn else scalefn = control$scalefn
-  if(hasArg(maxcsteps)) maxcsteps = match.call(expand.dots = TRUE)$maxcsteps else maxcsteps = control$maxcsteps
-  if(hasArg(initHsets)) initHsets = match.call(expand.dots = TRUE)$initHsets else initHsets = control$initHsets
-  if(hasArg(seed)) seed = match.call(expand.dots = TRUE)$seed else seed = control$seed
-  if(hasArg(tolSolve)) tolSolve = match.call(expand.dots = TRUE)$tolSolve else tolSolve = control$tolSolve
-  if(hasArg(wgtFUN)) wgtFUN = match.call(expand.dots = TRUE)$wgtFUN else wgtFUN = control$wgtFUN
-  if(hasArg(use.correction)) use.correction = match.call(expand.dots = TRUE)$use.correction else use.correction = control$use.correction
+  if(hasArg(control)) control = eval.parent(match.call(expand.dots = TRUE)$control) else control = MycovRobMcd()
+  if(hasArg(alpha)) alpha = eval.parent(match.call(expand.dots = TRUE)$alpha) else alpha = control$alpha
+  if(hasArg(nsamp)) nsamp = eval.parent(match.call(expand.dots = TRUE)$nsamp) else nsamp = control$nsamp
+  if(hasArg(nmini)) nmini = eval.parent(match.call(expand.dots = TRUE)$nmini) else nmini = control$nmini
+  if(hasArg(kmini)) kmini = eval.parent(match.call(expand.dots = TRUE)$kmini) else kmini = control$kmini
+  if(hasArg(scalefn)) scalefn = eval.parent(match.call(expand.dots = TRUE)$scalefn) else scalefn = control$scalefn
+  if(hasArg(maxcsteps)) maxcsteps = eval.parent(match.call(expand.dots = TRUE)$maxcsteps) else maxcsteps = control$maxcsteps
+  if(hasArg(initHsets)) initHsets = eval.parent(match.call(expand.dots = TRUE)$initHsets) else initHsets = control$initHsets
+  if(hasArg(seed)) seed = eval.parent(match.call(expand.dots = TRUE)$seed) else seed = control$seed
+  if(hasArg(tolSolve)) tolSolve = eval.parent(match.call(expand.dots = TRUE)$tolSolve) else tolSolve = control$tolSolve
+  if(hasArg(wgtFUN)) wgtFUN = eval.parent(match.call(expand.dots = TRUE)$wgtFUN) else wgtFUN = control$wgtFUN
+  if(hasArg(use.correction)) use.correction = eval.parent(match.call(expand.dots = TRUE)$use.correction) else use.correction = control$use.correction
   
   
   robustMCD <- robustbase::covMcd(x = R, alpha = alpha, 
@@ -187,13 +187,13 @@ MycovRobMcd <- function(alpha = 1/2,
 #'             2014.
 
 custom.covRob.TSGS <- function(R, ...){
-  if(hasArg(control)) control = match.call(expand.dots = TRUE)$control else control = MycovRobTSGS()
-  if(hasArg(filter)) filter = match.call(expand.dots = TRUE)$filter else filter = control$filter
-  if(hasArg(partial.impute)) partial.impute = match.call(expand.dots = TRUE)$partial.impute else partial.impute = control$partial.impute
-  if(hasArg(tol)) tol = match.call(expand.dots = TRUE)$tol else tol = control$tol
-  if(hasArg(maxiter)) maxiter = match.call(expand.dots = TRUE)$maxiter else maxiter = control$maxiter
-  if(hasArg(loss)) loss = match.call(expand.dots = TRUE)$loss else loss = control$loss
-  if(hasArg(init)) init = match.call(expand.dots = TRUE)$init else init = control$init
+  if(hasArg(control)) control = eval.parent(match.call(expand.dots = TRUE)$control) else control = MycovRobTSGS()
+  if(hasArg(filter)) filter = eval.parent(match.call(expand.dots = TRUE)$filter) else filter = control$filter
+  if(hasArg(partial.impute)) partial.impute = eval.parent(match.call(expand.dots = TRUE)$partial.impute) else partial.impute = control$partial.impute
+  if(hasArg(tol)) tol = eval.parent(match.call(expand.dots = TRUE)$tol) else tol = control$tol
+  if(hasArg(maxiter)) maxiter = eval.parent(match.call(expand.dots = TRUE)$maxiter) else maxiter = control$maxiter
+  if(hasArg(loss)) loss = eval.parent(match.call(expand.dots = TRUE)$loss) else loss = control$loss
+  if(hasArg(init)) init = eval.parent(match.call(expand.dots = TRUE)$init) else init = control$init
   
   tsgsRob <- GSE::TSGS(x = R, filter = filter,
                        partial.impute = partial.impute, tol = tol, 

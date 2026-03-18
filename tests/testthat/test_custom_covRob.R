@@ -261,13 +261,15 @@ test_that("custom.covRob.Mcd with custom control via do.call", {
   expect_equal(length(result$mu), n)
 })
 
-test_that("custom.covRob.Mcd direct call with control hits match.call bug", {
+test_that("custom.covRob.Mcd direct call with control variable works", {
   skip_if_not_installed("robustbase")
   
-  # Known limitation: match.call(expand.dots=TRUE)$control returns an
-  # unevaluated symbol when args are passed by variable name.
+  # Previously broken: match.call without eval.parent returned unevaluated AST.
+  # Fixed by wrapping in eval.parent() — direct calls with variables now work.
   ctrl <- MycovRobMcd(alpha = 0.75)
-  expect_error(custom.covRob.Mcd(R, control = ctrl), "not subsettable")
+  result <- custom.covRob.Mcd(R, control = ctrl)
+  expect_equal(dim(result$sigma), c(n, n))
+  expect_equal(length(result$mu), n)
 })
 
 test_that("custom.covRob.Mcd with alpha via do.call", {
@@ -325,9 +327,9 @@ test_that("custom.covRob.TSGS mu has correct length", {
 test_that("custom.covRob.TSGS with custom control via do.call", {
   skip_if_not_installed("GSE")
   
-  # Same match.call limitation as Mcd — use do.call for custom params
+  # match.call bug fixed via eval.parent — direct calls now also work
   ctrl <- MycovRobTSGS(filter = "DDC", tol = 1e-3, maxiter = 50)
-  result <- do.call(custom.covRob.TSGS, list(R = R, control = ctrl))
+  result <- custom.covRob.TSGS(R, control = ctrl)
   
   expect_equal(dim(result$sigma), c(n, n))
   expect_equal(length(result$mu), n)
@@ -365,4 +367,56 @@ test_that("custom.covRob.Mcd works as momentFUN string", {
   expect_equal(length(w), n)
   expect_true(all(w >= -1e-8))
   expect_equal(sum(w), 1, tolerance = 1e-6)
+})
+
+###############################################################################
+# 8. Direct calls with variable args (eval.parent fix coverage)
+###############################################################################
+
+test_that("custom.covRob.MM direct call with custom tol and maxit variables", {
+  skip_if_not_installed("RobStatTM")
+  
+  my_tol <- 1e-3
+  my_maxit <- 100
+  result <- custom.covRob.MM(R, tol = my_tol, maxit = my_maxit)
+  expect_equal(dim(result$sigma), c(n, n))
+  expect_equal(length(result$mu), n)
+})
+
+test_that("custom.covRob.Rocke direct call with custom params as variables", {
+  skip_if_not_installed("RobStatTM")
+  
+  my_tol <- 1e-3
+  my_maxit <- 100
+  my_initial <- "K"
+  my_maxsteps <- 3
+  my_propmin <- 2
+  my_qs <- 25
+  result <- custom.covRob.Rocke(R, tol = my_tol, maxit = my_maxit,
+                                 initial = my_initial, maxsteps = my_maxsteps,
+                                 propmin = my_propmin, qs = my_qs)
+  expect_equal(dim(result$sigma), c(n, n))
+  expect_equal(length(result$mu), n)
+})
+
+test_that("custom.covRob.Mcd direct call with individual params as variables", {
+  skip_if_not_installed("robustbase")
+  
+  my_alpha <- 0.75
+  my_nsamp <- 250
+  result <- custom.covRob.Mcd(R, alpha = my_alpha, nsamp = my_nsamp)
+  expect_equal(dim(result$sigma), c(n, n))
+  expect_equal(length(result$mu), n)
+})
+
+test_that("custom.covRob.TSGS direct call with params as variables", {
+  skip_if_not_installed("GSE")
+  
+  my_filter <- "DDC"
+  my_tol <- 1e-3
+  my_maxiter <- 50
+  result <- custom.covRob.TSGS(R, filter = my_filter, tol = my_tol,
+                                maxiter = my_maxiter)
+  expect_equal(dim(result$sigma), c(n, n))
+  expect_equal(length(result$mu), n)
 })

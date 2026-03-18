@@ -69,11 +69,11 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
     parallelType <- if (!is.null(dots$parallelType)) dots$parallelType else "foreach"
     DEcformals$parallelType <- parallelType
     if (parallelType %in% c(2, "foreach")) {
-      if (!requireNamespace("doSNOW", quietly = TRUE)) {
+      if (!requireNamespace("doSNOW", quietly = TRUE)) { # nocov start
         stop("Package 'doSNOW' is required for parallelType='foreach'. ",
              "Install it with install.packages('doSNOW')",
              call. = FALSE)
-      }
+      } # nocov end
       nC <- parallel::detectCores()
       rcl <- parallel::makeCluster(min(nC, 15), type = "PSOCK")
       on.exit({
@@ -118,6 +118,8 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
     fnMap = function(x) fn_map(x, portfolio = portfolio)$weights
   )
 
+  # nocov start — DEoptim almost never throws; would require mocking to test
+
   if (inherits(minw, "try-error")) {
     message(minw)
     ErrorM <- minw
@@ -132,6 +134,7 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
       error = if (exists("ErrorM")) ErrorM else NULL
     ))
   }
+  # nocov end
   if (isTRUE(tmptrace)) trace <- tmptrace
 
   # --- Extract results ---

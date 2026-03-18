@@ -102,7 +102,7 @@ if(hasArg(fev)) fev = match.call(expand.dots=TRUE)$fev else fev = 0:5
 if(hasArg(fev)) fev = eval.parent(match.call(expand.dots=TRUE)$fev) else fev = 0:5
 ```
 
-**Note:** The same `match.call()` without `eval.parent()` anti-pattern appears in 30+ other locations across the package (notably in `custom.covRob.R`, `constrained_objective.R`, and `ac_ranking.R`). These are tracked for future fixes. See the upstream source at [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) for the original code.
+**Note:** The same `match.call()` without `eval.parent()` anti-pattern appeared in 30+ other locations across the package. The `custom.covRob.R` instances (27 occurrences across `custom.covRob.MM`, `custom.covRob.Rocke`, `custom.covRob.Mcd`, and `custom.covRob.TSGS`) have now been fixed with the same `eval.parent()` wrapper. Remaining unfixed instances exist in `constrained_objective.R` and `ac_ranking.R`. See the upstream source at [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) for the original code.
 
 ### Bug Fix: Unused Fallback Variables in Group Constraint Setup (`optFUN.R`)
 
