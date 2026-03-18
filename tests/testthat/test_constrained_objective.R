@@ -720,3 +720,22 @@ test_that("calibrate_penalty with pre-computed env", {
   expect_true(is.finite(penalty))
   expect_true(penalty > 0)
 })
+
+# ===========================================================================
+# 31. Regression: verbose via variable (match.call + eval.parent fix)
+# ===========================================================================
+
+test_that("constrained_objective_v2 accepts verbose passed as a variable", {
+  p <- base_portf()
+  my_verbose <- TRUE
+  # Before fix, match.call() returned the symbol `my_verbose` instead of TRUE,
+  # causing isTRUE() to silently return FALSE (no print output).
+  # trace=TRUE needed because verbose block references tmp_return.
+  expect_output(
+    constrained_objective(w = w_eq, R = R, portfolio = p,
+                          verbose = my_verbose, trace = TRUE),
+    "weights"
+  )
+})
+
+

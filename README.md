@@ -102,7 +102,14 @@ if(hasArg(fev)) fev = match.call(expand.dots=TRUE)$fev else fev = 0:5
 if(hasArg(fev)) fev = eval.parent(match.call(expand.dots=TRUE)$fev) else fev = 0:5
 ```
 
-**Note:** Remaining unfixed `match.call()` without `eval.parent()` instances exist in `constrained_objective.R` and `ac_ranking.R`. See the upstream source at [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) for the original code.
+### Bug Fix: `match.call()` Without `eval.parent()` in `constrained_objective.R` and `ac_ranking.R`
+
+The same `match.call()` anti-pattern appeared in two more files:
+
+- **`constrained_objective.R`**: `verbose` parameter in both `constrained_objective_v2` (1 instance) and `constrained_objective_v1` (1 instance). When passed as a variable, `isTRUE(verbose)` silently returned `FALSE` instead of the intended value. Additionally, `optimize_method` was extracted via `match.call()` but never used in either function body — this dead code was removed.
+- **`ac_ranking.R`**: `max.value` parameter in `ac.ranking` (1 instance). When passed as a variable, `scale_range()` would fail with a non-numeric error.
+
+All 3 live instances fixed with `eval.parent()`, 2 dead-code instances removed.
 
 ### Bug Fix: `match.call()` Without `eval.parent()` in `custom.covRob.R`
 

@@ -134,3 +134,16 @@ test_that("centroid.buckets assigns same value within bucket", {
 test_that("centroid.buckets rejects non-list input", {
   expect_error(centroid.buckets(c(1, 2, 3)), "buckets must be a list")
 })
+
+# ============================================================================
+# G. Regression: max.value via variable (match.call + eval.parent fix)
+# ============================================================================
+
+test_that("ac.ranking accepts max.value passed as a variable", {
+  my_val <- 0.10
+  # Before fix, match.call() returned the symbol `my_val` instead of 0.10,
+  # causing scale_range() to fail with a non-numeric error.
+  result <- ac.ranking(R4, order = c(1, 2, 3, 4), max.value = my_val)
+  expect_length(result, 4)
+  expect_equal(which.max(result), 4)
+})

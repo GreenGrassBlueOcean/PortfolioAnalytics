@@ -27,10 +27,8 @@ constrained_objective_v1 <- function(w, R, constraints, ..., trace=FALSE, normal
     }
     N = length(w)
     T = nrow(R)
-    if(hasArg(optimize_method))
-    	optimize_method=match.call(expand.dots=TRUE)$optimize_method else optimize_method=''
     if(hasArg(verbose))
-    	verbose=match.call(expand.dots=TRUE)$verbose
+    	verbose=eval.parent(match.call(expand.dots=TRUE)$verbose)
     else verbose=FALSE
 
     # check for valid constraints
@@ -430,10 +428,8 @@ constrained_objective <- constrained_objective_v2 <- function(w, R, portfolio, .
   }
   N <- length(w)
   T <- nrow(R)
-  if(hasArg(optimize_method))
-    optimize_method <- match.call(expand.dots=TRUE)$optimize_method else optimize_method <- ''
   if(hasArg(verbose))
-    verbose <- match.call(expand.dots=TRUE)$verbose
+    verbose <- eval.parent(match.call(expand.dots=TRUE)$verbose)
   else verbose <- FALSE
 
   # initial weights

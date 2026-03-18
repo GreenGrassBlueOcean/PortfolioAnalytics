@@ -33,7 +33,7 @@ ac.ranking  <- function(R, order, ...){
   if(length(order) != ncol(R)) stop("The length of the order vector must equal the number of assets")
   nassets <- ncol(R)
   if(hasArg(max.value)) {
-    max.value <- match.call(expand.dots=TRUE)$max.value
+    max.value <- eval.parent(match.call(expand.dots=TRUE)$max.value)
   } else {
     max.value <- median(colMeans(R))
   }
