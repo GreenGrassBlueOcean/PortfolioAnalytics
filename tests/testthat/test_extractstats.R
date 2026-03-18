@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("extractStats and extractObjectiveMeasures")
 

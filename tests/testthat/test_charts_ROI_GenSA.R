@@ -6,8 +6,6 @@
 #          class validation, missing-R error path, chart.assets overlay,
 #          margin branches (main="", xlab=, las=1), infinite-bound ylim
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]
@@ -120,7 +118,7 @@ test_that("chart.Weight.ROI rejects wrong class", {
   mock <- list(weights = rep(0.2, 5))
   class(mock) <- "optimize.portfolio.random"
   expect_error(
-    PortfolioAnalytics:::chart.Weight.ROI(mock),
+    chart.Weight.ROI(mock),
     "optimize.portfolio.ROI"
   )
 })
@@ -129,7 +127,7 @@ test_that("chart.Scatter.ROI rejects wrong class", {
   mock <- list(weights = rep(0.2, 5))
   class(mock) <- "optimize.portfolio.random"
   expect_error(
-    PortfolioAnalytics:::chart.Scatter.ROI(mock),
+    chart.Scatter.ROI(mock),
     "optimize.portfolio.ROI"
   )
 })
@@ -140,7 +138,7 @@ test_that("chart.Scatter.ROI errors when R is missing (trace=FALSE)", {
   obj <- opt_roi
   obj$R <- NULL
   expect_error(
-    PortfolioAnalytics:::chart.Scatter.ROI(obj),
+    chart.Scatter.ROI(obj),
     "Returns object not detected"
   )
 })
@@ -223,7 +221,7 @@ test_that("chart.Weight.GenSA rejects wrong class", {
   mock <- list(weights = rep(0.2, 5))
   class(mock) <- "optimize.portfolio.ROI"
   expect_error(
-    PortfolioAnalytics:::chart.Weight.GenSA(mock),
+    chart.Weight.GenSA(mock),
     "optimize.portfolio.GenSA"
   )
 })
@@ -232,7 +230,7 @@ test_that("chart.Scatter.GenSA rejects wrong class", {
   mock <- list(weights = rep(0.2, 5))
   class(mock) <- "optimize.portfolio.ROI"
   expect_error(
-    PortfolioAnalytics:::chart.Scatter.GenSA(mock),
+    chart.Scatter.GenSA(mock),
     "optimize.portfolio.GenSA"
   )
 })
@@ -242,7 +240,7 @@ test_that("chart.Scatter.GenSA errors when R is missing", {
   obj <- opt_gensa
   obj$R <- NULL
   expect_error(
-    PortfolioAnalytics:::chart.Scatter.GenSA(obj),
+    chart.Scatter.GenSA(obj),
     "Returns object not detected"
   )
 })
@@ -253,22 +251,22 @@ test_that("chart.Scatter.GenSA errors when R is missing", {
 
 test_that("chart.Weights S3 method aliases are correct", {
   expect_identical(
-    PortfolioAnalytics:::chart.Weights.optimize.portfolio.ROI,
-    PortfolioAnalytics:::chart.Weight.ROI
+    chart.Weights.optimize.portfolio.ROI,
+    chart.Weight.ROI
   )
   expect_identical(
-    PortfolioAnalytics:::chart.Weights.optimize.portfolio.GenSA,
-    PortfolioAnalytics:::chart.Weight.GenSA
+    chart.Weights.optimize.portfolio.GenSA,
+    chart.Weight.GenSA
   )
 })
 
 test_that("chart.RiskReward S3 method aliases are correct", {
   expect_identical(
-    PortfolioAnalytics:::chart.RiskReward.optimize.portfolio.ROI,
-    PortfolioAnalytics:::chart.Scatter.ROI
+    chart.RiskReward.optimize.portfolio.ROI,
+    chart.Scatter.ROI
   )
   expect_identical(
-    PortfolioAnalytics:::chart.RiskReward.optimize.portfolio.GenSA,
-    PortfolioAnalytics:::chart.Scatter.GenSA
+    chart.RiskReward.optimize.portfolio.GenSA,
+    chart.Scatter.GenSA
   )
 })

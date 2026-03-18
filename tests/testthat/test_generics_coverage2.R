@@ -3,8 +3,6 @@
 #   "Unconstrained" position limit/diversification/turnover paths,
 #   factor exposure display, category labels, non-standard box constraints
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

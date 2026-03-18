@@ -1,8 +1,6 @@
 ##### test_local_storage.R #####
 # Tests for Proposal #8: Replace global .storage with local environment
 
-library(testthat)
-library(PortfolioAnalytics)
 library(DEoptim)
 
 context("Local storage for trace accumulation (reentrant)")

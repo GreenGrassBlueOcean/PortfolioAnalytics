@@ -1,7 +1,5 @@
 context("charts.RP.R coverage: Weight, Scatter, plot for random portfolios")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

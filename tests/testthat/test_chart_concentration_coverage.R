@@ -1,7 +1,5 @@
 context("chart.concentration.R coverage: chart.Concentration additional paths")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

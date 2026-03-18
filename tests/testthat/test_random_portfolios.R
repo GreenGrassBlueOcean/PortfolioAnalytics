@@ -4,8 +4,6 @@
 #          (sample / simplex / grid), rp_sample, rp_simplex, rp_grid,
 #          eliminate path, output structure, constraint satisfaction
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R4 <- edhec[1:60, 1:4]
@@ -31,7 +29,7 @@ make_box_portf <- function() {
 
 # Validate constraint satisfaction for a matrix of portfolios
 all_satisfy <- function(rp_mat, portfolio) {
-  all(apply(rp_mat, 1, PortfolioAnalytics:::check_constraints,
+  all(apply(rp_mat, 1, check_constraints,
             portfolio = portfolio))
 }
 
@@ -88,7 +86,7 @@ test_that("randomize_portfolio satisfies box constraints", {
   set.seed(6437)
   p <- make_box_portf()
   w <- randomize_portfolio(p)
-  constraints <- PortfolioAnalytics:::get_constraints(p)
+  constraints <- get_constraints(p)
   expect_true(all(w >= constraints$min - 1e-6))
   expect_true(all(w <= constraints$max + 1e-6))
 })
@@ -187,7 +185,7 @@ test_that("random_portfolios (simplex) satisfies min box constraints", {
   p <- add.constraint(p, type = "box", min = 0.05, max = 1)
   rp <- random_portfolios(p, permutations = 100, rp_method = "simplex",
                           eliminate = FALSE)
-  constraints <- PortfolioAnalytics:::get_constraints(p)
+  constraints <- get_constraints(p)
   expect_true(all(rp >= constraints$min - 1e-6))
 })
 
@@ -264,7 +262,7 @@ test_that("rp_grid with normalize=TRUE adjusts weight sums", {
   p <- make_box_portf()
   rp <- rp_grid(p, permutations = 50, normalize = TRUE)
   # With normalization, sums should be closer to target range
-  constraints <- PortfolioAnalytics:::get_constraints(p)
+  constraints <- get_constraints(p)
   row_sums <- rowSums(rp)
   # All sums should be >= min_sum after normalization
   expect_true(all(row_sums >= constraints$min_sum - 1e-6))
@@ -289,7 +287,7 @@ test_that("rp_grid generates at least permutations rows", {
 
 test_that("rp_grid respects box constraints", {
   p <- make_box_portf()
-  constraints <- PortfolioAnalytics:::get_constraints(p)
+  constraints <- get_constraints(p)
   rp <- rp_grid(p, permutations = 50, normalize = FALSE)
   expect_true(all(rp >= min(constraints$min) - 1e-6))
   expect_true(all(rp <= max(constraints$max) + 1e-6))

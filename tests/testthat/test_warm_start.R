@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Proposal #13: Warm-Starting Across Rebalancing Windows")
 

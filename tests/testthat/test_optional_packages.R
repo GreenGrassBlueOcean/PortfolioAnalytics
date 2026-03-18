@@ -1,7 +1,6 @@
 # Tests for Proposal #10: Optional packages in Suggests
 # Verifies DESCRIPTION structure and requireNamespace guards.
 
-library(testthat)
 
 # Helper: locate the package source root (works both interactively and during R CMD check)
 pkg_source_root <- function() {

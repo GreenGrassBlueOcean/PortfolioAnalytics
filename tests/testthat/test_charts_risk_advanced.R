@@ -8,8 +8,6 @@
 #   - Warning when no risk_budget_objective present
 #   - Class validation
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

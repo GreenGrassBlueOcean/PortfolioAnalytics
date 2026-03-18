@@ -1,7 +1,5 @@
 context("charts.risk.R coverage: chart.RiskBudget additional paths")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

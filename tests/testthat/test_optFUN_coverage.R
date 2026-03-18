@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("optFUN.R coverage: concentration aversion, factor exposure, infinite bounds")
 

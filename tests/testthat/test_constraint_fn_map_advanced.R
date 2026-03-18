@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("constraint_fn_map advanced: Dykstra projection, relaxation loops, fallback paths")
 
@@ -25,20 +23,20 @@ test_that(".project_box clamps to bounds", {
   w <- c(-0.1, 0.6, 0.3)
   lo <- c(0, 0, 0)
   hi <- c(0.5, 0.5, 0.5)
-  result <- PortfolioAnalytics:::.project_box(w, lo, hi)
+  result <- .project_box(w, lo, hi)
   expect_equal(result, c(0, 0.5, 0.3))
 })
 
 test_that(".project_weight_sum shifts weights uniformly", {
   w <- c(0.1, 0.1, 0.1)
-  result <- PortfolioAnalytics:::.project_weight_sum(w, min_sum = 1, max_sum = 1)
+  result <- .project_weight_sum(w, min_sum = 1, max_sum = 1)
   expect_equal(sum(result), 1, tolerance = 1e-12)
   # Shift should be uniform
   expect_equal(result[1], result[2], tolerance = 1e-12)
 
   # Already feasible — returned unchanged
   w2 <- c(0.3, 0.3, 0.4)
-  result2 <- PortfolioAnalytics:::.project_weight_sum(w2, min_sum = 0.99, max_sum = 1.01)
+  result2 <- .project_weight_sum(w2, min_sum = 0.99, max_sum = 1.01)
   expect_equal(result2, w2)
 })
 
@@ -46,19 +44,19 @@ test_that(".project_weight_sum projects to nearest bound", {
   # Below min_sum: project to min_sum
 
   w <- c(0.1, 0.2, 0.3)
-  result <- PortfolioAnalytics:::.project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
+  result <- .project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
   expect_equal(sum(result), 0.99, tolerance = 1e-12)
 
   # Above max_sum: project to max_sum
   w2 <- c(0.5, 0.4, 0.3)
-  result2 <- PortfolioAnalytics:::.project_weight_sum(w2, min_sum = 0.99, max_sum = 1.01)
+  result2 <- .project_weight_sum(w2, min_sum = 0.99, max_sum = 1.01)
   expect_equal(sum(result2), 1.01, tolerance = 1e-12)
 })
 
 test_that(".project_group modifies only group elements", {
   w <- c(0.1, 0.2, 0.3, 0.4)
   idx <- c(1, 2)
-  result <- PortfolioAnalytics:::.project_group(w, idx, lo = 0.5, up = 0.7)
+  result <- .project_group(w, idx, lo = 0.5, up = 0.7)
   expect_equal(sum(result[idx]), 0.5, tolerance = 1e-12)
   # Non-group elements unchanged
   expect_equal(result[3:4], w[3:4])
@@ -67,34 +65,34 @@ test_that(".project_group modifies only group elements", {
 test_that(".project_group returns unchanged when within bounds", {
   w <- c(0.3, 0.2, 0.3, 0.2)
   idx <- c(1, 2)
-  result <- PortfolioAnalytics:::.project_group(w, idx, lo = 0.4, up = 0.6)
+  result <- .project_group(w, idx, lo = 0.4, up = 0.6)
   expect_equal(result, w)
 })
 
 test_that(".is_projection_feasible correctly validates", {
   w <- c(0.25, 0.25, 0.25, 0.25)
-  expect_true(PortfolioAnalytics:::.is_projection_feasible(
+  expect_true(.is_projection_feasible(
     w, min_sum = 0.99, max_sum = 1.01,
     min_box = rep(0, 4), max_box = rep(0.5, 4)
   ))
 
   # Violates box
   w2 <- c(0.6, 0.2, 0.1, 0.1)
-  expect_false(PortfolioAnalytics:::.is_projection_feasible(
+  expect_false(.is_projection_feasible(
     w2, min_sum = 0.99, max_sum = 1.01,
     min_box = rep(0, 4), max_box = rep(0.5, 4)
   ))
 
   # Violates weight_sum
   w3 <- c(0.1, 0.1, 0.1, 0.1)
-  expect_false(PortfolioAnalytics:::.is_projection_feasible(
+  expect_false(.is_projection_feasible(
     w3, min_sum = 0.99, max_sum = 1.01,
     min_box = rep(0, 4), max_box = rep(0.5, 4)
   ))
 
   # Violates group constraint
   w4 <- c(0.4, 0.4, 0.1, 0.1)
-  expect_false(PortfolioAnalytics:::.is_projection_feasible(
+  expect_false(.is_projection_feasible(
     w4, min_sum = 0.99, max_sum = 1.01,
     min_box = rep(0, 4), max_box = rep(0.5, 4),
     groups = list(1:2, 3:4), cLO = c(0.3, 0.3), cUP = c(0.5, 0.7)
@@ -302,21 +300,21 @@ test_that("fn_map method argument accepts rp_transform explicitly", {
 test_that("check_constraints returns TRUE for feasible weights", {
   spec <- make_spec()
   w <- c(0.3, 0.3, 0.2, 0.2)
-  result <- PortfolioAnalytics:::check_constraints(w, spec)
+  result <- check_constraints(w, spec)
   expect_true(result)
 })
 
 test_that("check_constraints returns FALSE for box violation", {
   spec <- make_spec()
   w <- c(0.7, 0.1, 0.1, 0.1)
-  result <- PortfolioAnalytics:::check_constraints(w, spec)
+  result <- check_constraints(w, spec)
   expect_false(result)
 })
 
 test_that("check_constraints returns FALSE for weight_sum violation", {
   spec <- make_spec()
   w <- c(0.5, 0.5, 0.5, 0.5)
-  result <- PortfolioAnalytics:::check_constraints(w, spec)
+  result <- check_constraints(w, spec)
   expect_false(result)
 })
 
@@ -326,7 +324,7 @@ test_that("check_constraints detects group constraint violations", {
                          group_min = c(0.4, 0.4), group_max = c(0.6, 0.6))
   # Group 1 sum = 0.1, violates group_min = 0.4
   w <- c(0.05, 0.05, 0.45, 0.45)
-  result <- PortfolioAnalytics:::check_constraints(w, spec)
+  result <- check_constraints(w, spec)
   expect_false(result)
 })
 
@@ -336,6 +334,6 @@ test_that("check_constraints detects leverage_exposure violation", {
   spec <- add.constraint(spec, type = "box", min = -0.5, max = 0.5)
   spec <- add.constraint(spec, type = "leverage_exposure", leverage = 1.0)
   w <- c(0.4, -0.4, 0.3, -0.3)
-  result <- PortfolioAnalytics:::check_constraints(w, spec)
+  result <- check_constraints(w, spec)
   expect_false(result)
 })

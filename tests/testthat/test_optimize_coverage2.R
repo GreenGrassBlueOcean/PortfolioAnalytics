@@ -3,8 +3,6 @@
 #   unknown solver, penalty="auto" for ROI, warm_start validation,
 #   normalize_weights, check_feasibility
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

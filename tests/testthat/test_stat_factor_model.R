@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Statistical Factor Model: PCA-based comoment estimation")
 
@@ -64,7 +62,7 @@ test_that("covarianceSF produces correct N x N matrix", {
   stockM2 <- c(0.01, 0.02, 0.015, 0.008)
   factorM2 <- 0.05
 
-  result <- PortfolioAnalytics:::covarianceSF(beta, stockM2, factorM2)
+  result <- covarianceSF(beta, stockM2, factorM2)
   expect_equal(dim(result), c(4, 4))
   expect_true(isSymmetric(result))
   # Diagonal should be beta^2 * factorM2 + stockM2
@@ -74,7 +72,7 @@ test_that("covarianceSF produces correct N x N matrix", {
 
 test_that("covarianceSF rejects mismatched dimensions", {
   expect_error(
-    PortfolioAnalytics:::covarianceSF(c(0.5, 0.3), c(0.01), 0.05),
+    covarianceSF(c(0.5, 0.3), c(0.01), 0.05),
     "dimensions do not match"
   )
 })
@@ -84,7 +82,7 @@ test_that("coskewnessSF produces correct N x N^2 matrix", {
   stockM3 <- c(0.001, -0.002, 0.0005)
   factorM3 <- 0.003
 
-  result <- PortfolioAnalytics:::coskewnessSF(beta, stockM3, factorM3)
+  result <- coskewnessSF(beta, stockM3, factorM3)
   expect_equal(dim(result), c(3, 9))
 })
 
@@ -95,7 +93,7 @@ test_that("cokurtosisSF produces correct N x N^3 matrix via C code", {
   factorM2 <- 0.05
   factorM4 <- 0.008
 
-  result <- PortfolioAnalytics:::cokurtosisSF(beta, stockM2, stockM4, factorM2, factorM4)
+  result <- cokurtosisSF(beta, stockM2, stockM4, factorM2, factorM4)
   expect_equal(dim(result), c(3, 27))
 })
 
@@ -109,14 +107,14 @@ test_that("covarianceMF produces correct N x N matrix", {
   stockM2 <- abs(rnorm(N)) * 0.01
   factorM2 <- cov(matrix(rnorm(100 * k), ncol = k))
 
-  result <- PortfolioAnalytics:::covarianceMF(beta, stockM2, factorM2)
+  result <- covarianceMF(beta, stockM2, factorM2)
   expect_equal(dim(result), c(N, N))
   expect_true(isSymmetric(result))
 })
 
 test_that("covarianceMF rejects non-matrix beta", {
   expect_error(
-    PortfolioAnalytics:::covarianceMF(c(0.5, 0.3), c(0.01, 0.02), matrix(0.05)),
+    covarianceMF(c(0.5, 0.3), c(0.01, 0.02), matrix(0.05)),
     "beta must be a matrix"
   )
 })
@@ -129,7 +127,7 @@ test_that("coskewnessMF produces correct N x N^2 matrix", {
   f <- matrix(rnorm(100 * k), ncol = k)
   factorM3 <- PerformanceAnalytics::M3.MM(f)
 
-  result <- PortfolioAnalytics:::coskewnessMF(beta, stockM3, factorM3)
+  result <- coskewnessMF(beta, stockM3, factorM3)
   expect_equal(dim(result), c(N, N^2))
 })
 
@@ -143,7 +141,7 @@ test_that("cokurtosisMF produces correct N x N^3 matrix via C code", {
   factorM2 <- cov(f)
   factorM4 <- PerformanceAnalytics::M4.MM(f)
 
-  result <- PortfolioAnalytics:::cokurtosisMF(beta, stockM2, stockM4, factorM2, factorM4)
+  result <- cokurtosisMF(beta, stockM2, stockM4, factorM2, factorM4)
   expect_equal(dim(result), c(N, N^3))
 })
 

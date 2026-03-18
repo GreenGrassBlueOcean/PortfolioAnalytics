@@ -1,8 +1,6 @@
 ##### test_charts_DE_coverage2.R #####
 # Phase 3 coverage: chart.Weight.DE edge cases + chart.Scatter.DE neighbors
 
-library(testthat)
-library(PortfolioAnalytics)
 
 skip_if_not_installed("DEoptim")
 

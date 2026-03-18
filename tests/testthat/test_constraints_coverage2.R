@@ -3,8 +3,6 @@
 #   verbose, NA/NaN warning, median objective, env=NULL moments,
 #   disabled objective, calibrate_penalty edge cases
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R <- edhec[1:36, 1:4]

@@ -8,8 +8,6 @@
 #   - chart.EfficientFrontierCompare: mean-risk guideline comparison
 #   - chart.EfficientFrontierOverlay: with legend, chart.assets=FALSE
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

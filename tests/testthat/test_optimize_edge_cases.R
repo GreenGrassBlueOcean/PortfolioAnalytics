@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("Phase 1A: optimize.portfolio.R edge cases")
 
@@ -126,7 +124,7 @@ test_that("regime switching with multiple regime dates picks value at last(R)", 
 test_that("normalize_portfolio_weights handles normal case", {
   constraints <- list(min_sum = 0.99, max_sum = 1.01)
   w <- c(0.6, 0.6)  # sum = 1.2 > max_sum
-  result <- PortfolioAnalytics:::normalize_portfolio_weights(w, constraints)
+  result <- normalize_portfolio_weights(w, constraints)
   expect_equal(sum(result), 1.01, tolerance = 1e-10)
 })
 
@@ -134,27 +132,27 @@ test_that("normalize_portfolio_weights handles weights below min_sum", {
   constraints <- list(min_sum = 0.99, max_sum = 1.01)
   w <- c(0.3, 0.3)  # sum = 0.6 < min_sum
 
-  result <- PortfolioAnalytics:::normalize_portfolio_weights(w, constraints)
+  result <- normalize_portfolio_weights(w, constraints)
   expect_equal(sum(result), 0.99, tolerance = 1e-10)
 })
 
 test_that("normalize_portfolio_weights handles Inf max_sum", {
   constraints <- list(min_sum = 0.5, max_sum = Inf)
   w <- c(10, 10)  # sum = 20, but max_sum is Inf so no normalization
-  result <- PortfolioAnalytics:::normalize_portfolio_weights(w, constraints)
+  result <- normalize_portfolio_weights(w, constraints)
   expect_equal(result, w)
 })
 
 test_that("normalize_portfolio_weights handles -Inf min_sum", {
   constraints <- list(min_sum = -Inf, max_sum = 2)
   w <- c(-5, -5)  # sum = -10 < min_sum (-Inf), no normalization for min
-  result <- PortfolioAnalytics:::normalize_portfolio_weights(w, constraints)
+  result <- normalize_portfolio_weights(w, constraints)
   expect_equal(result, w)
 })
 
 test_that("normalize_portfolio_weights handles NULL constraints gracefully", {
   w <- c(0.3, 0.7)
-  result <- PortfolioAnalytics:::normalize_portfolio_weights(w, list())
+  result <- normalize_portfolio_weights(w, list())
   expect_equal(result, w)
 })
 
@@ -165,7 +163,7 @@ test_that("normalize_portfolio_weights with sum(weights)=0 and max_sum triggers 
 
   # When sum(weights) == 0: (max_sum / 0) * weights produces NaN/Inf
   # This is a known edge case—we just document the current behavior
-  result <- PortfolioAnalytics:::normalize_portfolio_weights(w, constraints)
+  result <- normalize_portfolio_weights(w, constraints)
   # sum(w) == 0, which is < min_sum (0.99), so min_sum normalization triggers:
   # (0.99 / 0) * w => Inf/-Inf
   expect_true(any(!is.finite(result)))

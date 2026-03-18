@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("constraints advanced: constructors, helpers, edge cases")
 
@@ -355,21 +353,21 @@ test_that("insert_constraints replaces constraints list", {
   spec <- portfolio.spec(assets = funds4)
   c1 <- weight_sum_constraint(min_sum = 1, max_sum = 1)
   c2 <- box_constraint(assets = spec$assets, min = 0, max = 1)
-  spec2 <- PortfolioAnalytics:::insert_constraints(spec, list(c1, c2))
+  spec2 <- insert_constraints(spec, list(c1, c2))
   expect_length(spec2$constraints, 2)
 })
 
 test_that("insert_constraints errors on non-constraint objects", {
   spec <- portfolio.spec(assets = funds4)
   expect_error(
-    PortfolioAnalytics:::insert_constraints(spec, list(list(type = "box"))),
+    insert_constraints(spec, list(list(type = "box"))),
     "class 'constraint'"
   )
 })
 
 test_that("insert_constraints errors on non-portfolio", {
   expect_error(
-    PortfolioAnalytics:::insert_constraints(list(), list()),
+    insert_constraints(list(), list()),
     "class portfolio"
   )
 })

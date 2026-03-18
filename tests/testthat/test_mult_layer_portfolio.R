@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Multi-layer portfolio: sub.portfolio internals and proxy validation")
 
@@ -16,7 +14,7 @@ test_that("sub.portfolio creates correct structure", {
   portf <- add.constraint(portf, type = "full_investment")
   portf <- add.objective(portf, type = "risk", name = "StdDev")
 
-  sp <- PortfolioAnalytics:::sub.portfolio(
+  sp <- sub.portfolio(
     portfolio = portf,
     optimize_method = "random",
     search_size = 100,
@@ -36,7 +34,7 @@ test_that("sub.portfolio creates correct structure", {
 
 test_that("sub.portfolio rejects non-portfolio object", {
   expect_error(
-    PortfolioAnalytics:::sub.portfolio(portfolio = list(), optimize_method = "random"),
+    sub.portfolio(portfolio = list(), optimize_method = "random"),
     "not of class"
   )
 })
@@ -45,7 +43,7 @@ test_that("sub.portfolio passes through extra arguments", {
   portf <- portfolio.spec(assets = colnames(R6)[1:3])
   portf <- add.constraint(portf, type = "full_investment")
 
-  sp <- PortfolioAnalytics:::sub.portfolio(
+  sp <- sub.portfolio(
     portfolio = portf,
     optimize_method = "DEoptim",
     custom_param = "test_value"
@@ -86,7 +84,7 @@ test_that("add.sub.portfolio forwards all parameters to sub.portfolio", {
 
 test_that("proxy.mult.portfolio rejects non mult.portfolio.spec", {
   expect_error(
-    PortfolioAnalytics:::proxy.mult.portfolio(R6, list()),
+    proxy.mult.portfolio(R6, list()),
     "mult.portfolio.spec"
   )
 })
@@ -101,7 +99,7 @@ test_that("proxy.mult.portfolio requires more than 1 sub portfolio", {
   mp <- add.sub.portfolio(mp, sub1, optimize_method = "random")
 
   expect_error(
-    PortfolioAnalytics:::proxy.mult.portfolio(R6, mp),
+    proxy.mult.portfolio(R6, mp),
     "more than 1"
   )
 })

@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("constraint_fn_map helpers: violation detectors, rp_transform, weight adjusters")
 
@@ -8,21 +6,21 @@ context("constraint_fn_map helpers: violation detectors, rp_transform, weight ad
 # ============================================================================
 
 test_that("min_sum_fail detects violation and handles NULL", {
-  expect_true(PortfolioAnalytics:::min_sum_fail(c(0.1, 0.2, 0.3), min_sum = 0.99))
-  expect_false(PortfolioAnalytics:::min_sum_fail(c(0.4, 0.3, 0.3), min_sum = 0.99))
-  expect_false(PortfolioAnalytics:::min_sum_fail(c(0.5, 0.5), min_sum = NULL))
+  expect_true(min_sum_fail(c(0.1, 0.2, 0.3), min_sum = 0.99))
+  expect_false(min_sum_fail(c(0.4, 0.3, 0.3), min_sum = 0.99))
+  expect_false(min_sum_fail(c(0.5, 0.5), min_sum = NULL))
 })
 
 test_that("max_sum_fail detects violation and handles NULL", {
-  expect_true(PortfolioAnalytics:::max_sum_fail(c(0.5, 0.4, 0.3), max_sum = 1.01))
-  expect_false(PortfolioAnalytics:::max_sum_fail(c(0.3, 0.3, 0.3), max_sum = 1.01))
-  expect_false(PortfolioAnalytics:::max_sum_fail(c(0.5, 0.5), max_sum = NULL))
+  expect_true(max_sum_fail(c(0.5, 0.4, 0.3), max_sum = 1.01))
+  expect_false(max_sum_fail(c(0.3, 0.3, 0.3), max_sum = 1.01))
+  expect_false(max_sum_fail(c(0.5, 0.5), max_sum = NULL))
 })
 
 test_that("leverage_fail detects violation and handles NULL", {
-  expect_true(PortfolioAnalytics:::leverage_fail(c(0.5, -0.5, 0.8), leverage = 1.5))
-  expect_false(PortfolioAnalytics:::leverage_fail(c(0.3, -0.2, 0.5), leverage = 1.5))
-  expect_false(PortfolioAnalytics:::leverage_fail(c(0.5, 0.5), leverage = NULL))
+  expect_true(leverage_fail(c(0.5, -0.5, 0.8), leverage = 1.5))
+  expect_false(leverage_fail(c(0.3, -0.2, 0.5), leverage = 1.5))
+  expect_false(leverage_fail(c(0.5, 0.5), leverage = NULL))
 })
 
 test_that("group_fail returns logical vector per group", {
@@ -32,22 +30,22 @@ test_that("group_fail returns logical vector per group", {
 
   # Group 1 violates cLO = 0.4
 
-  result <- PortfolioAnalytics:::group_fail(weights, groups, cLO = c(0.4, 0.3), cUP = c(0.6, 0.8))
+  result <- group_fail(weights, groups, cLO = c(0.4, 0.3), cUP = c(0.6, 0.8))
   expect_equal(result, c(TRUE, FALSE))
 
   # Both groups within bounds
-  result2 <- PortfolioAnalytics:::group_fail(weights, groups, cLO = c(0.2, 0.5), cUP = c(0.5, 0.8))
+  result2 <- group_fail(weights, groups, cLO = c(0.2, 0.5), cUP = c(0.5, 0.8))
   expect_equal(result2, c(FALSE, FALSE))
 
   # Returns FALSE when groups is NULL
-  expect_false(PortfolioAnalytics:::group_fail(weights, NULL, c(0.3, 0.3), c(0.7, 0.7)))
+  expect_false(group_fail(weights, NULL, c(0.3, 0.3), c(0.7, 0.7)))
 })
 
 test_that("group_fail detects group_pos violations", {
   weights <- c(0.1, 0.2, 0.3, 0.4)
   groups <- list(1:2, 3:4)
   # Both groups have 2 non-zero weights; set group_pos = 1 for group 1
-  result <- PortfolioAnalytics:::group_fail(weights, groups,
+  result <- group_fail(weights, groups,
                                             cLO = c(0, 0), cUP = c(1, 1),
                                             group_pos = c(1, 2))
   expect_true(result[1])
@@ -80,7 +78,7 @@ test_that("rp_increase raises weight sum toward min_sum", {
   set.seed(6142)
   w <- c(0.1, 0.1, 0.1)
   weight_seq <- seq(0, 0.6, by = 0.002)
-  result <- PortfolioAnalytics:::rp_increase(
+  result <- rp_increase(
     weights = w, min_sum = 0.99,
     max_box = rep(0.6, 3), weight_seq = weight_seq
   )
@@ -89,7 +87,7 @@ test_that("rp_increase raises weight sum toward min_sum", {
 
 test_that("rp_increase returns weights unchanged when already above min_sum", {
   w <- c(0.4, 0.3, 0.3)
-  result <- PortfolioAnalytics:::rp_increase(
+  result <- rp_increase(
     weights = w, min_sum = 0.99,
     max_box = rep(0.6, 3), weight_seq = seq(0, 0.6, by = 0.002)
   )
@@ -100,7 +98,7 @@ test_that("rp_decrease lowers weight sum toward max_sum", {
   set.seed(8417)
   w <- c(0.5, 0.4, 0.3)
   weight_seq <- seq(0, 0.6, by = 0.002)
-  result <- PortfolioAnalytics:::rp_decrease(
+  result <- rp_decrease(
     weights = w, max_sum = 1.01,
     min_box = rep(0, 3), weight_seq = weight_seq
   )
@@ -109,7 +107,7 @@ test_that("rp_decrease lowers weight sum toward max_sum", {
 
 test_that("rp_decrease returns weights unchanged when already below max_sum", {
   w <- c(0.3, 0.3, 0.3)
-  result <- PortfolioAnalytics:::rp_decrease(
+  result <- rp_decrease(
     weights = w, max_sum = 1.01,
     min_box = rep(0, 3), weight_seq = seq(0, 0.6, by = 0.002)
   )
@@ -120,7 +118,7 @@ test_that("rp_decrease_leverage reduces leverage exposure", {
   set.seed(3259)
   w <- c(0.5, -0.4, 0.6, -0.3)
   weight_seq <- seq(-0.6, 0.6, by = 0.002)
-  result <- PortfolioAnalytics:::rp_decrease_leverage(
+  result <- rp_decrease_leverage(
     weights = w, max_box = rep(0.6, 4), min_box = rep(-0.6, 4),
     leverage = 1.2, weight_seq = weight_seq
   )
@@ -132,7 +130,7 @@ test_that("rp_position_limit reduces long positions", {
   # 4 positive weights; max_pos_long = 2 means 2 need to become <= 0
   w <- c(0.3, 0.3, 0.2, 0.2)
   weight_seq <- c(seq(-0.3, 0.6, by = 0.002), 0)
-  result <- PortfolioAnalytics:::rp_position_limit(
+  result <- rp_position_limit(
     weights = w, max_pos = NULL,
     max_pos_long = 2, max_pos_short = NULL,
     min_box = rep(-0.3, 4), max_box = rep(0.6, 4),

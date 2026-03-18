@@ -1,6 +1,4 @@
 ##### Load packages #####
-require(testthat)
-require(PortfolioAnalytics)
 
 context("test demo_max_return.R")
 

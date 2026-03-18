@@ -1,7 +1,5 @@
 
 ##### Load packages #####
-require(testthat)
-require(PortfolioAnalytics)
 
 
 context("test demo max STARR")

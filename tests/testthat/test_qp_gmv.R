@@ -1,8 +1,6 @@
-library(PortfolioAnalytics)
 library(ROI)
 library(ROI.plugin.quadprog)
 library(quadprog)
-library(testthat)
 
 # Test that PortfolioAnalytics with ROI.plugin.quadprog solutions equal quadprog solutions
 context("GMV Portfolios: PortfolioAnalytics with ROI.plugin.quadprog and quadprog")

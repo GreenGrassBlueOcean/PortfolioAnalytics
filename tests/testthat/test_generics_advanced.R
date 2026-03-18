@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("generics advanced: remaining uncovered paths in generics.R and constraints.R")
 

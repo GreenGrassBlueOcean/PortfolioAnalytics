@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("solver wrappers: pso and gensa")
 

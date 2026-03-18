@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("generics.R coverage: print/summary methods for all optimizer classes")
 

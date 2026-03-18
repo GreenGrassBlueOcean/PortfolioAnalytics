@@ -5,8 +5,6 @@
 #          dispatch (return, risk, turnover, minmax, risk_budget,
 #          weight_concentration), trace/storage/verbose paths, NA warning
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec)
 R <- edhec[1:60, 1:4]

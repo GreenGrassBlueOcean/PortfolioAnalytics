@@ -2,8 +2,6 @@
 # Verifies the table-driven set.portfolio.moments_v2() produces identical
 # results to the original double-nested switch.
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec)
 R <- edhec[, 1:4]

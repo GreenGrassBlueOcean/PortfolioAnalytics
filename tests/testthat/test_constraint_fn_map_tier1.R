@@ -1,7 +1,5 @@
 context("constraint_fn_map coverage: relax, verbose, projection edge cases, rp helpers")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R4 <- edhec[1:48, 1:4]
@@ -264,31 +262,31 @@ test_that("project_weights returns input when already feasible", {
 # ============================================================================
 
 test_that(".project_box clamps correctly", {
-  result <- PortfolioAnalytics:::.project_box(c(-0.1, 0.3, 0.9), c(0, 0, 0), c(0.5, 0.5, 0.5))
+  result <- .project_box(c(-0.1, 0.3, 0.9), c(0, 0, 0), c(0.5, 0.5, 0.5))
   expect_equal(result, c(0, 0.3, 0.5))
 })
 
 test_that(".project_weight_sum returns input when within bounds", {
   w <- c(0.25, 0.25, 0.25, 0.25)
-  result <- PortfolioAnalytics:::.project_weight_sum(w, 0.99, 1.01)
+  result <- .project_weight_sum(w, 0.99, 1.01)
   expect_equal(result, w)
 })
 
 test_that(".project_weight_sum adjusts when below min_sum", {
   w <- c(0.1, 0.1, 0.1, 0.1)  # sum = 0.4
-  result <- PortfolioAnalytics:::.project_weight_sum(w, 0.99, 1.01)
+  result <- .project_weight_sum(w, 0.99, 1.01)
   expect_equal(sum(result), 0.99, tolerance = 1e-10)
 })
 
 test_that(".project_weight_sum adjusts when above max_sum", {
   w <- c(0.5, 0.5, 0.5, 0.5)  # sum = 2.0
-  result <- PortfolioAnalytics:::.project_weight_sum(w, 0.99, 1.01)
+  result <- .project_weight_sum(w, 0.99, 1.01)
   expect_equal(sum(result), 1.01, tolerance = 1e-10)
 })
 
 test_that(".project_group adjusts group sum when violated", {
   w <- c(0.1, 0.1, 0.4, 0.4)
-  result <- PortfolioAnalytics:::.project_group(w, c(1, 2), lo = 0.3, up = 0.6)
+  result <- .project_group(w, c(1, 2), lo = 0.3, up = 0.6)
   expect_true(sum(result[1:2]) >= 0.3 - 1e-10)
   # Non-group elements unchanged
   expect_equal(result[3:4], w[3:4])
@@ -299,11 +297,11 @@ test_that(".is_projection_feasible correctly classifies feasible/infeasible", {
   w_bad <- c(0.01, 0.01, 0.5, 0.48)
   
   expect_true(
-    PortfolioAnalytics:::.is_projection_feasible(
+    .is_projection_feasible(
       w_ok, 0.99, 1.01, rep(0.05, 4), rep(0.55, 4))
   )
   expect_false(
-    PortfolioAnalytics:::.is_projection_feasible(
+    .is_projection_feasible(
       w_bad, 0.99, 1.01, rep(0.05, 4), rep(0.55, 4))
   )
 })
@@ -311,14 +309,14 @@ test_that(".is_projection_feasible correctly classifies feasible/infeasible", {
 test_that(".is_projection_feasible checks group constraints", {
   w <- c(0.1, 0.1, 0.4, 0.4)
   expect_false(
-    PortfolioAnalytics:::.is_projection_feasible(
+    .is_projection_feasible(
       w, 0.99, 1.01, rep(0.05, 4), rep(0.55, 4),
       groups = list(c(1, 2)), cLO = 0.3, cUP = 0.6)
   )
   
   w2 <- c(0.2, 0.2, 0.3, 0.3)
   expect_true(
-    PortfolioAnalytics:::.is_projection_feasible(
+    .is_projection_feasible(
       w2, 0.99, 1.01, rep(0.05, 4), rep(0.55, 4),
       groups = list(c(1, 2)), cLO = 0.3, cUP = 0.6)
   )
@@ -391,7 +389,7 @@ test_that("rp_transform errors on infeasible portfolio", {
 
 test_that("rp_increase returns input when already above min_sum", {
   w <- c(0.3, 0.3, 0.3, 0.3)
-  result <- PortfolioAnalytics:::rp_increase(
+  result <- rp_increase(
     weights = w, min_sum = 0.99,
     max_box = rep(0.55, 4),
     weight_seq = seq(0, 1, by = 0.01)
@@ -401,7 +399,7 @@ test_that("rp_increase returns input when already above min_sum", {
 
 test_that("rp_decrease returns input when already below max_sum", {
   w <- c(0.2, 0.2, 0.2, 0.2)
-  result <- PortfolioAnalytics:::rp_decrease(
+  result <- rp_decrease(
     weights = w, max_sum = 1.01,
     min_box = rep(0.05, 4),
     weight_seq = seq(0, 1, by = 0.01)
@@ -413,7 +411,7 @@ test_that("rp_increase handles n_tmp_seq == 1 case", {
   set.seed(2471)
   # Weight is just below max_box so only 1 candidate in weight_seq
   w <- c(0.1, 0.1, 0.1, 0.1)  # sum = 0.4
-  result <- PortfolioAnalytics:::rp_increase(
+  result <- rp_increase(
     weights = w, min_sum = 0.99,
     max_box = c(0.11, 0.55, 0.55, 0.55),
     weight_seq = seq(0, 1, by = 0.01)
@@ -428,7 +426,7 @@ test_that("rp_increase handles n_tmp_seq == 1 case", {
 test_that("rp_decrease_leverage reduces leverage", {
   set.seed(3849)
   w <- c(0.4, 0.3, -0.3, -0.4)  # leverage = 1.4
-  result <- PortfolioAnalytics:::rp_decrease_leverage(
+  result <- rp_decrease_leverage(
     weights = w,
     max_box = rep(0.5, 4),
     min_box = rep(-0.5, 4),
@@ -441,7 +439,7 @@ test_that("rp_decrease_leverage reduces leverage", {
 test_that("rp_decrease_leverage handles negative current value", {
   set.seed(7621)
   w <- c(-0.5, -0.3, 0.4, 0.4)  # leverage = 1.6
-  result <- PortfolioAnalytics:::rp_decrease_leverage(
+  result <- rp_decrease_leverage(
     weights = w,
     max_box = rep(0.5, 4),
     min_box = rep(-0.5, 4),
@@ -458,7 +456,7 @@ test_that("rp_decrease_leverage handles negative current value", {
 test_that("rp_position_limit handles max_pos_long violation", {
   set.seed(4392)
   w <- c(0.3, 0.3, 0.2, 0.2)  # 4 long positions
-  result <- PortfolioAnalytics:::rp_position_limit(
+  result <- rp_position_limit(
     weights = w,
     max_pos_long = 2,
     min_box = rep(-0.1, 4),
@@ -471,7 +469,7 @@ test_that("rp_position_limit handles max_pos_long violation", {
 test_that("rp_position_limit handles max_pos_short violation", {
   set.seed(5183)
   w <- c(-0.2, -0.2, -0.1, 0.5)  # 3 short positions
-  result <- PortfolioAnalytics:::rp_position_limit(
+  result <- rp_position_limit(
     weights = w,
     max_pos_short = 1,
     min_box = rep(-0.3, 4),

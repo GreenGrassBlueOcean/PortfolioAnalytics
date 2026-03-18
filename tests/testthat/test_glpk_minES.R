@@ -1,8 +1,6 @@
-library(PortfolioAnalytics)
 library(ROI)
 library(ROI.plugin.glpk)
 library(Rglpk)
-library(testthat)
 
 # Test that ROI.plugin.glpk solutions equal Rglpk solutions
 context("Minimum ES Portfolios: PortfolioAnalytics with ROI.plugin.glpk and Rglpk")

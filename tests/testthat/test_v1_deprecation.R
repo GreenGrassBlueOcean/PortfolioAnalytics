@@ -1,8 +1,6 @@
 ##### test_v1_deprecation.R #####
 # Tests for Proposal #7: v1 function deprecation warnings
 
-library(testthat)
-library(PortfolioAnalytics)
 
 context("v1 API deprecation warnings")
 

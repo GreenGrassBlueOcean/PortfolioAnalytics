@@ -3,8 +3,6 @@
 # Targets: custom.covRob.MM, custom.covRob.Rocke, custom.covRob.Mcd,
 #          custom.covRob.TSGS, MycovRobMcd, MycovRobTSGS
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec)
 # 5 assets, 120 rows — robust estimators need more obs than parameters

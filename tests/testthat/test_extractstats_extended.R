@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("extractStats extended: name.replace, eqwt/invol, opt.list, extractGroups, extractFeasibility")
 
@@ -18,7 +16,7 @@ base_portf <- add.objective(base_portf, type = "risk", name = "StdDev")
 # ============================================================================
 
 test_that("name.replace cleans redundant objective_measures prefixes", {
-  nr <- PortfolioAnalytics:::name.replace
+  nr <- name.replace
   expect_equal(nr("objective_measures.mean.mean"), "mean")
   expect_equal(nr("objective_measures.StdDev.StdDev"), "StdDev")
   expect_equal(nr("objective_measures.ES.ES"), "ES")
@@ -30,7 +28,7 @@ test_that("name.replace cleans redundant objective_measures prefixes", {
 })
 
 test_that("name.replace passes through non-matching names", {
-  nr <- PortfolioAnalytics:::name.replace
+  nr <- name.replace
   expect_equal(nr("w.A"), "w.A")
   expect_equal(nr("out"), "out")
   expect_equal(nr(c("w.A", "w.B")), c("w.A", "w.B"))

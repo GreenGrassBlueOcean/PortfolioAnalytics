@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("EntropyProg: Entropy Pooling probability reweighting")
 
@@ -96,7 +94,7 @@ test_that("pHist returns frequency and midpoints", {
   p <- rep(1/50, 50)
   pdf(NULL)
   on.exit(dev.off(), add = TRUE)
-  result <- PortfolioAnalytics:::pHist(X, p, nBins = 10)
+  result <- pHist(X, p, nBins = 10)
   expect_true(is.list(result))
   expect_true("f" %in% names(result))
   expect_true("x" %in% names(result))

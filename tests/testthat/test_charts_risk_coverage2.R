@@ -2,8 +2,6 @@
 # Phase 3 coverage: chart.RiskBudget remaining paths
 # Targets: min_prisk point, rebalancing percentage, xlab styling
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

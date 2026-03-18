@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("charts.RP: Weight, Scatter (RiskReward), and plot dispatches")
 

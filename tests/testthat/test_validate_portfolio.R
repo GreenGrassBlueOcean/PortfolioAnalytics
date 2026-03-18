@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 library(xts)
 
 context("Proposal #11: validate_portfolio()")

@@ -1,7 +1,5 @@
 context("optFUN coverage: group, factor exposure, concentration, MILP, turnover, leverage")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 skip_if_not_installed("ROI")
 skip_if_not_installed("ROI.plugin.quadprog")

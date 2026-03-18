@@ -7,8 +7,6 @@
 # for its internal branches. Existing regression tests in test_moment_functions.R
 # are retained but not expanded.
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec)
 # 100 rows needed for GARCH(1,1) fitting stability; 3 assets for speed
@@ -465,7 +463,7 @@ test_that("set.portfolio.moments_v1 emits deprecation warning", {
   )
   
   # Reset once-per-session flag so warning fires
-  dw <- PortfolioAnalytics:::.deprecation_warned
+  dw <- .deprecation_warned
   if (exists("set.portfolio.moments_v1", envir = dw))
     rm("set.portfolio.moments_v1", envir = dw)
   

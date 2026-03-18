@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Meucci Fully Flexible Views: moments and ranking")
 

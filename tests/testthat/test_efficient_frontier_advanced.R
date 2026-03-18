@@ -8,8 +8,6 @@
 #          extractEfficientFrontier paths
 ###############################################################################
 
-require(testthat)
-require(PortfolioAnalytics)
 
 # ---------------------------------------------------------------------------
 # Shared test data: 5-asset EDHEC subset, long-only box constraints

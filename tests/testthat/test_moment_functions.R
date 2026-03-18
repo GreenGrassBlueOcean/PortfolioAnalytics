@@ -4,8 +4,6 @@
 #          portfolio.moments.bl, garch.mm, .moment_provider,
 #          clean returns paths, meucci method path
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec)
 # Use only 3 assets and 36 rows — M3.MM/M4.MM scales as O(n^3)/O(n^4)
@@ -313,7 +311,7 @@ test_that("portfolio.moments.bl cleans returns when clean argument specified", {
 # ===========================================================================
 
 test_that(".moment_provider returns correct structure for sample method", {
-  provider <- PortfolioAnalytics:::.moment_provider("sample", R)
+  provider <- .moment_provider("sample", R)
   
   expect_true(is.list(provider))
   expect_true(all(c("mu_narm", "mu", "sigma_pw", "sigma", "m3", "m4") %in% names(provider)))
@@ -325,7 +323,7 @@ test_that(".moment_provider returns correct structure for sample method", {
 })
 
 test_that(".moment_provider sample closures return correct values", {
-  provider <- PortfolioAnalytics:::.moment_provider("sample", R)
+  provider <- .moment_provider("sample", R)
   
   expect_equal(provider$mu(), matrix(colMeans(R), ncol = 1))
   expect_equal(provider$mu_narm(), matrix(as.vector(apply(R, 2, mean, na.rm = TRUE)), ncol = 1))
@@ -334,13 +332,13 @@ test_that(".moment_provider sample closures return correct values", {
 })
 
 test_that(".moment_provider returns NULL for unknown method", {
-  provider <- PortfolioAnalytics:::.moment_provider("unknown_method", R)
+  provider <- .moment_provider("unknown_method", R)
   expect_null(provider)
 })
 
 test_that(".moment_provider boudt uses fit object", {
   fit <- statistical.factor.model(R = R, k = 1)
-  provider <- PortfolioAnalytics:::.moment_provider("boudt", R, fit = fit)
+  provider <- .moment_provider("boudt", R, fit = fit)
   
   expect_true(is.list(provider))
   sigma_from_provider <- provider$sigma()
@@ -351,7 +349,7 @@ test_that(".moment_provider boudt uses fit object", {
 test_that(".moment_provider black_litterman uses B object", {
   P <- matrix(c(1, -1, 0), nrow = 1)
   B <- black.litterman(R = R, P = P)
-  provider <- PortfolioAnalytics:::.moment_provider("black_litterman", R, B = B)
+  provider <- .moment_provider("black_litterman", R, B = B)
   
   expect_true(is.list(provider))
   expect_equal(provider$mu(), B$BLMu)
@@ -360,7 +358,7 @@ test_that(".moment_provider black_litterman uses B object", {
 
 test_that(".moment_provider meucci uses meucci.model object", {
   mm <- meucci.moments(R = R, posterior_p = rep(1 / nrow(R), nrow(R)))
-  provider <- PortfolioAnalytics:::.moment_provider("meucci", R, meucci.model = mm)
+  provider <- .moment_provider("meucci", R, meucci.model = mm)
   
   expect_true(is.list(provider))
   expect_equal(provider$mu(), mm$mu)
@@ -413,7 +411,7 @@ test_that("garch.mm preserves pre-set m3 and m4", {
 # ===========================================================================
 
 test_that(".moment_needs contains expected objective entries", {
-  mn <- PortfolioAnalytics:::.moment_needs
+  mn <- .moment_needs
   
   expect_equal(mn$mean, "mu")
   expect_equal(mn$StdDev, c("mu", "sigma"))
@@ -423,7 +421,7 @@ test_that(".moment_needs contains expected objective entries", {
 })
 
 test_that(".narm_objectives is correct", {
-  narm <- PortfolioAnalytics:::.narm_objectives
+  narm <- .narm_objectives
   expect_true("mean" %in% narm)
   expect_true("StdDev" %in% narm)
   expect_true("sd" %in% narm)
@@ -433,7 +431,7 @@ test_that(".narm_objectives is correct", {
 })
 
 test_that(".es_aliases is correct", {
-  es_al <- PortfolioAnalytics:::.es_aliases
+  es_al <- .es_aliases
   expected <- c("es", "mES", "CVaR", "cVaR", "ETL", "mETL", "ES")
   expect_equal(es_al, expected)
 })

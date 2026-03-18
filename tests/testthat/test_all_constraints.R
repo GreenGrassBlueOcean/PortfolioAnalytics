@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("constraints")
 
@@ -47,7 +45,7 @@ init.portf <- add.constraint(portfolio=init.portf,
                              lower=0.9, 
                              upper=1.1)
 
-tmp_constraints <- PortfolioAnalytics:::get_constraints(init.portf)
+tmp_constraints <- get_constraints(init.portf)
 
 test_that("weight_sum constraint is consistent", {
   expect_equal(tmp_constraints$min_sum, 0.99)

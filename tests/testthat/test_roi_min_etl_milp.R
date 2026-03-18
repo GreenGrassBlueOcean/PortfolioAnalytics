@@ -1,5 +1,4 @@
 
-library(testthat)
 library(ROI)
 library(ROI.plugin.glpk)
 library(Rglpk)

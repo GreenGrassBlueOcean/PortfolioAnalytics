@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("constraint_fn_map.R coverage: projection fallback, stall detection, position/leverage paths")
 

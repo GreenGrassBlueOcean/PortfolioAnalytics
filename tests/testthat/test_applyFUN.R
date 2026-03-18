@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("applyFUN, scatterFUN, and objectiveFUN utilities")
 
@@ -82,7 +80,7 @@ test_that("HHI returns list with group HHI when groups specified", {
 
 test_that("port.mean computes weighted mean return", {
   mu <- matrix(colMeans(R4), ncol = 1)
-  pm <- PortfolioAnalytics:::port.mean(w_eq, mu)
+  pm <- port.mean(w_eq, mu)
   expect_length(pm, 1)
   expect_equal(pm, as.numeric(crossprod(w_eq, mu)))
 })

@@ -1,6 +1,5 @@
 
 # maximum return with position limit constraints
-library(testthat)
 library(ROI)
 library(ROI.plugin.glpk)
 library(Rglpk)

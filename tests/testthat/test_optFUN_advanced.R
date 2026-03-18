@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("Phase 1B: optFUN.R — bug fixes + advanced ROI paths")
 

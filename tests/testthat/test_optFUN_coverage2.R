@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("optFUN.R coverage: ptc, factor exposure (toc/leverage/milp), mean_etl_opt, max_sr_opt")
 

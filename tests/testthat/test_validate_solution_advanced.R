@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("validate_solution advanced: classify helpers, feasibility checks, as.data.frame")
 
@@ -15,42 +13,42 @@ funds4 <- colnames(R4)
 # ============================================================================
 
 test_that(".classify_two_sided detects lower violation", {
-  result <- PortfolioAnalytics:::.classify_two_sided(0.3, lo = 0.5, hi = 0.8, tol = 1e-8)
+  result <- .classify_two_sided(0.3, lo = 0.5, hi = 0.8, tol = 1e-8)
   expect_equal(result$status, "violated")
   expect_true(result$slack < 0)
   expect_equal(result$binding_bound, "lower")
 })
 
 test_that(".classify_two_sided detects upper violation", {
-  result <- PortfolioAnalytics:::.classify_two_sided(0.9, lo = 0.2, hi = 0.7, tol = 1e-8)
+  result <- .classify_two_sided(0.9, lo = 0.2, hi = 0.7, tol = 1e-8)
   expect_equal(result$status, "violated")
   expect_true(result$slack < 0)
   expect_equal(result$binding_bound, "upper")
 })
 
 test_that(".classify_two_sided detects lower binding", {
-  result <- PortfolioAnalytics:::.classify_two_sided(0.5, lo = 0.5, hi = 0.8, tol = 1e-8)
+  result <- .classify_two_sided(0.5, lo = 0.5, hi = 0.8, tol = 1e-8)
   expect_equal(result$status, "binding")
   expect_equal(result$slack, 0)
   expect_equal(result$binding_bound, "lower")
 })
 
 test_that(".classify_two_sided detects upper binding", {
-  result <- PortfolioAnalytics:::.classify_two_sided(0.8, lo = 0.2, hi = 0.8, tol = 1e-8)
+  result <- .classify_two_sided(0.8, lo = 0.2, hi = 0.8, tol = 1e-8)
   expect_equal(result$status, "binding")
   expect_equal(result$slack, 0)
   expect_equal(result$binding_bound, "upper")
 })
 
 test_that(".classify_two_sided detects inactive", {
-  result <- PortfolioAnalytics:::.classify_two_sided(0.5, lo = 0.2, hi = 0.8, tol = 1e-8)
+  result <- .classify_two_sided(0.5, lo = 0.2, hi = 0.8, tol = 1e-8)
   expect_equal(result$status, "inactive")
   expect_true(result$slack > 0)
   expect_equal(result$binding_bound, "none")
 })
 
 test_that(".classify_two_sided handles infinite bounds", {
-  result <- PortfolioAnalytics:::.classify_two_sided(100, lo = -Inf, hi = Inf, tol = 1e-8)
+  result <- .classify_two_sided(100, lo = -Inf, hi = Inf, tol = 1e-8)
   expect_equal(result$status, "inactive")
   expect_equal(result$slack, Inf)
 })
@@ -60,19 +58,19 @@ test_that(".classify_two_sided handles infinite bounds", {
 # ============================================================================
 
 test_that(".classify_upper_only detects violation", {
-  result <- PortfolioAnalytics:::.classify_upper_only(1.5, limit = 1.0, tol = 1e-8)
+  result <- .classify_upper_only(1.5, limit = 1.0, tol = 1e-8)
   expect_equal(result$status, "violated")
   expect_true(result$slack < 0)
 })
 
 test_that(".classify_upper_only detects binding", {
-  result <- PortfolioAnalytics:::.classify_upper_only(1.0, limit = 1.0, tol = 1e-8)
+  result <- .classify_upper_only(1.0, limit = 1.0, tol = 1e-8)
   expect_equal(result$status, "binding")
   expect_equal(result$slack, 0)
 })
 
 test_that(".classify_upper_only detects inactive", {
-  result <- PortfolioAnalytics:::.classify_upper_only(0.8, limit = 1.0, tol = 1e-8)
+  result <- .classify_upper_only(0.8, limit = 1.0, tol = 1e-8)
   expect_equal(result$status, "inactive")
   expect_equal(result$slack, 0.2)
 })
@@ -82,19 +80,19 @@ test_that(".classify_upper_only detects inactive", {
 # ============================================================================
 
 test_that(".classify_lower_only detects violation", {
-  result <- PortfolioAnalytics:::.classify_lower_only(0.3, target = 0.5, tol = 1e-8)
+  result <- .classify_lower_only(0.3, target = 0.5, tol = 1e-8)
   expect_equal(result$status, "violated")
   expect_true(result$slack < 0)
 })
 
 test_that(".classify_lower_only detects binding", {
-  result <- PortfolioAnalytics:::.classify_lower_only(0.5, target = 0.5, tol = 1e-8)
+  result <- .classify_lower_only(0.5, target = 0.5, tol = 1e-8)
   expect_equal(result$status, "binding")
   expect_equal(result$slack, 0)
 })
 
 test_that(".classify_lower_only detects inactive", {
-  result <- PortfolioAnalytics:::.classify_lower_only(0.8, target = 0.5, tol = 1e-8)
+  result <- .classify_lower_only(0.8, target = 0.5, tol = 1e-8)
   expect_equal(result$status, "inactive")
   expect_equal(result$slack, 0.3)
 })
@@ -104,19 +102,19 @@ test_that(".classify_lower_only detects inactive", {
 # ============================================================================
 
 test_that(".classify_count_limit detects violation", {
-  result <- PortfolioAnalytics:::.classify_count_limit(5, limit = 3)
+  result <- .classify_count_limit(5, limit = 3)
   expect_equal(result$status, "violated")
   expect_equal(result$slack, -2)
 })
 
 test_that(".classify_count_limit detects binding", {
-  result <- PortfolioAnalytics:::.classify_count_limit(3, limit = 3)
+  result <- .classify_count_limit(3, limit = 3)
   expect_equal(result$status, "binding")
   expect_equal(result$slack, 0)
 })
 
 test_that(".classify_count_limit detects inactive", {
-  result <- PortfolioAnalytics:::.classify_count_limit(2, limit = 3)
+  result <- .classify_count_limit(2, limit = 3)
   expect_equal(result$status, "inactive")
   expect_equal(result$slack, 1)
 })

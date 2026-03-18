@@ -1,7 +1,5 @@
 context("opt.outputMvo coverage (0% -> full)")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 skip_if_not_installed("ROI")
 skip_if_not_installed("ROI.plugin.quadprog")

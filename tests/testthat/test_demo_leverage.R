@@ -1,7 +1,5 @@
 
 ##### Load packages #####
-require(testthat)
-require(PortfolioAnalytics)
 
 context("test demo_leverage_exposure_constraint.R")
 

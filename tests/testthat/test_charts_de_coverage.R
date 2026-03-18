@@ -1,7 +1,5 @@
 context("charts.DE.R coverage: Weight, Scatter, trajectory, plot for DEoptim")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 skip_if_not_installed("DEoptim")
 

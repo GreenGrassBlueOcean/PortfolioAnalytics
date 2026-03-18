@@ -1,13 +1,11 @@
 ##### test_solver_registry.R #####
 # Tests for Proposal #6: Solver dispatch registry
 
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Solver registry and dispatch")
 
 # Use namespace-qualified get_solver to avoid devtools::load_all() shim issues
-get_solver <- PortfolioAnalytics:::get_solver
+get_solver <- get_solver
 
 # ---- Registry lookup ----
 

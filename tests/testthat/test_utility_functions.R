@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("utility functions: equal.weight, inverse.volatility.weight, black_litterman, trailingFUN, constraint_ROI, mult.layer.portfolio")
 
@@ -78,7 +76,7 @@ test_that("inverse.volatility.weight warns when R has more columns than assets",
 # ---- black_litterman ----
 
 test_that("BlackLittermanFormula computes posterior moments", {
-  BLF <- PortfolioAnalytics:::BlackLittermanFormula
+  BLF <- BlackLittermanFormula
   Mu <- c(0.05, 0.08, 0.06)
   Sigma <- matrix(c(0.04, 0.01, 0.02,
                      0.01, 0.09, 0.03,

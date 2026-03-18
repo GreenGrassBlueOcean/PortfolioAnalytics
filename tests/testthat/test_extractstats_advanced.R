@@ -8,8 +8,6 @@
 #          extractWeights for opt.list, extractGroups
 ###############################################################################
 
-require(testthat)
-require(PortfolioAnalytics)
 
 # ---------------------------------------------------------------------------
 # Shared test data

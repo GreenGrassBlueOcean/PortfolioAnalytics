@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Asset ranking centroid estimation (ac_ranking.R)")
 
@@ -11,7 +9,7 @@ R4 <- edhec[1:60, 1:4]
 # ============================================================================
 
 test_that("centroid returns descending values of length n", {
-  c4 <- PortfolioAnalytics:::centroid(4)
+  c4 <- centroid(4)
   expect_length(c4, 4)
   # Values should be strictly descending
 
@@ -19,13 +17,13 @@ test_that("centroid returns descending values of length n", {
 })
 
 test_that("centroid is symmetric around zero for even n", {
-  c6 <- PortfolioAnalytics:::centroid(6)
+  c6 <- centroid(6)
   expect_equal(sum(c6), 0, tolerance = 1e-4)
 })
 
 test_that("scale_range maps to [-0.05, 0.05]", {
   x <- c(-2, 0, 1, 3)
-  scaled <- PortfolioAnalytics:::scale_range(x, max.value = 0.02)
+  scaled <- scale_range(x, max.value = 0.02)
   expect_equal(min(scaled), -0.05)
   expect_equal(max(scaled), 0.05)
 })

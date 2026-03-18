@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("Phase 1C: solver_cvxr.R — ratio objectives, HHI, turnover, CSM/EQS")
 

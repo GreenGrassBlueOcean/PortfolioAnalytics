@@ -8,8 +8,6 @@
 #   - barplotOptWeights
 #   - chart.Weights.optimize.portfolio.rebalancing
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]

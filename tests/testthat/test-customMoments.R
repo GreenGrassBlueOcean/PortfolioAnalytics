@@ -1,6 +1,5 @@
 test_that("Custom Moment Functions ", {
 
-  library(PortfolioAnalytics)
   library(DEoptim)
 
   data(edhec)
@@ -64,7 +63,6 @@ test_that("Custom Moment Functions ", {
 
 test_that("Custom Moment Functions work", {
   
-  library(PortfolioAnalytics)
   library(DEoptim)
   
   data(edhec)
@@ -114,7 +112,7 @@ test_that("Custom Moment Functions work", {
   
   opt.pasd
   
-  weights <- PortfolioAnalytics::extractWeights(opt.pasd)
+  weights <- extractWeights(opt.pasd)
   sigma <- sigma.robust(R)$sigma
   
   sqrt(t(weights) %*% sigma %*% weights)
@@ -134,7 +132,6 @@ test_that("Custom Moment Functions work", {
 
 test_that("Custom Moment Functions work as expected", {
 
-  library(PortfolioAnalytics)
   library(DEoptim)
 
   data(edhec)
@@ -171,15 +168,15 @@ test_that("Custom Moment Functions work as expected", {
 
   # Construct initial portfolio with basic constraints.
 
-  crra.portf <- PortfolioAnalytics::portfolio.spec(assets=funds)
-  crra.portf <- PortfolioAnalytics::add.constraint(portfolio=crra.portf, type="weight_sum", min_sum=0.99, max_sum=1.01)
-  crra.portf <- PortfolioAnalytics::add.constraint(portfolio=crra.portf, type="box", min=0.05, max=0.4)
+  crra.portf <- portfolio.spec(assets=funds)
+  crra.portf <- add.constraint(portfolio=crra.portf, type="weight_sum", min_sum=0.99, max_sum=1.01)
+  crra.portf <- add.constraint(portfolio=crra.portf, type="box", min=0.05, max=0.4)
 
   # Portfolio with crra as an objective
   # Note how we can specify lambda as an argument
-  crra.portf <- PortfolioAnalytics::add.objective(portfolio=crra.portf, type="return", name="CRRA", arguments=list(lambda=5))
+  crra.portf <- add.objective(portfolio=crra.portf, type="return", name="CRRA", arguments=list(lambda=5))
 
-  opt.crra <- PortfolioAnalytics::optimize.portfolio(R, crra.portf, optimize_method="DEoptim"
+  opt.crra <- optimize.portfolio(R, crra.portf, optimize_method="DEoptim"
                                                      , search_size=5000, trace=TRUE
                                                      , traceDE=0, momentFUN="crra.moments"
                                                      , parallel=FALSE)

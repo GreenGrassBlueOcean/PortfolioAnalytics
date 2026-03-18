@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Extended chart smoke tests: DE, efficient frontier, risk budget")
 

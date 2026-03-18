@@ -1,7 +1,5 @@
 context("charts.PSO.R coverage: Weight, Scatter, plot for PSO")
 
-library(testthat)
-library(PortfolioAnalytics)
 
 skip_if_not_installed("pso")
 

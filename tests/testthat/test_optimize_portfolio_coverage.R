@@ -1,6 +1,4 @@
 
-require(testthat)
-require(PortfolioAnalytics)
 
 context("optimize.portfolio.R coverage: advanced code paths")
 

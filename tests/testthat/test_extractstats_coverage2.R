@@ -2,8 +2,6 @@
 # Phase 3B coverage: extractStats for invol/eqwt, name.replace aliases,
 #   opt.list/opt.rebal.list methods
 
-library(testthat)
-library(PortfolioAnalytics)
 
 data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:48, 1:5]
@@ -14,32 +12,32 @@ colnames(R5) <- c("A", "B", "C", "D", "E")
 # ===========================================================================
 
 test_that("name.replace handles median.median", {
-  out <- PortfolioAnalytics:::name.replace(c("median.median", "foo"))
+  out <- name.replace(c("median.median", "foo"))
   expect_equal(out[1], "median")
 })
 
 test_that("name.replace handles CVaR.MES", {
-  out <- PortfolioAnalytics:::name.replace(c("CVaR.MES"))
+  out <- name.replace(c("CVaR.MES"))
   expect_equal(out[1], "CVaR")
 })
 
 test_that("name.replace handles ETL.MES", {
-  out <- PortfolioAnalytics:::name.replace(c("ETL.MES"))
+  out <- name.replace(c("ETL.MES"))
   expect_equal(out[1], "ETL")
 })
 
 test_that("name.replace handles ETL.ETL", {
-  out <- PortfolioAnalytics:::name.replace(c("ETL.ETL"))
+  out <- name.replace(c("ETL.ETL"))
   expect_equal(out[1], "ETL")
 })
 
 test_that("name.replace handles VaR.MVaR", {
-  out <- PortfolioAnalytics:::name.replace(c("VaR.MVaR"))
+  out <- name.replace(c("VaR.MVaR"))
   expect_equal(out[1], "VaR")
 })
 
 test_that("name.replace handles maxDrawdown.maxDrawdown", {
-  out <- PortfolioAnalytics:::name.replace(c("maxDrawdown.maxDrawdown"))
+  out <- name.replace(c("maxDrawdown.maxDrawdown"))
   expect_equal(out[1], "maxDrawdown")
 })
 

@@ -1,5 +1,3 @@
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Proposal #14: Deterministic Constraint Repair (Dykstra's Projection)")
 
@@ -26,24 +24,24 @@ check_feasible <- function(w, min_sum, max_sum, min_box, max_box,
 
 test_that(".project_box clamps correctly", {
   w <- c(-0.1, 0.5, 0.8, 0.3)
-  result <- PortfolioAnalytics:::.project_box(w, min_box = rep(0, 4), max_box = rep(0.6, 4))
+  result <- .project_box(w, min_box = rep(0, 4), max_box = rep(0.6, 4))
   expect_equal(result, c(0, 0.5, 0.6, 0.3))
 })
 
 test_that(".project_weight_sum shifts to nearest boundary", {
   # Below min_sum
   w <- c(0.1, 0.1, 0.1)
-  result <- PortfolioAnalytics:::.project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
+  result <- .project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
   expect_equal(sum(result), 0.99, tolerance = 1e-12)
 
   # Above max_sum
   w <- c(0.5, 0.4, 0.3)
-  result <- PortfolioAnalytics:::.project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
+  result <- .project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
   expect_equal(sum(result), 1.01, tolerance = 1e-12)
 
   # Already feasible
   w <- c(0.33, 0.33, 0.34)
-  result <- PortfolioAnalytics:::.project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
+  result <- .project_weight_sum(w, min_sum = 0.99, max_sum = 1.01)
   expect_equal(result, w)
 })
 
@@ -51,7 +49,7 @@ test_that(".project_group adjusts single group", {
   w <- c(0.1, 0.1, 0.5, 0.3)
   groups <- list(1:2, 3:4)
   # Group 1 sum = 0.2, below cLO = 0.3
-  result <- PortfolioAnalytics:::.project_group(w, idx = 1:2, lo = 0.3, up = 0.5)
+  result <- .project_group(w, idx = 1:2, lo = 0.3, up = 0.5)
   expect_equal(sum(result[1:2]), 0.3, tolerance = 1e-12)
   # Group 2 unchanged
   expect_equal(result[3:4], w[3:4])

@@ -3,8 +3,6 @@
 # worker processes and the main process never accumulates per-iteration
 # results, leaving DEoptim_objective_results as an empty list.
 
-library(testthat)
-library(PortfolioAnalytics)
 
 # --- Helper: build a minimal mock DEoptim result object ---
 make_mock_deoptim_result <- function(weights, objective_measures, out,

@@ -1,6 +1,4 @@
 ##### Load packages #####
-require(testthat)
-require(PortfolioAnalytics)
 
 ##### Source Demo Script #####
 context("test demo_min_StdDev.R")

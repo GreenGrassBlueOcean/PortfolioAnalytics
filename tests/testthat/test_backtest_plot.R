@@ -8,8 +8,6 @@
 #   - Custom style parameters (colorSet, ltySet, lwdSet)
 #   - Custom main title
 
-library(testthat)
-library(PortfolioAnalytics)
 library(xts)
 
 # Generate simple return data for testing

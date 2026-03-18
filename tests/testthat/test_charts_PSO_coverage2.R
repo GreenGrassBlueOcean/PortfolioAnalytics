@@ -1,8 +1,6 @@
 ##### test_charts_PSO_coverage2.R #####
 # Phase 3 coverage: chart.Weight.pso edge cases + chart.Scatter.pso chart.assets
 
-library(testthat)
-library(PortfolioAnalytics)
 
 skip_if_not_installed("pso")
 

@@ -1,8 +1,6 @@
 ##### test_adaptive_penalty.R #####
 # Tests for Proposal #5: Adaptive penalty scaling
 
-library(testthat)
-library(PortfolioAnalytics)
 
 context("Adaptive penalty scaling")
 
