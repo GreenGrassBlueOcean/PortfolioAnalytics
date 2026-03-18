@@ -124,6 +124,27 @@ rhs.vec <- c(rhs.vec, cLO, -cUP)
 
 If `constraints$cLO` was NULL, `c(rhs.vec, NULL, ...)` would silently drop the NULL, making `rhs.vec` too short for the constraint matrix. If `constraints$cUP` was NULL, `-NULL` would throw `"invalid argument to unary operator"`. The bug was dormant because `group_constraint()` requires non-NULL `group_min`/`group_max`, but it would surface if anyone constructed a constraints list manually.
 
+### Bug Fix: Missing Neighbors Handling in `chart.Scatter.pso`
+
+`chart.Scatter.pso` (the PSO risk-reward scatter plot, aliased as `chart.RiskReward.optimize.portfolio.pso`) accepts a `neighbors` parameter in its function signature but never uses it — the parameter is silently ignored. Both `chart.Scatter.RP` and `chart.Scatter.DE` have active neighbors handling (vector of portfolio indices, single integer for k-nearest, and matrix/data.frame of pre-computed values). The PSO version was missing this block entirely.
+
+The fix inserts the same neighbors handling code (matching the corrected RP version — see next bug fix).
+
+### Bug Fix: Wrong Variable in `chart.Scatter.DE` Matrix Neighbors Fallback
+
+In `chart.Scatter.DE`, the matrix/data.frame neighbors code path has a variable name error in the `pmatch` fallback for `risk.col`:
+
+```r
+// Before (upstream) — assigns to wrong variable
+rsc = pmatch(risk.col, columnnames)
+if(is.na(rsc)) {
+  risk.column = pmatch(paste(risk.col,risk.col,sep='.'), columnnames)  // should be rsc
+}
+for(i in 1:nrow(neighbors)) points(neighbors[i, rsc], ...)  // rsc is still NA
+```
+
+If the initial `pmatch` returns `NA`, the fallback writes to `risk.column` instead of `rsc`, leaving `rsc` as `NA`. The `for` loop then indexes `neighbors[i, NA]`, producing invisible/missing points. The `chart.Scatter.RP` version already has the correct assignment (`rsc = pmatch(...)`). The fix is a one-variable-name change.
+
 ### Bug Fix: Missing Accumulation in Multi-Factor Residual Cokurtosis
 
 The C function `residualcokurtosisMF()` (in `src/residualcokurtosisMF.c`) computes the residual cokurtosis tensor for statistical factor models with k > 1 factors. The residual tensor element `kijkl` for the case where two pairs of indices match (`i==k && j==l`, with `i != j`) requires three terms:

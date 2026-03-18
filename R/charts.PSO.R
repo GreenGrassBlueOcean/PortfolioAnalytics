@@ -158,6 +158,31 @@ chart.Scatter.pso <- .chart_scatter_pso <- function(object, ..., neighbors=NULL,
   # plot the portfolios from PSOoutput
   plot(xtract[,risk.column],xtract[,return.column], xlab=risk.col, ylab=return.col, col="darkgray", axes=FALSE, xlim=xlim, ylim=ylim, ...)
   
+  if(!is.null(neighbors)){
+    if(is.vector(neighbors)){
+      if(length(neighbors)==1){
+        # overplot nearby portfolios defined by 'out'
+        orderx = order(xtract[,"out"])
+        subsetx = head(xtract[orderx,], n=neighbors)
+      } else{
+        # assume we have a vector of portfolio numbers
+        subsetx = xtract[neighbors,]
+      }
+      points(subsetx[,risk.column], subsetx[,return.column], col="lightblue", pch=1)
+    }
+    if(is.matrix(neighbors) | is.data.frame(neighbors)){
+      rtc = pmatch(return.col,columnnames)
+      if(is.na(rtc)) {
+        rtc = pmatch(paste(return.col,return.col,sep='.'),columnnames)
+      }
+      rsc = pmatch(risk.col,columnnames)
+      if(is.na(rsc)) {
+        rsc = pmatch(paste(risk.col,risk.col,sep='.'),columnnames)
+      }
+      for(i in 1:nrow(neighbors)) points(neighbors[i,rsc], neighbors[i,rtc], col="lightblue", pch=1)
+    }
+  }
+  
   ## @TODO: Generalize this to find column containing the "risk" metric
   if(length(names(object)[which(names(object)=='constrained_objective')])) {
     result.slot<-'constrained_objective'

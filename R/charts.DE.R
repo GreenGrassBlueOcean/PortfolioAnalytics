@@ -204,7 +204,7 @@ chart.Scatter.DE <- .chart_scatter_DE <- function(object, ..., neighbors = NULL,
       }
       rsc = pmatch(risk.col,columnnames)
       if(is.na(rsc)) {
-        risk.column = pmatch(paste(risk.col,risk.col,sep='.'),columnnames)
+        rsc = pmatch(paste(risk.col,risk.col,sep='.'),columnnames)
       }
       for(i in 1:nrow(neighbors)) points(neighbors[i,rsc], neighbors[i,rtc], col="lightblue", pch=1)
     }
