@@ -213,8 +213,8 @@ add.objective <- add.objective_v2 <- function(portfolio, constraints=NULL, type,
   if (!is.portfolio(portfolio)) {stop("portfolio passed in is not of class portfolio")}
   
   if (type != "quadratic_utility" & !hasArg(name)) stop("you must supply a name for the objective")
-  if (!hasArg(type)) stop("you must supply a type of objective to create")
-  if (!hasArg(enabled)) enabled=TRUE
+  if (!hasArg(type)) stop("you must supply a type of objective to create") # nocov — type is required formal
+  if (!hasArg(enabled)) enabled=TRUE # nocov — enabled has default TRUE
   if (!hasArg(arguments) | is.null(arguments)) arguments<-list()
   if (!is.list(arguments)) stop("arguments must be passed as a named list")
   
