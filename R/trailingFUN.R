@@ -72,8 +72,6 @@ trailingFUN <- function(R, weights, n=0, FUN, FUNargs=NULL, ...) {
         } else {
             warning('no FUNargs passed for function')
         }
-    } else {
-        stop('FUN must specify an R function') # nocov — unreachable; match.fun() on L34 errors first
     }
     
     tmp_measure = try((do.call(FUN,.formals)) ,silent=TRUE)
