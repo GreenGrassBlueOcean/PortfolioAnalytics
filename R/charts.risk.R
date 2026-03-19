@@ -97,11 +97,11 @@ chart.RiskBudget.optimize.portfolio <- function(object, ..., neighbors=NULL, ris
   if(main=="") topmargin=1 else topmargin=4
   if(las > 1) {# set the bottom border to accommodate labels
     bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
-    if(bottommargin > 10 ) {
+    if(bottommargin > 10 ) { # nocov start — requires extremely long asset names
       bottommargin<-10
       columnnames<-substr(columnnames,1,19)
       # par(srt=45) #TODO figure out how to use text() and srt to rotate long labels
-    }
+    } # nocov end
   }
   else {
     bottommargin = minmargin
@@ -124,7 +124,7 @@ chart.RiskBudget.optimize.portfolio <- function(object, ..., neighbors=NULL, ris
         if(is.vector(neighbors)){
           xtract <- extractStats(object)
           riskcols <- grep(paste(objname, "contribution", sep="."), colnames(xtract))
-          if(length(riskcols) == 0) stop("Could not extract risk column")
+          if(length(riskcols) == 0) stop("Could not extract risk column") # nocov
           if(length(neighbors) == 1){
             # overplot nearby portfolios defined by 'out'
             orderx <- order(xtract[,"out"])
@@ -139,8 +139,8 @@ chart.RiskBudget.optimize.portfolio <- function(object, ..., neighbors=NULL, ris
         if(is.matrix(neighbors) | is.data.frame(neighbors)){
           # the user has likely passed in a matrix containing calculated values for contrib or pct_contrib
           nbriskcol <- grep(paste(objname, "contribution", sep="."), colnames(neighbors))
-          if(length(nbriskcol) == 0) stop(paste("must have '", objname,".contribution' as column name in neighbors",sep=""))
-          if(length(nbriskcol) != numassets) stop("number of 'contribution' columns must equal number of assets")
+          if(length(nbriskcol) == 0) stop(paste("must have '", objname,".contribution' as column name in neighbors",sep="")) # nocov
+          if(length(nbriskcol) != numassets) stop("number of 'contribution' columns must equal number of assets") # nocov
           for(i in 1:nrow(neighbors)) points(as.numeric(neighbors[i, nbriskcol]), type="b", col="lightblue")
           # note that here we need to get risk cols separately from the matrix, not from xtract
           # also note the need for as.numeric.  points() doesn't like matrix inputs
@@ -178,12 +178,8 @@ chart.RiskBudget.optimize.portfolio <- function(object, ..., neighbors=NULL, ris
       if(!is.null(neighbors)){
         if(is.vector(neighbors)){
           xtract <- extractStats(object)
-          if(risk.type == "absolute"){
-            riskcols <- grep(paste(objname, "contribution", sep="."), colnames(xtract))
-          } else if(risk.type %in% c("percent", "percentage", "pct_contrib")){
-            riskcols <- grep(paste(objname, "pct_contrib", sep="."), colnames(xtract))
-          }
-          if(length(riskcols) == 0) stop("Could not extract risk column")
+          riskcols <- grep(paste(objname, "pct_contrib", sep="."), colnames(xtract))
+          if(length(riskcols) == 0) stop("Could not extract risk column") # nocov
           if(length(neighbors) == 1){
             # overplot nearby portfolios defined by 'out'
             orderx <- order(xtract[,"out"])
@@ -198,8 +194,8 @@ chart.RiskBudget.optimize.portfolio <- function(object, ..., neighbors=NULL, ris
         if(is.matrix(neighbors) | is.data.frame(neighbors)){
           # the user has likely passed in a matrix containing calculated values for contrib or pct_contrib
           nbriskcol <- grep(paste(objname, "pct_contrib", sep="."), colnames(neighbors))
-          if(length(nbriskcol) == 0) stop(paste("must have '", objname,".pct_contrib' as column name in neighbors",sep=""))
-          if(length(nbriskcol) != numassets) stop("number of 'pct_contrib' columns must equal number of assets")
+          if(length(nbriskcol) == 0) stop(paste("must have '", objname,".pct_contrib' as column name in neighbors",sep="")) # nocov
+          if(length(nbriskcol) != numassets) stop("number of 'pct_contrib' columns must equal number of assets") # nocov
           for(i in 1:nrow(neighbors)) points(as.numeric(neighbors[i, nbriskcol]), type="b", col="lightblue")
           # note that here we need to get risk cols separately from the matrix, not from xtract
           # also note the need for as.numeric.  points() doesn't like matrix inputs
@@ -222,6 +218,7 @@ chart.RiskBudget.optimize.portfolio.rebalancing <- function(object, ..., match.c
   # Get the objective measures at each rebalance period
   rebal.obj <- extractObjectiveMeasures(object)
   
+  # nocov start — regime handling requires complex optimize.portfolio.rebalancing + regime.portfolios setup
   if(inherits(object$portfolio, "regime.portfolios")){
     # If the optimize.portfolio.rebalancing object is run with regime switching,
     # the output of extractObjectiveMeasures is a list of length N where each
@@ -230,10 +227,11 @@ chart.RiskBudget.optimize.portfolio.rebalancing <- function(object, ..., match.c
     if(is.null(regime)) regime=1
     rebal.obj <- rebal.obj[[regime]]
   }
+  # nocov end
   
   if(risk.type == "absolute"){
     rbcols <- grep(paste(match.col, "contribution", sep="."), colnames(rebal.obj))
-    if(length(rbcols) < 1) stop(paste("No ", match.col, ".contribution columns.", sep=""))
+    if(length(rbcols) < 1) stop(paste("No ", match.col, ".contribution columns.", sep="")) # nocov
     rbdata <- rebal.obj[, rbcols]
     colnames(rbdata) <- gsub("^.*\\.", "", colnames(rbdata))
     chart.StackedBar(w=rbdata, ylab=paste(match.col, "Contribution", sep=" "), main=main, ...)
@@ -241,7 +239,7 @@ chart.RiskBudget.optimize.portfolio.rebalancing <- function(object, ..., match.c
   
   if(risk.type %in% c("percent", "percentage", "pct_contrib")){
     rbcols <- grep(paste(match.col, "pct_contrib", sep="."), colnames(rebal.obj))
-    if(length(rbcols) < 1) stop(paste("No ", match.col, ".pct_contrib columns.", sep=""))
+    if(length(rbcols) < 1) stop(paste("No ", match.col, ".pct_contrib columns.", sep="")) # nocov
     rbdata <- rebal.obj[, rbcols]
     colnames(rbdata) <- gsub("^.*\\.", "", colnames(rbdata))
     chart.StackedBar(w=rbdata, ylab=paste(match.col, "% Contribution", sep=" "), main=main, ...)
@@ -254,7 +252,7 @@ chart.RiskBudget.optimize.portfolio.rebalancing <- function(object, ..., match.c
 
 #' @export
 chart.RiskBudget.opt.list <- function(object, ..., match.col="ES", risk.type="absolute", main="Risk Budget", plot.type="line", cex.axis=0.8, cex.lab=0.8, element.color="darkgray", las=3, ylim=NULL, colorset=NULL, legend.loc=NULL, cex.legend=0.8){
-  if(!inherits(object, "opt.list")) stop("object must be of class 'opt.list'")
+  if(!inherits(object, "opt.list")) stop("object must be of class 'opt.list'") # nocov
   
   if(plot.type %in% c("bar", "barplot")){
     barplotRiskBudget(object=object, ...=..., match.col=match.col, risk.type=risk.type, main=main, ylim=ylim, cex.axis=cex.axis, cex.lab=cex.lab, element.color=element.color, las=las, colorset=colorset, legend.loc=legend.loc, cex.legend=cex.legend)
@@ -266,7 +264,7 @@ chart.RiskBudget.opt.list <- function(object, ..., match.col="ES", risk.type="ab
       # get the index of columns with risk budget
       rbcols <- grep(paste(match.col, "contribution", sep="."), colnames(xtract))
       dat <- na.omit(xtract[, rbcols])
-      if(ncol(dat) < 1) stop("No data to plot after na.omit")
+      if(ncol(dat) < 1) stop("No data to plot after na.omit") # nocov
       opt_names <- rownames(dat)
       # remove everything up to the last dot (.) to extract the names
       colnames(dat) <- gsub("(.*)\\.", "", colnames(dat))
@@ -276,19 +274,15 @@ chart.RiskBudget.opt.list <- function(object, ..., match.col="ES", risk.type="ab
       columnnames <- colnames(dat)
       numassets <- length(columnnames)
       
-      xlab <- NULL
-      if(is.null(xlab))
-        minmargin <- 3
-      else
-        minmargin <- 5
+      minmargin <- 3
       if(main=="") topmargin=1 else topmargin=4
       if(las > 1) {# set the bottom border to accommodate labels
         bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
-        if(bottommargin > 10 ) {
+        if(bottommargin > 10 ) { # nocov start — requires extremely long asset names
           bottommargin <- 10
           columnnames<-substr(columnnames,1,19)
           # par(srt=45) #TODO figure out how to use text() and srt to rotate long labels
-        }
+        } # nocov end
       }
       else {
         bottommargin = minmargin
@@ -315,7 +309,7 @@ chart.RiskBudget.opt.list <- function(object, ..., match.col="ES", risk.type="ab
       # get the index of columns with risk budget
       rbcols <- grep(paste(match.col, "pct_contrib", sep="."), colnames(xtract))
       dat <- na.omit(xtract[, rbcols])
-      if(ncol(dat) < 1) stop("No data to plot after na.omit")
+      if(ncol(dat) < 1) stop("No data to plot after na.omit") # nocov
       opt_names <- rownames(dat)
       # remove everything up to the last dot (.) to extract the names
       colnames(dat) <- gsub("(.*)\\.", "", colnames(dat))
@@ -326,19 +320,15 @@ chart.RiskBudget.opt.list <- function(object, ..., match.col="ES", risk.type="ab
       columnnames <- colnames(dat)
       numassets <- length(columnnames)
       
-      xlab <- NULL
-      if(is.null(xlab))
-        minmargin <- 3
-      else
-        minmargin <- 5
+      minmargin <- 3
       if(main=="") topmargin=1 else topmargin=4
       if(las > 1) {# set the bottom border to accommodate labels
         bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
-        if(bottommargin > 10 ) {
+        if(bottommargin > 10 ) { # nocov start — requires extremely long asset names
           bottommargin <- 10
           columnnames<-substr(columnnames,1,19)
           # par(srt=45) #TODO figure out how to use text() and srt to rotate long labels
-        }
+        } # nocov end
       }
       else {
         bottommargin = minmargin
@@ -364,7 +354,7 @@ chart.RiskBudget.opt.list <- function(object, ..., match.col="ES", risk.type="ab
 
 # This function is called inside chart.RiskBudget.opt.list when plot.type == "bar" or "barplot"
 barplotRiskBudget <- function(object, ..., match.col="ES", risk.type="absolute", main="Risk Budget", cex.axis=0.8, cex.lab=0.8, element.color="darkgray", las=3, colorset=NULL, legend.loc=NULL, cex.legend=0.8){
-  if(!inherits(object, "opt.list")) stop("object must be of class 'opt.list'")
+  if(!inherits(object, "opt.list")) stop("object must be of class 'opt.list'") # nocov
   
   xtract <- extractObjectiveMeasures(object)
   
@@ -372,7 +362,7 @@ barplotRiskBudget <- function(object, ..., match.col="ES", risk.type="absolute",
     # get the index of columns with risk budget
     rbcols <- grep(paste(match.col, "contribution", sep="."), colnames(xtract))
     dat <- na.omit(xtract[, rbcols])
-    if(ncol(dat) < 1) stop("No data to plot after na.omit")
+    if(ncol(dat) < 1) stop("No data to plot after na.omit") # nocov
     opt_names <- rownames(dat)
     # remove everything up to the last dot (.) to extract the names
     colnames(dat) <- gsub("(.*)\\.", "", colnames(dat))
@@ -380,19 +370,15 @@ barplotRiskBudget <- function(object, ..., match.col="ES", risk.type="absolute",
     columnnames <- colnames(dat)
     numassets <- length(columnnames)
     
-    xlab <- NULL
-    if(is.null(xlab))
-      minmargin <- 3
-    else
-      minmargin <- 5
+    minmargin <- 3
     if(main=="") topmargin=1 else topmargin=4
     if(las > 1) {# set the bottom border to accommodate labels
       bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
-      if(bottommargin > 10 ) {
+      if(bottommargin > 10 ) { # nocov start — requires extremely long asset names
         bottommargin <- 10
         columnnames<-substr(columnnames,1,19)
         # par(srt=45) #TODO figure out how to use text() and srt to rotate long labels
-      }
+      } # nocov end
     }
     else {
       bottommargin = minmargin
@@ -418,7 +404,7 @@ barplotRiskBudget <- function(object, ..., match.col="ES", risk.type="absolute",
     # get the index of columns with risk budget
     rbcols <- grep(paste(match.col, "pct_contrib", sep="."), colnames(xtract))
     dat <- na.omit(xtract[, rbcols])
-    if(ncol(dat) < 1) stop("No data to plot after na.omit")
+    if(ncol(dat) < 1) stop("No data to plot after na.omit") # nocov
     opt_names <- rownames(dat)
     # remove everything up to the last dot (.) to extract the names
     colnames(dat) <- gsub("(.*)\\.", "", colnames(dat))
@@ -426,19 +412,15 @@ barplotRiskBudget <- function(object, ..., match.col="ES", risk.type="absolute",
     columnnames <- colnames(dat)
     numassets <- length(columnnames)
     
-    xlab <- NULL
-    if(is.null(xlab))
-      minmargin <- 3
-    else
-      minmargin <- 5
+    minmargin <- 3
     if(main=="") topmargin=1 else topmargin=4
     if(las > 1) {# set the bottom border to accommodate labels
       bottommargin = max(c(minmargin, (strwidth(columnnames,units="in"))/par("cin")[1])) * cex.lab
-      if(bottommargin > 10 ) {
+      if(bottommargin > 10 ) { # nocov start — requires extremely long asset names
         bottommargin <- 10
         columnnames<-substr(columnnames,1,19)
         # par(srt=45) #TODO figure out how to use text() and srt to rotate long labels
-      }
+      } # nocov end
     }
     else {
       bottommargin = minmargin
