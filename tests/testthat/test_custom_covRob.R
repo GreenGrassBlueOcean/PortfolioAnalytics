@@ -420,3 +420,38 @@ test_that("custom.covRob.TSGS direct call with params as variables", {
   expect_equal(dim(result$sigma), c(n, n))
   expect_equal(length(result$mu), n)
 })
+
+###############################################################################
+# 9. Individual parameter coverage for Mcd (lines 93-101)
+###############################################################################
+
+test_that("custom.covRob.Mcd individual params: nmini through use.correction", {
+  skip_if_not_installed("robustbase")
+
+  result <- custom.covRob.Mcd(R,
+    nmini = 300, kmini = 5, scalefn = "hrv2012", maxcsteps = 200,
+    seed = NULL, tolSolve = 1e-14, wgtFUN = "01.original",
+    use.correction = TRUE)
+  expect_equal(dim(result$sigma), c(n, n))
+  expect_equal(length(result$mu), n)
+})
+
+test_that("custom.covRob.Mcd individual param initHsets (line 97)", {
+  skip_if_not_installed("robustbase")
+
+  result <- custom.covRob.Mcd(R, initHsets = NULL)
+  expect_equal(dim(result$sigma), c(n, n))
+})
+
+###############################################################################
+# 10. Individual parameter coverage for TSGS (lines 192, 195-196)
+###############################################################################
+
+test_that("custom.covRob.TSGS individual params: partial.impute, loss, init", {
+  skip_if_not_installed("GSE")
+
+  result <- custom.covRob.TSGS(R,
+    partial.impute = FALSE, loss = "bisquare", init = "emve")
+  expect_equal(dim(result$sigma), c(n, n))
+  expect_equal(length(result$mu), n)
+})
