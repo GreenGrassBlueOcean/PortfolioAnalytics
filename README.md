@@ -224,6 +224,32 @@ The function also lacked input validation: `risk_type` is documented as a single
 
 The fix adds input validation (`risk_type` must be a single character string, `compare_port` entries must be valid risk types) and guards the `colnames` assignment so that an empty `risk_compare` produces `character(0)` instead of phantom names.
 
+### Bug Fix: Uninitialized `dotargs` When `momentFUN` Fails in `optimize.portfolio`
+
+In the v2 `optimize.portfolio()` code path, the portfolio moment function is called inside `try()` and, on success, assigns the result to `dotargs`. On failure, the upstream code calls `message()` with the error text and continues — but `dotargs` is never assigned. Two downstream uses (`calibrate_penalty(..., env = dotargs)` and `solver_fn(..., moments = dotargs, ...)`) then fail with `object 'dotargs' not found`, masking the original moment function error.
+
+The v1 code path does not have this bug because it initializes `dotargs <- list(...)` before the `try()` call, so `dotargs` always exists even if `momentFUN` fails.
+
+The fix replaces `message()` with `stop()`, since optimization cannot proceed without moments. The error message includes the original function name and the underlying failure text:
+
+```r
+# Before (upstream) — message + continue, then crash on undefined dotargs
+if(inherits(mout, "try-error")) {
+  message(paste("portfolio moment function failed with message", mout))
+} else {
+  dotargs <- mout
+}
+
+# After (this fork) — stop immediately with actionable error
+if(inherits(mout, "try-error")) {
+  stop("Portfolio moment function ('", moment_name,
+       "') failed. Cannot proceed without moments.\n",
+       "Original error: ", mout, call. = FALSE)
+} else {
+  dotargs <- mout
+}
+```
+
 ## What's Included from braverock
 
 All features from [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) are included:
@@ -247,7 +273,7 @@ All features from [braverock/PortfolioAnalytics](https://github.com/braverock/Po
 
 ## Testing
 
-The package includes 103 test files with 3,046+ passing assertions:
+The package includes 103 test files with 3,155+ passing assertions:
 
 ```r
 devtools::test()
