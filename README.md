@@ -250,6 +250,21 @@ if(inherits(mout, "try-error")) {
 }
 ```
 
+### Upstream Sync: `CVXR::solve()` → `CVXR::psolve()` Migration
+
+CVXR deprecated `solve()` in favor of `psolve()`. This fork migrated all call sites:
+
+- **`solver_cvxr.R`** (line 244): The centralized `.cvxr_solve()` wrapper uses `CVXR::psolve()`
+- **`solver_cvxr.R`** (line 269): Result extraction uses `CVXR::value(wts)` (replacing the old `$getValue(wts)`)
+- **`extractrisk.R`**: All three `CVXR::solve()` calls (ES, CSM, EQS) replaced with `CVXR::psolve()`
+
+Upstream commits `951f3c6` and `68e7431` (March 2026) make the same `psolve` migration. The following upstream changes were **not** taken:
+
+- **CSM formula change** (`sqrt(T)` removed from `extractrisk.R`): Upstream's own CVXR solver at line 2915 of `optimize.portfolio.R` still uses `1/(alpha * sqrt(T))`. This fork keeps `sqrt(T)` in both `solver_cvxr.R` and `extractrisk.R` for internal consistency.
+- **Merge conflict markers in `optimize.portfolio.R`**: Upstream lines 2929 and 2946 contain literal `<` and `=` prefixes from an unresolved merge, which would cause R parse errors. Not applicable to this fork (CVXR solver lives in `solver_cvxr.R`).
+
+The upstream vignette URL fix (missing `/` in a CRAN link) and `extractrisk.R` style cleanup (`=` → `<-`) were taken.
+
 ## What's Included from braverock
 
 All features from [braverock/PortfolioAnalytics](https://github.com/braverock/PortfolioAnalytics) are included:
