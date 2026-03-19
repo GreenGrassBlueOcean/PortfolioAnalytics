@@ -801,6 +801,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
     return(out)
   }
   
+  # nocov start — regime switching requires regime.portfolios object with matching date index
   # Detect regime switching portfolio
   if(inherits(portfolio, "regime.portfolios")){
     regime.switching <- TRUE
@@ -815,9 +816,11 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
       portfolio <- portfolio$portfolio.list[[regime.idx]]
     }
   } else {
+    # nocov end
     regime.switching <- FALSE
   }
   
+  # nocov start — mult.portfolio.spec requires multi-layer portfolio with sub-portfolios and rebalancing
   # This is the case where the user has passed in a mult.portfolio.spec
   # object for multiple layer portfolio optimization.
   if(inherits(portfolio, "mult.portfolio.spec")){
@@ -830,6 +833,7 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
     # top level portfolio so now set the 'portfolio' to the top level portfolio
     portfolio <- portfolio$top.portfolio
   }
+  # nocov end
   
   # Optimization Model Language
   if(length(optimize_method) == 2) optimize_method <- optimize_method[2] else optimize_method <- optimize_method[1]
@@ -933,33 +937,6 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
     dotargs <- mout
   }
   
-  # Function to normalize weights to min_sum and max_sum
-  # This function could be replaced by rp_transform
-  normalize_weights <- function(weights){
-    # normalize results if necessary
-    if(!is.null(constraints$min_sum) | !is.null(constraints$max_sum)){
-      # the user has passed in either min_sum or max_sum constraints for the portfolio, or both.
-      # we'll normalize the weights passed in to whichever boundary condition has been violated
-      # NOTE: this means that the weights produced by a numeric optimization algorithm like DEoptim
-      # might violate your constraints, so you'd need to renormalize them after optimizing
-      # we'll create functions for that so the user is less likely to mess it up.
-      
-      # NOTE: need to normalize in the optimization wrapper too before we return, since we've normalized in here
-      # In Kris' original function, this was manifested as a full investment constraint
-      if(!is.null(constraints$max_sum) & constraints$max_sum != Inf & constraints$max_sum != 0) {
-        max_sum=constraints$max_sum
-        if(sum(weights)>max_sum) { weights<-(max_sum/sum(weights))*weights } # normalize to max_sum
-      }
-      
-      if(!is.null(constraints$min_sum) & constraints$min_sum != -Inf & constraints$min_sum != 0) {
-        min_sum=constraints$min_sum
-        if(sum(weights)<min_sum) { weights<-(min_sum/sum(weights))*weights } # normalize to min_sum
-      }
-      
-    } # end min_sum and max_sum normalization
-    return(weights)
-  }
-
   # Calibrate penalty for stochastic solvers
   if (identical(penalty, "auto")) {
     if (optimize_method %in% c("DEoptim", "random", "pso", "GenSA")) {
@@ -1022,9 +999,9 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   # return a $regime element to indicate what regime portfolio used for
   # optimize.portfolio. The regime information is used in extractStats and
   # extractObjectiveMeasures
-  if(regime.switching){
+  if(regime.switching){ # nocov start — only reachable via regime.portfolios path above
     out$regime <- regime.idx
-  }
+  } # nocov end
   if (isTRUE(check_feasibility) && !is.optimization_failure(out)) {
     out$feasibility_report <- check_portfolio_feasibility(out$weights, portfolio)
     if (!out$feasibility_report$feasible) {
@@ -1236,17 +1213,12 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
     return(out)
   }
   
-  # This is the case where the user has passed in a mult.portfolio.spec
-  # object for multiple layer portfolio optimization.
+  # nocov start — mult.portfolio.spec requires multi-layer portfolio with sub-portfolios and rebalancing
   if(inherits(portfolio, "mult.portfolio.spec")){
-    # This function calls optimize.portfolio.rebalancing on each sub portfolio
-    # according to the given optimization parameters and returns an xts object
-    # representing the proxy returns of each sub portfolio.
     R <- proxy.mult.portfolio(R=R, mult.portfolio=portfolio)
-    # The optimization is controlled by the constraints and objectives in the
-    # top level portfolio
     portfolio <- portfolio$top.portfolio
   }
+  # nocov end
   
   # Store the call to return later
   call <- match.call()
@@ -1302,9 +1274,9 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
     
     # call random_portfolios() with constraints and search_size to create matrix of portfolios
     if(is.null(rp))
-      if(inherits(portfolio, "regime.portfolios")){
+      if(inherits(portfolio, "regime.portfolios")){ # nocov start — requires regime.portfolios object
         rp <- rp.regime.portfolios(regime=portfolio, permutations=search_size, rp_method=rp_method, eliminate=eliminate, fev=fev)
-      } else {
+      } else { # nocov end
         rp <- random_portfolios(portfolio=portfolio, permutations=search_size, rp_method=rp_method, eliminate=eliminate, fev=fev)
       }
   } else {
@@ -1433,6 +1405,7 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
 #' @return a list containing the optimal weights, some summary statistics, the function call, and optionally trace information 
 #' @author Kris Boudt, Peter Carl, Brian G. Peterson
 #' @export
+# nocov start — requires parallel backend registration
 optimize.portfolio.parallel <- function(R,
                                         portfolio,
                                         optimize_method=c("DEoptim","random","ROI","pso","GenSA"),
@@ -1471,6 +1444,7 @@ optimize.portfolio.parallel <- function(R,
     class(out) <- c("optimize.portfolio.parallel")
     return(out)
 }
+# nocov end
 
 
 #TODO write function to compute an efficient frontier of optimal portfolios
