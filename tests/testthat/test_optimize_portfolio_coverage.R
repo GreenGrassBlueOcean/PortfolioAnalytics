@@ -211,7 +211,7 @@ test_that("two-element optimize_method selects the second element", {
 # Tests: moment function error handling (lines 921–933)
 # ============================================================================
 
-test_that("broken momentFUN produces message about failure", {
+test_that("broken momentFUN stops with informative error", {
   portf <- portfolio.spec(assets = colnames(R5))
   portf <- add.constraint(portf, type = "full_investment")
   portf <- add.constraint(portf, type = "long_only")
@@ -222,14 +222,10 @@ test_that("broken momentFUN produces message about failure", {
   }
 
   set.seed(5174)
-  # The message about failure should be emitted even if downstream errors occur
-  expect_message(
-    tryCatch(
-      optimize.portfolio(R5, portf, optimize_method = "random",
-                         search_size = 50, momentFUN = broken_moment),
-      error = function(e) NULL
-    ),
-    "portfolio moment function failed"
+  expect_error(
+    optimize.portfolio(R5, portf, optimize_method = "random",
+                       search_size = 50, momentFUN = broken_moment),
+    "Cannot proceed without moments"
   )
 })
 

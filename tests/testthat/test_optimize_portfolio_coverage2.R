@@ -22,27 +22,24 @@ test_that("optimize.portfolio subsets R when ncol(R) > N", {
   expect_equal(names(opt$weights), colnames(R3))
 })
 
-# --- momentFUN try-error path (L924-925) --------------------------------------
-# Note: when momentFUN fails, the code messages the failure but dotargs is
-# never assigned, causing a downstream error. This test covers L924-925
-# (the message path) while accepting the subsequent error.
+# --- momentFUN try-error path (L926-931) --------------------------------------
+# When momentFUN fails, optimize.portfolio now stops with a clear error
+# instead of silently leaving dotargs unassigned and crashing downstream.
 
-test_that("optimize.portfolio messages when momentFUN fails", {
+test_that("optimize.portfolio stops when momentFUN fails", {
   portf <- make_portf(colnames(R3))
   bad_moment <- function(R, portfolio, ...) stop("moment failure")
-  msgs <- character()
-  tryCatch(
-    withCallingHandlers(
-      optimize.portfolio(R3, portf, optimize_method = "ROI",
-                         momentFUN = bad_moment),
-      message = function(m) {
-        msgs <<- c(msgs, conditionMessage(m))
-        invokeRestart("muffleMessage")
-      }
-    ),
-    error = function(e) NULL
+  # Error includes "Cannot proceed" and the original failure text
+  expect_error(
+    optimize.portfolio(R3, portf, optimize_method = "ROI",
+                       momentFUN = bad_moment),
+    "Cannot proceed without moments"
   )
-  expect_true(any(grepl("portfolio moment function failed", msgs)))
+  expect_error(
+    optimize.portfolio(R3, portf, optimize_method = "ROI",
+                       momentFUN = bad_moment),
+    "moment failure"
+  )
 })
 
 # --- portfolio.list path in optimize.portfolio (L781-802) ---------------------
