@@ -33,7 +33,7 @@ gmv_opt_ptc(
 \item{control}{list of solver control parameters}
 }
 \description{
-This function is called by optimize.portfolio to solve minimum variance or 
+This function is called by optimize.portfolio to solve minimum variance or
 maximum quadratic utility problems with proportional transaction cost constraint
 }
 \author{

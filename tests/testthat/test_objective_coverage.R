@@ -16,18 +16,19 @@ base_portf <- function() {
 # ===========================================================================
 # 1. objective() constructor error paths
 # ===========================================================================
+pa_objective <- getExportedValue("PortfolioAnalytics", "objective")
 
 test_that("objective() errors when name is missing", {
-  expect_error(objective(), "you must specify an objective name")
+  expect_error(pa_objective(), "you must specify an objective name")
 })
 
 test_that("objective() errors when name is NULL", {
-  expect_error(objective(name = NULL), "you must specify an objective name")
+  expect_error(pa_objective(name = NULL), "you must specify an objective name")
 })
 
 test_that("objective() errors when arguments is not a list", {
   expect_error(
-    objective(name = "mean", arguments = "bad"),
+    pa_objective(name = "mean", arguments = "bad"),
     "arguments must be passed as a named list"
   )
 })

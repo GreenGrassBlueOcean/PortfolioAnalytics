@@ -71,10 +71,7 @@ name.replace <- function(rnames){
 #' @param prefix prefix to add to output row names
 #' @param ... any other passthru parameters
 #' @seealso \code{\link{optimize.portfolio}}
-#' @aliases extractStats extractStats.optimize.portfolio.DEoptim
-#' extractStats.optimize.portfolio.parallel extractStats.optimize.portfolio.random
-#' extractStats.optimize.portfolio.ROI extractStats.optimize.portfolio.pso
-#' extractStats.optimize.portfolio.GenSA
+#' @aliases extractStats extractStats.optimize.portfolio.DEoptim extractStats.optimize.portfolio.parallel extractStats.optimize.portfolio.random extractStats.optimize.portfolio.ROI extractStats.optimize.portfolio.pso extractStats.optimize.portfolio.GenSA
 #' @export
 extractStats <- function (object, prefix=NULL, ...){
     UseMethod('extractStats')

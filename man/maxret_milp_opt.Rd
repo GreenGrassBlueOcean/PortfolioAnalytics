@@ -27,7 +27,7 @@ maxret_milp_opt(
 \item{control}{list of solver control parameters}
 }
 \description{
-This function is called by optimize.portfolio to solve maximum return 
+This function is called by optimize.portfolio to solve maximum return
 problems via mixed integer linear programming.
 }
 \author{
