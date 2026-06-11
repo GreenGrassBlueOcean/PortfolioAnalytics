@@ -857,3 +857,21 @@ The following design decisions are depended on by known downstream consumers. Ch
 1. **`optimization_failure` dual-class inheritance** — Must inherit from both `"optimization_failure"` and `"optimize.portfolio"`. Downstream `inherits(x, "optimize.portfolio")` checks depend on this.
 2. **`check_feasibility=TRUE` default in `optimize.portfolio()`** — Downstream code relies on `$feasibility_report` being present on every result.
 3. **`extractWeights()` returning named `NA` vector on failure** — Downstream code checks `is.optimization_failure()` before calling `extractWeights()`, expecting NAs rather than an error.
+
+---
+
+## Namespace & Build Stabilization (May 2026)
+
+To meet the strict compliance gates of `GGBODeploy` for monorepo integration into the GGBO environment, the following structural hardenings were applied to the package:
+
+### Test Suite Namespace Consolidation
+**Problem:** The `tests/testthat/` suite defined several mock helper functions (e.g., `base_portf()`, `make_portf()`, `make_spec()`, `make_v1_constr()`) with identical names across multiple independent test scripts. This caused symbol collisions during the `GGBODeploy::CheckDuplicateFunctions` build phase.
+**Solution:**
+- **Symbol Renaming:** All duplicate mock functions were suffixed according to their originating file (e.g., `base_portf` → `base_portf_co` for `test_constrained_objective.R`).
+- **Static Analysis Gate:** Introduced `tests/testthat/test_no_duplicate_functions.R`, which scans the test suite's AST at test-time to ensure no helper functions share the same identifier, preventing future regressions.
+
+### R CMD Check Compliance (Global Variables)
+**Problem:** The `GGBODeploy::CheckGlobalVariables` gate rejects any usage of `utils::globalVariables()` in `R/zzz.R` (a common legacy R pattern used to silence `R CMD check` warnings for `data.table` or `subset` scoping).
+**Solution:**
+- Removed `globalVariables(c('filter_constraint'))` from `R/zzz.R`.
+- Remediated the underlying scoping warning by explicitly introducing local assignments (`filter_constraint <- NULL`) at the top of the function body in `R/constraints.R` (`add.constraint`). This satisfies `R CMD check` deterministically without polluting the package namespace.

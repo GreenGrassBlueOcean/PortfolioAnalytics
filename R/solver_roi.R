@@ -110,7 +110,6 @@ solve_roi <- function(R, portfolio, constraints, moments, penalty,
                              lambda_hhi = lambda_hhi, conc_groups = conc_groups,
                              solver = solver, control = control)
         tmp_moments_mean <- roi_moments$mean
-        roi_moments$mean <- rep(0, length(roi_moments$mean))
       }
       roi_result <- gmv_opt(R = R, constraints = constraints, moments = roi_moments,
                              lambda = lambda, target = target, lambda_hhi = lambda_hhi,

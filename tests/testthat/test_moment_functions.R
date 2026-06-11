@@ -14,7 +14,7 @@ funds <- colnames(R)
 # ---------------------------------------------------------------------------
 # Helper: quick portfolio builder
 # ---------------------------------------------------------------------------
-make_portf <- function(obj_specs, add_constraints = TRUE) {
+make_portf_mf <- function(obj_specs, add_constraints = TRUE) {
   p <- portfolio.spec(assets = funds)
   if (add_constraints) {
     p <- add.constraint(p, type = "full_investment")
@@ -32,7 +32,7 @@ make_portf <- function(obj_specs, add_constraints = TRUE) {
 # ===========================================================================
 
 # Helper to create v1 constraint objects (suppress deprecation warnings)
-make_v1_constr <- function() {
+make_v1_constr_mf <- function() {
   suppressWarnings(
     constraint_v1(assets = funds, min = 0, max = 1,
                   min_sum = 0.99, max_sum = 1.01,
@@ -41,7 +41,7 @@ make_v1_constr <- function() {
 }
 
 test_that("set.portfolio.moments_v1 computes mu + sigma for StdDev", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_mf()
   gen <- suppressWarnings(add.objective_v1(constraints = gen, type = "risk", name = "StdDev"))
   
   moments <- set.portfolio.moments_v1(R, gen)
@@ -54,7 +54,7 @@ test_that("set.portfolio.moments_v1 computes mu + sigma for StdDev", {
 })
 
 test_that("set.portfolio.moments_v1 computes all 4 moments for ES", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_mf()
   gen <- suppressWarnings(add.objective_v1(constraints = gen, type = "risk", name = "ES"))
   
   moments <- set.portfolio.moments_v1(R, gen)
@@ -62,7 +62,7 @@ test_that("set.portfolio.moments_v1 computes all 4 moments for ES", {
 })
 
 test_that("set.portfolio.moments_v1 computes all 4 moments for VaR", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_mf()
   gen <- suppressWarnings(add.objective_v1(constraints = gen, type = "risk", name = "VaR"))
   
   moments <- set.portfolio.moments_v1(R, gen)
@@ -70,7 +70,7 @@ test_that("set.portfolio.moments_v1 computes all 4 moments for VaR", {
 })
 
 test_that("set.portfolio.moments_v1 warns when no objectives", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_mf()
   gen$objectives <- NULL
   
   expect_warning(set.portfolio.moments_v1(R, gen), "no objectives")
@@ -81,7 +81,7 @@ test_that("set.portfolio.moments_v1 warns when no objectives", {
 # ===========================================================================
 
 test_that("portfolio.moments.boudt computes moments for StdDev", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "StdDev")))
   
   moments <- portfolio.moments.boudt(R, portf)
   expect_true(!is.null(moments$mu))
@@ -91,28 +91,28 @@ test_that("portfolio.moments.boudt computes moments for StdDev", {
 })
 
 test_that("portfolio.moments.boudt computes all 4 moments for VaR", {
-  portf <- make_portf(list(list(type = "risk", name = "VaR")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "VaR")))
   
   moments <- portfolio.moments.boudt(R, portf)
   expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"))
 })
 
 test_that("portfolio.moments.boudt computes all 4 moments for ES", {
-  portf <- make_portf(list(list(type = "risk", name = "ES")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "ES")))
   
   moments <- portfolio.moments.boudt(R, portf)
   expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"))
 })
 
 test_that("portfolio.moments.boudt skips ES moments when ROI=TRUE", {
-  portf <- make_portf(list(list(type = "risk", name = "ES")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "ES")))
   
   moments <- portfolio.moments.boudt(R, portf, ROI = TRUE)
   expect_length(moments, 0)
 })
 
 test_that("portfolio.moments.boudt handles mean-only objective", {
-  portf <- make_portf(list(list(type = "return", name = "mean")))
+  portf <- make_portf_mf(list(list(type = "return", name = "mean")))
   
   moments <- portfolio.moments.boudt(R, portf)
   expect_equal(names(moments), "mu")
@@ -126,7 +126,7 @@ test_that("portfolio.moments.boudt warns on no objectives", {
 })
 
 test_that("portfolio.moments.boudt respects k parameter", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "StdDev")))
   
   m1 <- portfolio.moments.boudt(R, portf, k = 1)
   m2 <- portfolio.moments.boudt(R, portf, k = 2)
@@ -138,7 +138,7 @@ test_that("portfolio.moments.boudt respects k parameter", {
 test_that("portfolio.moments.boudt handles ES aliases (CVaR, cVaR, ETL, mETL, mES)", {
   aliases <- c("CVaR", "cVaR", "ETL", "mETL", "mES")
   for (alias in aliases) {
-    portf <- make_portf(list(list(type = "risk", name = alias)))
+    portf <- make_portf_mf(list(list(type = "risk", name = alias)))
     moments <- portfolio.moments.boudt(R, portf)
     expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"),
                  info = paste("alias:", alias))
@@ -150,7 +150,7 @@ test_that("portfolio.moments.boudt handles ES aliases (CVaR, cVaR, ETL, mETL, mE
 # ===========================================================================
 
 test_that("portfolio.moments.bl computes moments for StdDev", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "StdDev")))
   P <- matrix(c(1, -1, 0), nrow = 1)
   
   moments <- portfolio.moments.bl(R, portf, P = P)
@@ -159,7 +159,7 @@ test_that("portfolio.moments.bl computes moments for StdDev", {
 })
 
 test_that("portfolio.moments.bl computes all 4 moments for VaR", {
-  portf <- make_portf(list(list(type = "risk", name = "VaR")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "VaR")))
   P <- matrix(c(1, -1, 0), nrow = 1)
   
   moments <- portfolio.moments.bl(R, portf, P = P)
@@ -167,7 +167,7 @@ test_that("portfolio.moments.bl computes all 4 moments for VaR", {
 })
 
 test_that("portfolio.moments.bl skips ES when ROI=TRUE", {
-  portf <- make_portf(list(list(type = "risk", name = "ES")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "ES")))
   P <- matrix(c(1, -1, 0), nrow = 1)
   
   moments <- portfolio.moments.bl(R, portf, P = P, ROI = TRUE)
@@ -175,7 +175,7 @@ test_that("portfolio.moments.bl skips ES when ROI=TRUE", {
 })
 
 test_that("portfolio.moments.bl handles mean-only objective", {
-  portf <- make_portf(list(list(type = "return", name = "mean")))
+  portf <- make_portf_mf(list(list(type = "return", name = "mean")))
   P <- matrix(c(1, -1, 0), nrow = 1)
   
   moments <- portfolio.moments.bl(R, portf, P = P)
@@ -198,7 +198,7 @@ test_that("portfolio.moments.bl warns on no objectives", {
 # ===========================================================================
 
 test_that("set.portfolio.moments with method=boudt computes moments", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "StdDev")))
   
   moments <- set.portfolio.moments(R, portf, method = "boudt")
   expect_true(!is.null(moments$mu))
@@ -207,7 +207,7 @@ test_that("set.portfolio.moments with method=boudt computes moments", {
 })
 
 test_that("set.portfolio.moments with method=boudt for VaR gives 4 moments", {
-  portf <- make_portf(list(list(type = "risk", name = "VaR")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "VaR")))
   
   moments <- set.portfolio.moments(R, portf, method = "boudt")
   expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"))
@@ -222,7 +222,7 @@ test_that("set.portfolio.moments with method=black_litterman dispatches", {
 
   # language object, not the evaluated matrix. This is a known pre-existing
   # issue. Test portfolio.moments.bl() directly for full BL moment tests.
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "StdDev")))
   P_mat <- matrix(c(1, -1, 0), nrow = 1)
   
   # Verify it at least selects the correct method without argument errors
@@ -237,7 +237,7 @@ test_that("set.portfolio.moments with method=black_litterman dispatches", {
 # ===========================================================================
 
 test_that("set.portfolio.moments with method=meucci works for StdDev", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "StdDev")))
   
   moments <- set.portfolio.moments(R, portf, method = "meucci")
   expect_true(!is.null(moments$mu))
@@ -245,7 +245,7 @@ test_that("set.portfolio.moments with method=meucci works for StdDev", {
 })
 
 test_that("set.portfolio.moments with method=meucci for VaR gives 4 moments", {
-  portf <- make_portf(list(list(type = "risk", name = "VaR")))
+  portf <- make_portf_mf(list(list(type = "risk", name = "VaR")))
   
   moments <- set.portfolio.moments(R, portf, method = "meucci")
   expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"))
@@ -256,12 +256,12 @@ test_that("set.portfolio.moments with method=meucci for VaR gives 4 moments", {
 # ===========================================================================
 
 test_that("set.portfolio.moments cleans returns when clean argument specified", {
-  portf <- make_portf(list(
+  portf <- make_portf_mf(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt"))
   ))
   
   moments_clean <- set.portfolio.moments(R, portf)
-  moments_raw   <- set.portfolio.moments(R, make_portf(
+  moments_raw   <- set.portfolio.moments(R, make_portf_mf(
     list(list(type = "risk", name = "StdDev"))
   ))
   
@@ -274,7 +274,7 @@ test_that("set.portfolio.moments cleans returns when clean argument specified", 
 })
 
 test_that("set.portfolio.moments warns on multiple clean methods", {
-  portf <- make_portf(list(
+  portf <- make_portf_mf(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt")),
     list(type = "risk", name = "ES", arguments = list(clean = "geltinger"))
   ))
@@ -286,7 +286,7 @@ test_that("set.portfolio.moments warns on multiple clean methods", {
 })
 
 test_that("portfolio.moments.boudt cleans returns when clean argument specified", {
-  portf <- make_portf(list(
+  portf <- make_portf_mf(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt"))
   ))
   
@@ -296,7 +296,7 @@ test_that("portfolio.moments.boudt cleans returns when clean argument specified"
 })
 
 test_that("portfolio.moments.bl cleans returns when clean argument specified", {
-  portf <- make_portf(list(
+  portf <- make_portf_mf(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt"))
   ))
   P <- matrix(c(1, -1, 0), nrow = 1)

@@ -67,7 +67,7 @@ fn_map <- function(weights, portfolio, relax=FALSE, verbose=FALSE,
   # --- Attempt deterministic projection for convex constraint sets ---
   # Convex when: no position_limit and no leverage constraints
   is_convex <- is.null(max_pos) && is.null(max_pos_long) &&
-    is.null(max_pos_short) && is.null(leverage)
+    is.null(max_pos_short) && is.null(leverage) && is.null(group_pos)
   
   if (method == "projection" && is_convex) {
     proj <- project_weights(
@@ -1098,8 +1098,8 @@ rp_position_limit <- function(weights, max_pos=NULL, max_pos_long=NULL, max_pos_
       # Check if max_pos_short is violated
       # If max_pos_short is violated, we grab a negative weight and set it
       # to be between 0 and max_box
-      if(sum(tmp_w < tolerance) > max_pos_short){
-        if(cur_val < tolerance){
+      if(sum(tmp_w < -tolerance) > max_pos_short){
+        if(cur_val < -tolerance){
           # subset such that 0 <= weight_i <= max_box_i
           tmp_seq <- weight_seq[(weight_seq >= 0) & (weight_seq <= max_box[cur_index])]
           n_tmp_seq <- length(tmp_seq)

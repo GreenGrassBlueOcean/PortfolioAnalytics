@@ -8,7 +8,7 @@ data(edhec, package = "PerformanceAnalytics")
 R <- edhec[1:36, 1:4]
 
 # Helper: basic portfolio with StdDev objective
-base_portf <- function() {
+base_portf_cc2 <- function() {
   p <- portfolio.spec(assets = colnames(R))
   p <- add.constraint(p, type = "full_investment")
   p <- add.constraint(p, type = "box", min = 0.05, max = 0.65)
@@ -23,7 +23,7 @@ w_eq <- rep(0.25, 4)
 # ===========================================================================
 
 test_that("constrained_objective with verbose=TRUE prints debug info", {
-  p <- base_portf()
+  p <- base_portf_cc2()
   env <- list(mu = matrix(colMeans(R), ncol = 1), sigma = cov(R))
   # verbose requires trace=TRUE so tmp_return is initialized
   expect_output(
@@ -69,7 +69,7 @@ test_that("constrained_objective with env=NULL computes moments internally", {
 # ===========================================================================
 
 test_that("disabled objective is skipped in constrained_objective", {
-  p <- base_portf()
+  p <- base_portf_cc2()
   p$objectives[[1]]$enabled <- FALSE
   env <- list(mu = matrix(colMeans(R), ncol = 1), sigma = cov(R))
   val_disabled <- constrained_objective(w = w_eq, R = R, portfolio = p,

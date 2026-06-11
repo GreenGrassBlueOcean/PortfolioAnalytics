@@ -8,7 +8,7 @@ data(edhec, package = "PerformanceAnalytics")
 R4 <- edhec[1:36, 1:4]
 funds4 <- colnames(R4)
 
-make_spec <- function(funds = funds4) {
+make_spec_cfma <- function(funds = funds4) {
   spec <- portfolio.spec(assets = funds)
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0.05, max = 0.55)
@@ -147,7 +147,7 @@ test_that("project_weights returns input when already feasible", {
 # ============================================================================
 
 test_that("fn_map uses projection by default for convex constraints", {
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   w <- c(0.6, 0.2, 0.1, 0.1)
   names(w) <- funds4
   result <- fn_map(w, spec)
@@ -158,7 +158,7 @@ test_that("fn_map uses projection by default for convex constraints", {
 })
 
 test_that("fn_map projection path handles group constraints", {
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   spec <- add.constraint(spec, type = "group", groups = list(1:2, 3:4),
                          group_min = c(0.3, 0.3), group_max = c(0.7, 0.7))
   w <- c(0.5, 0.3, 0.15, 0.05)
@@ -175,7 +175,7 @@ test_that("fn_map projection path handles group constraints", {
 
 test_that("fn_map falls back to rp_transform for position_limit (non-convex)", {
   set.seed(6274)
-  spec <- make_spec(funds = colnames(edhec[, 1:6]))
+  spec <- make_spec_cfma(funds = colnames(edhec[, 1:6]))
   spec <- add.constraint(spec, type = "position_limit", max_pos = 4)
   w <- rep(1 / 6, 6)
   names(w) <- colnames(edhec[, 1:6])
@@ -201,7 +201,7 @@ test_that("fn_map falls back to rp_transform for leverage_exposure (non-convex)"
 test_that("fn_map verbose message on Dykstra failure fallback", {
   # Force projection failure via infeasible-for-projection but feasible-for-rp_transform
   set.seed(3981)
-  spec <- make_spec(funds = colnames(edhec[, 1:6]))
+  spec <- make_spec_cfma(funds = colnames(edhec[, 1:6]))
   spec <- add.constraint(spec, type = "position_limit", max_pos = 4)
   w <- rep(1 / 6, 6)
   names(w) <- colnames(edhec[, 1:6])
@@ -216,7 +216,7 @@ test_that("fn_map verbose message on Dykstra failure fallback", {
 
 test_that("fn_map relax=TRUE relaxes position limit constraints", {
   set.seed(4526)
-  spec <- make_spec(funds = colnames(edhec[, 1:6]))
+  spec <- make_spec_cfma(funds = colnames(edhec[, 1:6]))
   spec <- add.constraint(spec, type = "position_limit", max_pos = 2)
   w <- rep(1 / 6, 6)
   names(w) <- colnames(edhec[, 1:6])
@@ -275,7 +275,7 @@ test_that("fn_map errors on non-portfolio input", {
 })
 
 test_that("fn_map preserves weight names", {
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   w <- c(0.3, 0.3, 0.2, 0.2)
   names(w) <- funds4
   result <- fn_map(w, spec)
@@ -284,7 +284,7 @@ test_that("fn_map preserves weight names", {
 
 test_that("fn_map method argument accepts rp_transform explicitly", {
   set.seed(5723)
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   w <- c(0.6, 0.2, 0.1, 0.1)
   names(w) <- funds4
   result <- fn_map(w, spec, method = "rp_transform")
@@ -298,28 +298,28 @@ test_that("fn_map method argument accepts rp_transform explicitly", {
 # ============================================================================
 
 test_that("check_constraints returns TRUE for feasible weights", {
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   w <- c(0.3, 0.3, 0.2, 0.2)
   result <- check_constraints(w, spec)
   expect_true(result)
 })
 
 test_that("check_constraints returns FALSE for box violation", {
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   w <- c(0.7, 0.1, 0.1, 0.1)
   result <- check_constraints(w, spec)
   expect_false(result)
 })
 
 test_that("check_constraints returns FALSE for weight_sum violation", {
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   w <- c(0.5, 0.5, 0.5, 0.5)
   result <- check_constraints(w, spec)
   expect_false(result)
 })
 
 test_that("check_constraints detects group constraint violations", {
-  spec <- make_spec()
+  spec <- make_spec_cfma()
   spec <- add.constraint(spec, type = "group", groups = list(1:2, 3:4),
                          group_min = c(0.4, 0.4), group_max = c(0.6, 0.6))
   # Group 1 sum = 0.1, violates group_min = 0.4

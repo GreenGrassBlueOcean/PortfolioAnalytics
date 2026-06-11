@@ -278,10 +278,15 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
       cvxr_wts <- (cvxr_wts / sum(cvxr_wts)) * min_sum
     }
   }
-  # Clamp weights to box constraints to correct for solver tolerance
+  # Clamp weights to box constraints only for sub-tolerance solver drift,
+  # never for real violations (which signal infeasibility, not numerical noise).
   if (!is.null(constraints$min) && !is.null(constraints$max)) {
-    cvxr_wts <- pmax(cvxr_wts, constraints$min)
-    cvxr_wts <- pmin(cvxr_wts, constraints$max)
+    lb_viol <- pmax(constraints$min - cvxr_wts, 0)
+    ub_viol <- pmax(cvxr_wts - constraints$max, 0)
+    if (max(lb_viol, ub_viol) <= 1e-5) {
+      cvxr_wts <- pmax(cvxr_wts, constraints$min)
+      cvxr_wts <- pmin(cvxr_wts, constraints$max)
+    }
   }
 
   names(cvxr_wts) <- colnames(R)

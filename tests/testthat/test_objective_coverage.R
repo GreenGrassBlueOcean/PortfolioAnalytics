@@ -6,7 +6,7 @@ R4 <- edhec[1:60, 1:4]
 colnames(R4) <- c("CA", "CTAG", "DS", "EM")
 funds <- colnames(R4)
 
-base_portf <- function() {
+base_portf_oc <- function() {
   p <- portfolio.spec(assets = funds)
   p <- add.constraint(p, type = "full_investment")
   p <- add.constraint(p, type = "long_only")
@@ -45,7 +45,7 @@ test_that("add.objective errors when portfolio is not a portfolio object", {
 })
 
 test_that("add.objective errors when name is missing for non-QU type", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(portfolio = p, type = "return"),
     "you must supply a name"
@@ -53,7 +53,7 @@ test_that("add.objective errors when name is missing for non-QU type", {
 })
 
 test_that("add.objective errors when arguments is not a list", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(portfolio = p, type = "return", name = "mean",
                   arguments = "bad"),
@@ -62,13 +62,13 @@ test_that("add.objective errors when arguments is not a list", {
 })
 
 test_that("add.objective with type='null' returns portfolio unchanged", {
-  p <- base_portf()
+  p <- base_portf_oc()
   p2 <- add.objective(p, type = "null", name = "whatever")
   expect_equal(length(p2$objectives), 0)
 })
 
 test_that("add.objective with indexnum updates specific slot", {
-  p <- base_portf()
+  p <- base_portf_oc()
   p <- add.objective(p, type = "return", name = "mean")
   p <- add.objective(p, type = "risk", name = "StdDev")
   # Overwrite the first objective
@@ -82,7 +82,7 @@ test_that("add.objective with indexnum updates specific slot", {
 # ===========================================================================
 
 test_that("risk_budget_objective errors on mismatched min/max_prisk lengths", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(p, type = "risk_budget", name = "StdDev",
                   min_prisk = c(0.1, 0.2), max_prisk = c(0.3, 0.4, 0.5)),
@@ -91,7 +91,7 @@ test_that("risk_budget_objective errors on mismatched min/max_prisk lengths", {
 })
 
 test_that("risk_budget_objective errors when min_prisk has wrong length", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(p, type = "risk_budget", name = "StdDev",
                   min_prisk = c(0.1, 0.2)),
@@ -100,7 +100,7 @@ test_that("risk_budget_objective errors when min_prisk has wrong length", {
 })
 
 test_that("risk_budget_objective errors when max_prisk has wrong length", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(p, type = "risk_budget", name = "StdDev",
                   max_prisk = c(0.1, 0.2)),
@@ -109,7 +109,7 @@ test_that("risk_budget_objective errors when max_prisk has wrong length", {
 })
 
 test_that("risk_budget_objective replicates scalar min/max_prisk", {
-  p <- base_portf()
+  p <- base_portf_oc()
   p <- add.objective(p, type = "risk_budget", name = "StdDev",
                      min_prisk = 0.1, max_prisk = 0.5)
   obj <- p$objectives[[1]]
@@ -124,7 +124,7 @@ test_that("risk_budget_objective replicates scalar min/max_prisk", {
 # ===========================================================================
 
 test_that("weight_concentration_objective errors when conc_groups is not a list", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(p, type = "weight_concentration", name = "HHI",
                   conc_aversion = 0.1, conc_groups = c(1, 2)),
@@ -133,7 +133,7 @@ test_that("weight_concentration_objective errors when conc_groups is not a list"
 })
 
 test_that("weight_concentration_objective errors on length mismatch", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(p, type = "weight_concentration", name = "HHI",
                   conc_aversion = c(0.1, 0.2, 0.3),
@@ -143,7 +143,7 @@ test_that("weight_concentration_objective errors on length mismatch", {
 })
 
 test_that("weight_concentration_objective errors when conc_aversion is vector without groups", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     add.objective(p, type = "weight_concentration", name = "HHI",
                   conc_aversion = c(0.1, 0.2)),
@@ -152,7 +152,7 @@ test_that("weight_concentration_objective errors when conc_aversion is vector wi
 })
 
 test_that("weight_concentration_objective replicates scalar conc_aversion to groups", {
-  p <- base_portf()
+  p <- base_portf_oc()
   p <- add.objective(p, type = "weight_concentration", name = "HHI",
                      conc_aversion = 0.1,
                      conc_groups = list(c(1, 2), c(3, 4)))
@@ -173,7 +173,7 @@ test_that("insert_objectives errors on non-portfolio input", {
 })
 
 test_that("insert_objectives errors when objectives is not a list", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     insert_objectives(portfolio = p, objectives = "bad"),
     "objectives must be passed in as a list"
@@ -181,7 +181,7 @@ test_that("insert_objectives errors when objectives is not a list", {
 })
 
 test_that("insert_objectives errors when list contains non-objective", {
-  p <- base_portf()
+  p <- base_portf_oc()
   expect_error(
     insert_objectives(portfolio = p, objectives = list("not_an_objective")),
     "all objects in objectives must be of class"
@@ -189,7 +189,7 @@ test_that("insert_objectives errors when list contains non-objective", {
 })
 
 test_that("insert_objectives sets objectives on valid input", {
-  p <- base_portf()
+  p <- base_portf_oc()
   obj <- return_objective(name = "mean")
   p2 <- insert_objectives(p, list(obj))
   expect_equal(length(p2$objectives), 1)

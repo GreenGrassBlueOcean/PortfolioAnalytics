@@ -21,7 +21,7 @@ colnames(R_small) <- funds
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
-make_portf <- function(obj_specs, assets = funds, add_constraints = TRUE) {
+make_portf_ma <- function(obj_specs, assets = funds, add_constraints = TRUE) {
   p <- portfolio.spec(assets = assets)
   if (add_constraints) {
     p <- add.constraint(p, type = "full_investment")
@@ -127,7 +127,7 @@ test_that("CCCgarch.MM preserves existing momentargs", {
 context("moment.functions advanced: GARCH detection in v2")
 
 test_that("GARCH loop in v2 is bypassed when no garch argument", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   
   # Should use sample moments, no GARCH
   moments <- set.portfolio.moments(R_small, portf)
@@ -148,10 +148,10 @@ test_that("GARCH loop in v2 is bypassed when no garch argument", {
 context("moment.functions advanced: per-objective clean returns in v2")
 
 test_that("v2 uses cleaned returns when objective has clean argument", {
-  portf_clean <- make_portf(list(
+  portf_clean <- make_portf_ma(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt"))
   ))
-  portf_raw <- make_portf(list(
+  portf_raw <- make_portf_ma(list(
     list(type = "risk", name = "StdDev")
   ))
   
@@ -166,7 +166,7 @@ test_that("v2 uses cleaned returns when objective has clean argument", {
 test_that("v2 per-objective clean: mixed clean/raw objectives use correct data", {
   # First objective: StdDev with clean=boudt -> uses cleanR
   # Second objective: VaR without clean -> uses raw R
-  portf_mixed <- make_portf(list(
+  portf_mixed <- make_portf_ma(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt")),
     list(type = "risk", name = "VaR")
   ))
@@ -190,10 +190,10 @@ test_that("v2 clean path: sigma from cleaned data differs when outliers present"
   R_outlier <- R_small
   R_outlier[1, 1] <- 0.5  # extreme return
   
-  portf_clean <- make_portf(list(
+  portf_clean <- make_portf_ma(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt"))
   ), assets = colnames(R_outlier))
-  portf_raw <- make_portf(list(
+  portf_raw <- make_portf_ma(list(
     list(type = "risk", name = "StdDev")
   ), assets = colnames(R_outlier))
   
@@ -211,7 +211,7 @@ test_that("v2 clean path: sigma from cleaned data differs when outliers present"
 context("moment.functions advanced: v2 boudt method edge cases")
 
 test_that("v2 method=boudt with CSM objective produces all 4 moments", {
-  portf <- make_portf(list(list(type = "risk", name = "CSM")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "CSM")))
   
   moments <- set.portfolio.moments(R_small, portf, method = "boudt")
   expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"))
@@ -222,7 +222,7 @@ test_that("v2 method=boudt with CSM objective produces all 4 moments", {
 })
 
 test_that("v2 method=boudt with k=2 produces different moments than k=1", {
-  portf <- make_portf(list(list(type = "risk", name = "VaR")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "VaR")))
   
   m1 <- set.portfolio.moments(R_small, portf, method = "boudt", k = 1)
   m2 <- set.portfolio.moments(R_small, portf, method = "boudt", k = 2)
@@ -231,10 +231,10 @@ test_that("v2 method=boudt with k=2 produces different moments than k=1", {
 })
 
 test_that("v2 method=boudt with clean objective uses cleaned data for fit", {
-  portf <- make_portf(list(
+  portf <- make_portf_ma(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt"))
   ))
-  portf_raw <- make_portf(list(
+  portf_raw <- make_portf_ma(list(
     list(type = "risk", name = "StdDev")
   ))
   
@@ -255,7 +255,7 @@ test_that("v2 method=boudt with clean objective uses cleaned data for fit", {
 context("moment.functions advanced: v2 meucci method")
 
 test_that("v2 method=meucci posterior_p hits match.call bug (known limitation)", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   
   # set.portfolio.moments uses match.call(expand.dots=TRUE)$posterior_p which
   # returns an unevaluated symbol. Same class of bug as CCCgarch.MM $mu and
@@ -271,7 +271,7 @@ test_that("v2 method=meucci posterior_p hits match.call bug (known limitation)",
 })
 
 test_that("v2 method=meucci with ES objective produces all 4 moments", {
-  portf <- make_portf(list(list(type = "risk", name = "ES")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "ES")))
   
   moments <- set.portfolio.moments(R_small, portf, method = "meucci")
   expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"))
@@ -284,7 +284,7 @@ test_that("v2 method=meucci with ES objective produces all 4 moments", {
 })
 
 test_that("v2 method=meucci ROI=TRUE skips ES moments", {
-  portf <- make_portf(list(list(type = "risk", name = "ES")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "ES")))
   
   moments <- set.portfolio.moments(R_small, portf, method = "meucci", ROI = TRUE)
   expect_length(moments, 0)
@@ -302,7 +302,7 @@ context("moment.functions advanced: v2 black_litterman method")
 # portfolio.moments.bl() directly for the working BL moment path.
 
 test_that("v2 method=black_litterman hits known match.call bug", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   P_mat <- matrix(c(1, -1, 0), nrow = 1)
   
   expect_error(
@@ -321,7 +321,7 @@ test_that("portfolio.moments.bl with ES aliases produces all 4 moments", {
   P <- matrix(c(1, -1, 0), nrow = 1)
   
   for (alias in c("CVaR", "cVaR", "ETL", "mETL", "mES")) {
-    portf <- make_portf(list(list(type = "risk", name = alias)))
+    portf <- make_portf_ma(list(list(type = "risk", name = alias)))
     moments <- portfolio.moments.bl(R_small, portf, P = P)
     
     expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"),
@@ -330,7 +330,7 @@ test_that("portfolio.moments.bl with ES aliases produces all 4 moments", {
 })
 
 test_that("portfolio.moments.bl with CSM objective produces all 4 moments", {
-  portf <- make_portf(list(list(type = "risk", name = "CSM")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "CSM")))
   P <- matrix(c(1, -1, 0), nrow = 1)
   
   moments <- portfolio.moments.bl(R_small, portf, P = P)
@@ -342,7 +342,7 @@ test_that("portfolio.moments.bl with CSM objective produces all 4 moments", {
 })
 
 test_that("portfolio.moments.bl with custom Mu and Sigma", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   P <- matrix(c(1, -1, 0), nrow = 1)
   custom_Mu <- colMeans(R_small) * 2
   custom_Sigma <- cov(R_small) * 1.5
@@ -355,7 +355,7 @@ test_that("portfolio.moments.bl with custom Mu and Sigma", {
 })
 
 test_that("portfolio.moments.bl multiple clean methods warns", {
-  portf <- make_portf(list(
+  portf <- make_portf_ma(list(
     list(type = "risk", name = "StdDev", arguments = list(clean = "boudt")),
     list(type = "risk", name = "ES", arguments = list(clean = "geltinger"))
   ))
@@ -374,7 +374,7 @@ test_that("portfolio.moments.bl multiple clean methods warns", {
 context("moment.functions advanced: portfolio.moments.boudt paths")
 
 test_that("portfolio.moments.boudt with CSM objective", {
-  portf <- make_portf(list(list(type = "risk", name = "CSM")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "CSM")))
   
   moments <- portfolio.moments.boudt(R_small, portf)
   expect_equal(sort(names(moments)), c("m3", "m4", "mu", "sigma"))
@@ -382,7 +382,7 @@ test_that("portfolio.moments.boudt with CSM objective", {
 
 test_that("portfolio.moments.boudt CSM mu uses raw mean (no na.rm)", {
   # CSM is in the VaR/mVaR group, which does NOT use na.rm
-  portf <- make_portf(list(list(type = "risk", name = "CSM")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "CSM")))
   moments <- portfolio.moments.boudt(R_small, portf)
   
   expected_mu <- matrix(colMeans(R_small), ncol = 1)
@@ -390,7 +390,7 @@ test_that("portfolio.moments.boudt CSM mu uses raw mean (no na.rm)", {
 })
 
 test_that("portfolio.moments.boudt StdDev mu uses na.rm=TRUE", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   moments <- portfolio.moments.boudt(R_small, portf)
   
   expected_mu <- matrix(as.vector(apply(R_small, 2, mean, na.rm = TRUE)), ncol = 1)
@@ -398,7 +398,7 @@ test_that("portfolio.moments.boudt StdDev mu uses na.rm=TRUE", {
 })
 
 test_that("portfolio.moments.boudt ETL skipped with ROI=TRUE", {
-  portf <- make_portf(list(list(type = "risk", name = "ETL")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "ETL")))
   moments <- portfolio.moments.boudt(R_small, portf, ROI = TRUE)
   
   expect_length(moments, 0)
@@ -516,7 +516,7 @@ test_that("set.portfolio.moments with unknown objective name produces empty", {
 })
 
 test_that("set.portfolio.moments with NULL momentargs works", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   
   moments <- set.portfolio.moments(R_small, portf, momentargs = NULL)
   expect_true(!is.null(moments$mu))
@@ -524,7 +524,7 @@ test_that("set.portfolio.moments with NULL momentargs works", {
 })
 
 test_that("set.portfolio.moments preserves pre-existing momentargs fields", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   
   existing <- list(custom_data = "keep_me")
   moments <- set.portfolio.moments(R_small, portf, momentargs = existing)
@@ -534,7 +534,7 @@ test_that("set.portfolio.moments preserves pre-existing momentargs fields", {
 })
 
 test_that("set.portfolio.moments first-writer-wins with pre-set mu", {
-  portf <- make_portf(list(list(type = "risk", name = "StdDev")))
+  portf <- make_portf_ma(list(list(type = "risk", name = "StdDev")))
   
   custom_mu <- matrix(rep(0.99, ncol(R_small)), ncol = 1)
   moments <- set.portfolio.moments(R_small, portf, momentargs = list(mu = custom_mu))

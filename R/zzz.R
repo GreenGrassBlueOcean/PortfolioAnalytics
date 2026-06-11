@@ -11,4 +11,3 @@ NULL
 
 "_PACKAGE"
 
-globalVariables(c('filter_constraint'))

@@ -2,7 +2,7 @@
 context("check_portfolio_feasibility")
 
 # --- Helper: build a minimal portfolio spec ---
-make_spec <- function(n = 4, asset_names = paste0("A", seq_len(n))) {
+make_spec_fr <- function(n = 4, asset_names = paste0("A", seq_len(n))) {
   spec <- portfolio.spec(assets = asset_names)
   spec
 }
@@ -12,7 +12,7 @@ make_spec <- function(n = 4, asset_names = paste0("A", seq_len(n))) {
 # ============================================================
 
 test_that("fully feasible weights produce clean report", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -32,7 +32,7 @@ test_that("fully feasible weights produce clean report", {
 # ============================================================
 
 test_that("weight sum violation detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "weight_sum", min_sum = 0.99, max_sum = 1.01)
 
   w <- c(A1 = 0.5, A2 = 0.5, A3 = 0.5, A4 = 0.5)  # sum = 2.0
@@ -50,7 +50,7 @@ test_that("weight sum violation detected", {
 # ============================================================
 
 test_that("box constraint violation detected per-asset", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0.05, max = 0.40)
 
@@ -69,7 +69,7 @@ test_that("box constraint violation detected per-asset", {
 # ============================================================
 
 test_that("group constraint violation detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
   spec <- add.constraint(spec, type = "group",
@@ -91,7 +91,7 @@ test_that("group constraint violation detected", {
 # ============================================================
 
 test_that("position limit violation detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
   spec <- add.constraint(spec, type = "position_limit", max_pos = 2)
@@ -110,7 +110,7 @@ test_that("position limit violation detected", {
 # ============================================================
 
 test_that("leverage exposure violation detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "weight_sum", min_sum = -0.01, max_sum = 0.01)
   spec <- add.constraint(spec, type = "box", min = -1, max = 1)
   spec <- add.constraint(spec, type = "leverage_exposure", leverage = 1.5)
@@ -128,7 +128,7 @@ test_that("leverage exposure violation detected", {
 # ============================================================
 
 test_that("factor exposure violation detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
 
@@ -150,7 +150,7 @@ test_that("factor exposure violation detected", {
 # ============================================================
 
 test_that("diversification constraint violation detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
   spec <- add.constraint(spec, type = "diversification", div_target = 0.7)
@@ -169,7 +169,7 @@ test_that("diversification constraint violation detected", {
 # ============================================================
 
 test_that("turnover constraint produces 'not checked' entry", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "turnover", turnover_target = 0.1)
 
@@ -186,7 +186,7 @@ test_that("turnover constraint produces 'not checked' entry", {
 # ============================================================
 
 test_that("print method runs for feasible and infeasible reports", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -202,7 +202,7 @@ test_that("print method runs for feasible and infeasible reports", {
 # ============================================================
 
 test_that("summary fields are populated correctly", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0.1, max = 0.4)
 
@@ -220,7 +220,7 @@ test_that("summary fields are populated correctly", {
 # ============================================================
 
 test_that("weight_sum binding at upper bound detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "weight_sum", min_sum = 0.99, max_sum = 1.01)
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
 
@@ -235,7 +235,7 @@ test_that("weight_sum binding at upper bound detected", {
 })
 
 test_that("weight_sum binding at lower bound detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "weight_sum", min_sum = 0.99, max_sum = 1.01)
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
 
@@ -252,7 +252,7 @@ test_that("weight_sum binding at lower bound detected", {
 # ============================================================
 
 test_that("box binding at upper limit for specific assets", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -275,7 +275,7 @@ test_that("box binding at upper limit for specific assets", {
 # ============================================================
 
 test_that("group binding at upper bound detected", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
   spec <- add.constraint(spec, type = "group",
@@ -299,7 +299,7 @@ test_that("group binding at upper bound detected", {
 # ============================================================
 
 test_that("inactive constraints have positive slack", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "weight_sum", min_sum = 0.5, max_sum = 1.5)
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
 
@@ -318,7 +318,7 @@ test_that("inactive constraints have positive slack", {
 # ============================================================
 
 test_that("violated constraints have correct status and negative slack", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "weight_sum", min_sum = 0.99, max_sum = 1.01)
 
   w <- c(A1 = 0.5, A2 = 0.5, A3 = 0.5, A4 = 0.5)  # sum = 2.0
@@ -334,7 +334,7 @@ test_that("violated constraints have correct status and negative slack", {
 # ============================================================
 
 test_that("unchecked constraints get status = 'unchecked'", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "turnover", turnover_target = 0.1)
 
@@ -350,7 +350,7 @@ test_that("unchecked constraints get status = 'unchecked'", {
 # ============================================================
 
 test_that("summary binding fields are correct", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -369,7 +369,7 @@ test_that("summary binding fields are correct", {
 # ============================================================
 
 test_that("position limit exactly at limit is binding", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 1)
   spec <- add.constraint(spec, type = "position_limit", max_pos = 3)
@@ -389,7 +389,7 @@ test_that("position limit exactly at limit is binding", {
 # ============================================================
 
 test_that("as.data.frame returns data.frame with expected columns", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -404,7 +404,7 @@ test_that("as.data.frame returns data.frame with expected columns", {
 })
 
 test_that("as.data.frame has correct number of rows", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
   spec <- add.constraint(spec, type = "group",
@@ -421,7 +421,7 @@ test_that("as.data.frame has correct number of rows", {
 })
 
 test_that("as.data.frame uses 'total' for scalar constraints", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
 
   w <- c(A1 = 0.25, A2 = 0.25, A3 = 0.25, A4 = 0.25)
@@ -433,7 +433,7 @@ test_that("as.data.frame uses 'total' for scalar constraints", {
 })
 
 test_that("as.data.frame status column has correct values", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
   spec <- add.constraint(spec, type = "turnover", turnover_target = 0.1)
@@ -449,7 +449,7 @@ test_that("as.data.frame status column has correct values", {
 })
 
 test_that("as.data.frame unchecked rows have NA for numeric columns", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "turnover", turnover_target = 0.1)
 
@@ -469,7 +469,7 @@ test_that("as.data.frame unchecked rows have NA for numeric columns", {
 
 test_that("extractFeasibility.optimize.portfolio returns report", {
   # Build a mock optimization result with a feasibility_report
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -488,7 +488,7 @@ test_that("extractFeasibility.optimize.portfolio returns report", {
 })
 
 test_that("extractFeasibility with as.data.frame returns data.frame", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -573,7 +573,7 @@ test_that("solver_diagnostics NULL for random solver", {
 # ============================================================
 
 test_that("violation details structure unchanged for box", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0.05, max = 0.40)
 
@@ -595,7 +595,7 @@ test_that("violation details structure unchanged for box", {
 # ============================================================
 
 test_that("print method shows binding count", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "full_investment")
   spec <- add.constraint(spec, type = "box", min = 0, max = 0.5)
 
@@ -610,7 +610,7 @@ test_that("print method shows binding count", {
 # ============================================================
 
 test_that("all-inactive with loose constraints works", {
-  spec <- make_spec()
+  spec <- make_spec_fr()
   spec <- add.constraint(spec, type = "weight_sum", min_sum = 0.5, max_sum = 1.5)
   spec <- add.constraint(spec, type = "box", min = -1, max = 1)
 

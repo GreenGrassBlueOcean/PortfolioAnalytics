@@ -497,8 +497,9 @@ constrained_objective <- constrained_objective_v2 <- function(w, R, portfolio, .
     cLO <- constraints$cLO
     cUP <- constraints$cUP
     # Only go to penalty term if group constraint is violated
-    if(any(group_fail(w, groups, cLO, cUP))){
+    if(any(group_fail(w, groups, cLO, cUP, constraints$group_pos))){
       ngroups <- length(groups)
+      tol_gp <- .Machine$double.eps^0.5
       for(i in 1:ngroups){
         tmp_w <- w[groups[[i]]]
         # penalize for weights that are below cLO
@@ -507,6 +508,13 @@ constrained_objective <- constrained_objective_v2 <- function(w, R, portfolio, .
         }
         if(sum(tmp_w) > cUP[i]){
           out <- out + penalty * (sum(tmp_w) - cUP[i])
+        }
+        # penalize group_pos violations (too many non-zero weights in group)
+        if(!is.null(constraints$group_pos)){
+          n_nonzero <- sum(abs(tmp_w) > tol_gp)
+          if(n_nonzero > constraints$group_pos[i]){
+            out <- out + penalty * (n_nonzero - constraints$group_pos[i])
+          }
         }
       }
     }

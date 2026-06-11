@@ -303,6 +303,7 @@ constraint <- constraint_v2 <- function(type, enabled=TRUE, ..., constrclass="v2
 #' indexnum=2)
 #' @export
 add.constraint <- function(portfolio, type, enabled=TRUE, message=FALSE, ..., indexnum=NULL){
+  filter_constraint <- NULL # Guard for R CMD Check global variable warning
   # Check to make sure that the portfolio passed in is a portfolio object
   if (!is.portfolio(portfolio)) {stop("portfolio passed in is not of class portfolio")}
   

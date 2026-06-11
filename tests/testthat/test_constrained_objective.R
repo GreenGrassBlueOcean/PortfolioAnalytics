@@ -18,7 +18,7 @@ names(w_eq) <- funds
 # ---------------------------------------------------------------------------
 # Helper: minimal portfolio with return + risk objectives
 # ---------------------------------------------------------------------------
-base_portf <- function() {
+base_portf_co <- function() {
   p <- portfolio.spec(assets = funds)
   p <- add.constraint(p, type = "full_investment")
   p <- add.constraint(p, type = "long_only")
@@ -32,7 +32,7 @@ base_portf <- function() {
 # ===========================================================================
 
 test_that("constrained_objective returns a finite scalar (default)", {
-  val <- constrained_objective(w = w_eq, R = R, portfolio = base_portf())
+  val <- constrained_objective(w = w_eq, R = R, portfolio = base_portf_co())
   expect_true(is.numeric(val))
   expect_length(val, 1)
   expect_true(is.finite(val))
@@ -43,7 +43,7 @@ test_that("constrained_objective returns a finite scalar (default)", {
 # ===========================================================================
 
 test_that("constrained_objective with trace=TRUE returns list with out, weights, objective_measures", {
-  res <- constrained_objective(w = w_eq, R = R, portfolio = base_portf(),
+  res <- constrained_objective(w = w_eq, R = R, portfolio = base_portf_co(),
                                trace = TRUE)
   expect_true(is.list(res))
   expect_true(all(c("out", "weights", "objective_measures") %in% names(res)))
@@ -59,7 +59,7 @@ test_that("constrained_objective with trace=TRUE returns list with out, weights,
 # ===========================================================================
 
 test_that("normalize=FALSE penalizes weights above max_sum", {
-  p <- base_portf()
+  p <- base_portf_co()
   w_over <- c(0.5, 0.3, 0.2, 0.15)
   names(w_over) <- funds
   
@@ -73,7 +73,7 @@ test_that("normalize=FALSE penalizes weights above max_sum", {
 })
 
 test_that("normalize=FALSE penalizes weights below min_sum", {
-  p <- base_portf()
+  p <- base_portf_co()
   w_under <- c(0.1, 0.1, 0.1, 0.1)
   names(w_under) <- funds
   
@@ -455,7 +455,7 @@ test_that("weight_concentration_objective (grouped) contributes to output", {
 # ===========================================================================
 
 test_that("storage_env accumulates objective results across calls", {
-  p <- base_portf()
+  p <- base_portf_co()
   env <- new.env(parent = emptyenv())
   assign(".objectivestorage", list(), envir = env)
   
@@ -642,7 +642,7 @@ test_that("env argument passes pre-computed moments", {
 # ===========================================================================
 
 # Helper for v1 constraint objects
-make_v1_constr <- function() {
+make_v1_constr_co <- function() {
   gen <- suppressWarnings(
     constraint_v1(assets = funds, min = 0, max = 1,
                   min_sum = 0.99, max_sum = 1.01,
@@ -654,7 +654,7 @@ make_v1_constr <- function() {
 }
 
 test_that("constrained_objective_v1 processes objectives", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_co()
   
   val <- suppressWarnings(
     constrained_objective_v1(w = w_eq, R = R, constraints = gen)
@@ -664,7 +664,7 @@ test_that("constrained_objective_v1 processes objectives", {
 })
 
 test_that("constrained_objective_v1 trace returns list", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_co()
   
   res <- suppressWarnings(
     constrained_objective_v1(w = w_eq, R = R, constraints = gen, trace = TRUE)
@@ -675,7 +675,7 @@ test_that("constrained_objective_v1 trace returns list", {
 })
 
 test_that("constrained_objective_v1 normalize=FALSE penalizes sum violations", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_co()
   
   w_over <- c(0.5, 0.3, 0.2, 0.15)
   names(w_over) <- funds
@@ -692,7 +692,7 @@ test_that("constrained_objective_v1 normalize=FALSE penalizes sum violations", {
 })
 
 test_that("constrained_objective_v1 storage_env accumulates", {
-  gen <- make_v1_constr()
+  gen <- make_v1_constr_co()
   
   env <- new.env(parent = emptyenv())
   assign(".objectivestorage", list(), envir = env)
@@ -710,7 +710,7 @@ test_that("constrained_objective_v1 storage_env accumulates", {
 # ===========================================================================
 
 test_that("calibrate_penalty with pre-computed env", {
-  p <- base_portf()
+  p <- base_portf_co()
   env <- list(
     mu = matrix(colMeans(R), ncol = 1),
     sigma = cov(R)
@@ -726,7 +726,7 @@ test_that("calibrate_penalty with pre-computed env", {
 # ===========================================================================
 
 test_that("constrained_objective_v2 accepts verbose passed as a variable", {
-  p <- base_portf()
+  p <- base_portf_co()
   my_verbose <- TRUE
   # Before fix, match.call() returned the symbol `my_verbose` instead of TRUE,
   # causing isTRUE() to silently return FALSE (no print output).

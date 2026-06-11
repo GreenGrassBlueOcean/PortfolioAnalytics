@@ -6,7 +6,7 @@ R4 <- edhec[1:48, 1:4]
 colnames(R4) <- c("A", "B", "C", "D")
 
 # Helper: build a portfolio spec with given constraints
-make_portf <- function(n = 4, min_box = rep(0.05, 4), max_box = rep(0.55, 4)) {
+make_portf_cfmt1 <- function(n = 4, min_box = rep(0.05, 4), max_box = rep(0.55, 4)) {
   p <- portfolio.spec(assets = paste0("A", seq_len(n))[1:n])
   p <- add.constraint(p, type = "weight_sum", min_sum = 0.99, max_sum = 1.01)
   p <- add.constraint(p, type = "box", min = min_box, max = max_box)
@@ -18,7 +18,7 @@ make_portf <- function(n = 4, min_box = rep(0.05, 4), max_box = rep(0.55, 4)) {
 # ============================================================================
 
 test_that("fn_map projection path returns feasible weights for box + weight_sum", {
-  portf <- make_portf()
+  portf <- make_portf_cfmt1()
   # Weights that violate box constraints
 
   bad_w <- c(0.01, 0.02, 0.6, 0.37)
@@ -32,7 +32,7 @@ test_that("fn_map projection path returns feasible weights for box + weight_sum"
 })
 
 test_that("fn_map projection handles group constraints", {
-  portf <- make_portf()
+  portf <- make_portf_cfmt1()
   portf <- add.constraint(portf, type = "group",
                           groups = list(c(1, 2), c(3, 4)),
                           group_min = c(0.3, 0.3),
@@ -51,7 +51,7 @@ test_that("fn_map projection handles group constraints", {
 # ============================================================================
 
 test_that("fn_map rp_transform path works for simple violations", {
-  portf <- make_portf()
+  portf <- make_portf_cfmt1()
   bad_w <- c(0.01, 0.02, 0.6, 0.37)
   names(bad_w) <- names(portf$assets)
   
@@ -89,7 +89,7 @@ test_that("fn_map relax=TRUE relaxes box constraints on hard problems", {
 # ============================================================================
 
 test_that("fn_map relax=TRUE relaxes group constraints", {
-  portf <- make_portf()
+  portf <- make_portf_cfmt1()
   # Group constraints that conflict with each other
   portf <- add.constraint(portf, type = "group",
                           groups = list(c(1, 2), c(3, 4)),
@@ -112,7 +112,7 @@ test_that("fn_map relax=TRUE relaxes group constraints", {
 # ============================================================================
 
 test_that("fn_map handles position limit constraint violations", {
-  portf <- make_portf()
+  portf <- make_portf_cfmt1()
   portf <- add.constraint(portf, type = "position_limit", max_pos = 2)
   
   # All four weights non-zero, violates max_pos=2
@@ -125,7 +125,7 @@ test_that("fn_map handles position limit constraint violations", {
 })
 
 test_that("fn_map relax=TRUE relaxes position limit constraints", {
-  portf <- make_portf(min_box = rep(0.1, 4), max_box = rep(0.6, 4))
+  portf <- make_portf_cfmt1(min_box = rep(0.1, 4), max_box = rep(0.6, 4))
   portf <- add.constraint(portf, type = "position_limit",
                           max_pos = 1)
   # Can't have only 1 asset and sum to 1.0 with max=0.6

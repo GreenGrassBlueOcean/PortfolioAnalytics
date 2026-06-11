@@ -5,7 +5,7 @@ data(edhec, package = "PerformanceAnalytics")
 R5 <- edhec[1:36, 1:5]
 R3 <- R5[, 1:3]
 
-make_portf <- function(assets) {
+make_portf_opc2 <- function(assets) {
   p <- portfolio.spec(assets = assets)
   p <- add.constraint(p, type = "full_investment")
   p <- add.constraint(p, type = "box", min = 0.05, max = 0.8)
@@ -16,7 +16,7 @@ make_portf <- function(assets) {
 # --- R has more columns than portfolio assets (L877-879) ----------------------
 
 test_that("optimize.portfolio subsets R when ncol(R) > N", {
-  portf <- make_portf(colnames(R3))
+  portf <- make_portf_opc2(colnames(R3))
   opt <- optimize.portfolio(R5, portf, optimize_method = "ROI")
   expect_equal(length(opt$weights), 3)
   expect_equal(names(opt$weights), colnames(R3))
@@ -27,7 +27,7 @@ test_that("optimize.portfolio subsets R when ncol(R) > N", {
 # instead of silently leaving dotargs unassigned and crashing downstream.
 
 test_that("optimize.portfolio stops when momentFUN fails", {
-  portf <- make_portf(colnames(R3))
+  portf <- make_portf_opc2(colnames(R3))
   bad_moment <- function(R, portfolio, ...) stop("moment failure")
   # Error includes "Cannot proceed" and the original failure text
   expect_error(
@@ -45,7 +45,7 @@ test_that("optimize.portfolio stops when momentFUN fails", {
 # --- portfolio.list path in optimize.portfolio (L781-802) ---------------------
 
 test_that("optimize.portfolio handles portfolio.list input", {
-  portf1 <- make_portf(colnames(R3))
+  portf1 <- make_portf_opc2(colnames(R3))
   portf2 <- portfolio.spec(assets = colnames(R3))
   portf2 <- add.constraint(portf2, type = "full_investment")
   portf2 <- add.constraint(portf2, type = "box", min = 0.1, max = 0.7)
@@ -60,7 +60,7 @@ test_that("optimize.portfolio handles portfolio.list input", {
 # --- message=TRUE branches ---------------------------------------------------
 
 test_that("optimize.portfolio with message=TRUE produces output", {
-  portf <- make_portf(colnames(R3))
+  portf <- make_portf_opc2(colnames(R3))
   expect_message(
     opt <- optimize.portfolio(R3, portf, optimize_method = "ROI",
                               message = TRUE),
@@ -72,7 +72,7 @@ test_that("optimize.portfolio with message=TRUE produces output", {
 # --- trailing_periods backward compat in rebalancing --------------------------
 
 test_that("optimize.portfolio.rebalancing supports trailing_periods argument", {
-  portf <- make_portf(colnames(R3))
+  portf <- make_portf_opc2(colnames(R3))
   opt_rebal <- optimize.portfolio.rebalancing(
     R3, portf,
     optimize_method = "ROI",
@@ -86,7 +86,7 @@ test_that("optimize.portfolio.rebalancing supports trailing_periods argument", {
 # --- portfolio.list path in optimize.portfolio.rebalancing --------------------
 
 test_that("optimize.portfolio.rebalancing handles portfolio.list input", {
-  portf1 <- make_portf(colnames(R3))
+  portf1 <- make_portf_opc2(colnames(R3))
   portf2 <- portfolio.spec(assets = colnames(R3))
   portf2 <- add.constraint(portf2, type = "full_investment")
   portf2 <- add.constraint(portf2, type = "box", min = 0.1, max = 0.7)

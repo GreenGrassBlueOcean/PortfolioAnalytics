@@ -333,7 +333,7 @@ maxret_milp_opt <- function(R, constraints, moments, target, solver="glpk", cont
   Amat <- rbind(Amat, c(rep(0, N), rep(1, N)))
 
   dir <- c("<=", ">=", targetdir, rep("<=", 2*N), "<=", "<=")
-  rhs <- c(1, 1, targetrhs, rep(0, 2*N), -min_pos, max_pos)
+  rhs <- c(constraints$max_sum, constraints$min_sum, targetrhs, rep(0, 2*N), -min_pos, max_pos)
 
   # Include group constraints
   if(try(!is.null(constraints$groups), silent=TRUE)){
@@ -907,13 +907,13 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
   rhs <- c(rhs, 0)
   dir <- c(dir, ">=")
 
-  # Amat for lower box constraints
-  Amat <- rbind(Amat, cbind(diag(N), diag(N), diag(N)))
+  # Amat for lower box constraints (apply only to w, not w+/w-)
+  Amat <- rbind(Amat, cbind(diag(N), matrix(0, N, N), matrix(0, N, N)))
   rhs <- c(rhs, constraints$min)
   dir <- c(dir, rep(">=", N))
 
-  # Amat for upper box constraints
-  Amat <- rbind(Amat, cbind(-diag(N), -diag(N), -diag(N)))
+  # Amat for upper box constraints (apply only to w, not w+/w-)
+  Amat <- rbind(Amat, cbind(-diag(N), matrix(0, N, N), matrix(0, N, N)))
   rhs <- c(rhs, -constraints$max)
   dir <- c(dir, rep(">=", N))
 
@@ -926,8 +926,9 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
     }
     cLO <- if(is.null(constraints$cLO)) rep(-Inf, n.groups) else constraints$cLO
     cUP <- if(is.null(constraints$cUP)) rep(Inf, n.groups) else constraints$cUP
-    Amat <- rbind(Amat, cbind(Amat.group, Amat.group, Amat.group))
-    Amat <- rbind(Amat, cbind(-Amat.group, -Amat.group, -Amat.group))
+    zeros.group <- matrix(0, n.groups, N)
+    Amat <- rbind(Amat, cbind(Amat.group, zeros.group, zeros.group))
+    Amat <- rbind(Amat, cbind(-Amat.group, zeros.group, zeros.group))
     dir <- c(dir, rep(">=", (n.groups + n.groups)))
     rhs <- c(rhs, cLO, -cUP)
   }
@@ -935,8 +936,9 @@ gmv_opt_ptc <- function(R, constraints, moments, lambda, target, init_weights, s
   # Add the factor exposures to Amat, dir, and rhs
   if(!is.null(constraints$B)){
     t.B <- t(constraints$B)
-    Amat <- rbind(Amat, cbind(t.B, t.B, t.B))
-    Amat <- rbind(Amat, cbind(-t.B, -t.B, -t.B))
+    zeros.B <- matrix(0, nrow(t.B), N)
+    Amat <- rbind(Amat, cbind(t.B, zeros.B, zeros.B))
+    Amat <- rbind(Amat, cbind(-t.B, zeros.B, zeros.B))
     dir <- c(dir, rep(">=", 2 * nrow(t.B)))
     rhs <- c(rhs, constraints$lower, -constraints$upper)
   }
