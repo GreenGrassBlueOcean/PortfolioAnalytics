@@ -326,6 +326,20 @@ constrained_objective_v1 <- function(w, R, constraints, ..., trace=FALSE, normal
 calibrate_penalty <- function(R, portfolio, env = NULL, ...,
                               n_pilot = 20, scaling_factor = 10000,
                               min_penalty = 1) {
+  # Preserve RNG state so the pilot doesn't consume draws from the user's
+
+  # set.seed() sequence — otherwise set.seed(42); optimize.portfolio(...) gives
+  # different weights than upstream with identical inputs.
+  old_seed <- if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+    get(".Random.seed", envir = globalenv())
+  }
+  on.exit({
+    if (is.null(old_seed)) {
+      rm(".Random.seed", envir = globalenv())
+    } else {
+      assign(".Random.seed", old_seed, envir = globalenv())
+    }
+  }, add = TRUE)
   pilot_rp <- try(
     random_portfolios(portfolio, permutations = n_pilot,
                       rp_method = "sample", eliminate = FALSE),

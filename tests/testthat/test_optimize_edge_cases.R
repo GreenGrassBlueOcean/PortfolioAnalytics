@@ -156,17 +156,16 @@ test_that("normalize_portfolio_weights handles NULL constraints gracefully", {
   expect_equal(result, w)
 })
 
-test_that("normalize_portfolio_weights with sum(weights)=0 and max_sum triggers division by zero", {
-  # Documents the known division-by-zero vulnerability
+test_that("normalize_portfolio_weights with sum(weights)=0 warns and returns unnormalized", {
   constraints <- list(min_sum = 0.99, max_sum = 1.01)
   w <- c(0.5, -0.5)  # sum = 0
 
-  # When sum(weights) == 0: (max_sum / 0) * weights produces NaN/Inf
-  # This is a known edge case—we just document the current behavior
-  result <- normalize_portfolio_weights(w, constraints)
-  # sum(w) == 0, which is < min_sum (0.99), so min_sum normalization triggers:
-  # (0.99 / 0) * w => Inf/-Inf
-  expect_true(any(!is.finite(result)))
+  # Guard against division-by-zero: should warn and return original weights
+  expect_warning(
+    result <- normalize_portfolio_weights(w, constraints),
+    "sum\\(weights\\) near zero"
+  )
+  expect_equal(result, w)
 })
 
 # ============================================================================

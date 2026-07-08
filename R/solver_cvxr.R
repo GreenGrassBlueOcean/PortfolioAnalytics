@@ -71,7 +71,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   sigma_value <- moments$sigma
 
   # Efficient frontier support
-  ef <- if (methods::hasArg(ef)) match.call(expand.dots = TRUE)$ef else FALSE
+  ef <- if (!is.null(dots$ef)) dots$ef else FALSE
   if (ef) {
     reward <- FALSE
     mean_idx <- which(vapply(portfolio$objectives, function(x) x$name, character(1)) == "mean")
@@ -94,7 +94,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
     constraints_cvxr <- list()
     tmpname <- "HHI"
   } else if (reward & risk & !risk_ES & !risk_CSM & !risk_HHI & !risk_EQS) {
-    if (methods::hasArg(maxSR)) maxSR <- match.call(expand.dots = TRUE)$maxSR
+    if (!is.null(dots$maxSR)) maxSR <- dots$maxSR
     if (!maxSR) {
       obj <- CVXR::quad_form(wts, sigma_value) - (t(mean_value) %*% wts) / lambda
       constraints_cvxr <- list()
@@ -106,8 +106,8 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
     }
   } else if (risk_ES & !risk_CSM & !risk_EQS) {
     if (reward) {
-      if (methods::hasArg(maxSTARR)) maxSTARR <- match.call(expand.dots = TRUE)$maxSTARR else maxSTARR <- TRUE
-      if (methods::hasArg(ESratio)) maxSTARR <- match.call(expand.dots = TRUE)$ESratio else maxSTARR <- maxSTARR
+      if (!is.null(dots$maxSTARR)) maxSTARR <- dots$maxSTARR else maxSTARR <- TRUE
+      if (!is.null(dots$ESratio)) maxSTARR <- dots$ESratio else maxSTARR <- maxSTARR
     }
     if (maxSTARR) {
       obj <- zeta + (1 / (Tobs * alpha)) * sum(z)
@@ -123,7 +123,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
     }
   } else if (!risk_ES & risk_CSM & !risk_EQS) {
     if (reward) {
-      if (methods::hasArg(CSMratio)) CSMratio <- match.call(expand.dots = TRUE)$CSMratio else CSMratio <- TRUE
+      if (!is.null(dots$CSMratio)) CSMratio <- dots$CSMratio else CSMratio <- TRUE
     }
     if (CSMratio) {
       obj <- zeta + (1 / (alpha * sqrt(Tobs))) * t_var
@@ -141,14 +141,14 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
     }
   } else if (!risk_ES & !risk_CSM & risk_EQS) {
     if (reward) {
-      if (methods::hasArg(EQSratio)) EQSratio <- match.call(expand.dots = TRUE)$EQSratio else EQSratio <- TRUE
+      if (!is.null(dots$EQSratio)) EQSratio <- dots$EQSratio else EQSratio <- TRUE
     }
     if (EQSratio) {
-      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(CVXR::square(CVXR::pos(X %*% wts)) - zeta))
+      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(CVXR::square(CVXR::pos(-X %*% wts)) - zeta))
       constraints_cvxr <- list(t(mean_value) %*% wts == 1, sum(wts) >= 0)
       tmpname <- "EQS ratio"
     } else {
-      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(CVXR::square(CVXR::pos(X %*% wts)) - zeta))
+      obj <- zeta + (1 / (alpha * Tobs)) * sum(CVXR::pos(CVXR::square(CVXR::pos(-X %*% wts)) - zeta))
       constraints_cvxr <- list()
       tmpname <- "EQS"
     }
@@ -158,11 +158,11 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   }
 
   # Weight scale for maximizing return per unit risk
-  if (!maxSR & !maxSTARR & !CSMratio) weight_scale <- 1 else weight_scale <- sum(wts)
+  if (!maxSR & !maxSTARR & !CSMratio & !EQSratio) weight_scale <- 1 else weight_scale <- sum(wts)
 
   # --- Build CVXR constraints ---
   # Weight sum constraint
-  if (!maxSR & !maxSTARR & !CSMratio) {
+  if (!maxSR & !maxSTARR & !CSMratio & !EQSratio) {
     if (!is.null(constraints$max_sum) & !is.infinite(constraints$max_sum) &
         constraints$max_sum - constraints$min_sum <= 0.001) {
       constraints_cvxr <- append(constraints_cvxr, sum(wts) == constraints$max_sum)
@@ -191,11 +191,14 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   }
 
   # Group constraint
-  i <- 1
-  for (g in constraints$groups) {
-    constraints_cvxr <- append(constraints_cvxr, sum(wts[g]) >= constraints$cLO[i] * weight_scale)
-    constraints_cvxr <- append(constraints_cvxr, sum(wts[g]) <= constraints$cUP[i] * weight_scale)
-    i <- i + 1
+  if (!is.null(constraints$groups) && length(constraints$groups) > 0 &&
+      !is.null(constraints$cLO) && !is.null(constraints$cUP)) {
+    i <- 1
+    for (g in constraints$groups) {
+      constraints_cvxr <- append(constraints_cvxr, sum(wts[g]) >= constraints$cLO[i] * weight_scale)
+      constraints_cvxr <- append(constraints_cvxr, sum(wts[g]) <= constraints$cUP[i] * weight_scale)
+      i <- i + 1
+    }
   }
 
   # Target return constraint
@@ -267,7 +270,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
 
   # --- Extract results ---
   cvxr_wts <- CVXR::value(wts)
-  if (maxSR | maxSTARR | CSMratio) cvxr_wts <- cvxr_wts / sum(cvxr_wts)
+  if (maxSR | maxSTARR | CSMratio | EQSratio) cvxr_wts <- cvxr_wts / sum(cvxr_wts)
   cvxr_wts <- as.vector(cvxr_wts)
 
   # Normalize weights to satisfy sum constraints
@@ -303,7 +306,7 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
   } else if (!reward & risk & !risk_ES & !risk_CSM & risk_HHI) {
     obj_cvxr[["StdDev"]] <- sqrt(t(cvxr_wts) %*% sigma_value %*% cvxr_wts)
     obj_cvxr[[tmpname]] <- (opt_value - t(cvxr_wts) %*% sigma_value %*% cvxr_wts) / lambda_hhi
-  } else if (!maxSR & !maxSTARR & !CSMratio) {
+  } else if (!maxSR & !maxSTARR & !CSMratio & !EQSratio) {
     obj_cvxr[[tmpname]] <- opt_value
     if (reward & risk) {
       obj_cvxr[["mean"]] <- cvxr_wts %*% mean_value
@@ -320,6 +323,9 @@ solve_cvxr <- function(R, portfolio, constraints, moments, penalty,
     } else if (CSMratio) {
       obj_cvxr[["CSM"]] <- opt_value / raw_wts_sum
       obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["CSM"]]
+    } else if (EQSratio) {
+      obj_cvxr[["EQS"]] <- opt_value / raw_wts_sum
+      obj_cvxr[[tmpname]] <- obj_cvxr[["mean"]] / obj_cvxr[["EQS"]]
     }
   }
   if (ef) obj_cvxr[["mean"]] <- cvxr_wts %*% mean_value

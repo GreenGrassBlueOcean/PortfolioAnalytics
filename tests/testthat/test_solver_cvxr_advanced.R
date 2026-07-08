@@ -254,21 +254,28 @@ test_that("CVXR min EQS produces valid result", {
 # 11. EQS ratio
 # ============================================================================
 
-test_that("CVXR max EQS ratio returns result or optimization_failure", {
+test_that("CVXR max EQS ratio returns valid long-only result", {
   skip_if_not_installed("CVXR")
 
-  # EQS ratio can be numerically challenging depending on the data;
-  # we verify the solver at least runs and returns a structured result.
   p <- portfolio.spec(assets = colnames(R5))
   p <- add.constraint(p, type = "full_investment")
   p <- add.constraint(p, type = "long_only")
   p <- add.objective(p, type = "risk", name = "EQS")
   p <- add.objective(p, type = "return", name = "mean")
 
-  result <- optimize.portfolio(R5, p, optimize_method = "CVXR", EQSratio = TRUE)
-  expect_true(
-    inherits(result, "optimize.portfolio") || is.optimization_failure(result)
-  )
+  # Pass EQSratio as a variable (not literal) to regression-test dots$ fix
+  flag <- TRUE
+  result <- optimize.portfolio(R5, p, optimize_method = "CVXR", EQSratio = flag)
+  expect_s3_class(result, "optimize.portfolio")
+
+  w <- result$weights
+  expect_equal(sum(w), 1, tolerance = 0.01)
+  expect_true(all(w >= -1e-6))
+
+  # EQS ratio objective should be present and finite
+  eqs_val <- result$objective_measures[["EQS ratio"]]
+  expect_true(!is.null(eqs_val))
+  expect_true(is.finite(eqs_val))
 })
 
 # ============================================================================

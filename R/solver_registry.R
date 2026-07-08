@@ -13,6 +13,7 @@
   ROI      = "solve_roi",
   quadprog = "solve_roi",
   glpk     = "solve_roi",
+  Rglpk    = "solve_roi",
   symphony = "solve_roi",
   ipop     = "solve_roi",
   pso      = "solve_pso",
@@ -23,6 +24,7 @@
   GLPK     = "solve_cvxr",
   GLPK_MI  = "solve_cvxr",
   OSQP     = "solve_cvxr",
+  osqp     = "solve_cvxr",
   CPLEX    = "solve_cvxr",
   SCS      = "solve_cvxr",
   ECOS     = "solve_cvxr",
@@ -98,14 +100,26 @@ get_solver <- function(name) {
 #' @keywords internal
 normalize_portfolio_weights <- function(weights, constraints) {
   if (!is.null(constraints$min_sum) | !is.null(constraints$max_sum)) {
+    ws <- sum(weights)
+    if (abs(ws) < .Machine$double.eps * 100) {
+      warning("normalize_portfolio_weights: sum(weights) near zero; ",
+              "returning unnormalized weights", call. = FALSE)
+      return(weights)
+    }
     if (!is.null(constraints$max_sum) & constraints$max_sum != Inf) {
-      if (sum(weights) > constraints$max_sum) {
-        weights <- (constraints$max_sum / sum(weights)) * weights
+      if (ws > constraints$max_sum) {
+        weights <- (constraints$max_sum / ws) * weights
       }
     }
     if (!is.null(constraints$min_sum) & constraints$min_sum != -Inf) {
-      if (sum(weights) < constraints$min_sum) {
-        weights <- (constraints$min_sum / sum(weights)) * weights
+      if (ws < constraints$min_sum) {
+        if (ws < 0 && constraints$min_sum > 0) {
+          warning("normalize_portfolio_weights: negative weight sum with ",
+                  "positive min_sum; returning unnormalized weights",
+                  call. = FALSE)
+          return(weights)
+        }
+        weights <- (constraints$min_sum / ws) * weights
       }
     }
   }

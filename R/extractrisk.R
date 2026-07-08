@@ -47,7 +47,7 @@ extract_risk <- function(R, w, ES_alpha = 0.05, CSM_alpha = 0.05, EQS_alpha = 0.
   res$CSM <- CVXR::psolve(p_CSM, solver = "SCS")
 
   ## EQS
-  obj_EQS <- zeta + (1 / (T * EQS_alpha)) * sum(CVXR::pos(CVXR::square(CVXR::pos(X %*% w)) - zeta))
+  obj_EQS <- zeta + (1 / (T * EQS_alpha)) * sum(CVXR::pos(CVXR::square(CVXR::pos(-X %*% w)) - zeta))
   con_EQS <- list()
   p_EQS <- CVXR::Problem(CVXR::Minimize(obj_EQS), constraints = con_EQS)
   res$EQS <- CVXR::psolve(p_EQS, solver = "SCS")
