@@ -52,6 +52,42 @@ modify.args <- function(formals, arglist, ..., dots=FALSE)
 # tmp_val <- do.call(indicator$name, .formals)
 
 
+#' Was an optional dot-argument meaningfully supplied?
+#'
+#' Optional arguments to `optimize.portfolio()` are read with the idiom
+#' `if (hasArg(x)) x <- eval.parent(match.call(expand.dots = TRUE)$x)` and then
+#' tested with `is.na(x)`. That test is unsafe in three ways, each surfacing as
+#' an error far from its cause:
+#'
+#' 1. `hasArg()` is TRUE for an argument passed explicitly as `NULL`, so the
+#'    "supplied" branch is taken and `is.na(NULL)` yields `logical(0)`.
+#'    Arithmetic on that gives a zero-length value and the next `if()` fails
+#'    with "argument is of length zero" -- for `itermax` this happened before
+#'    DEoptim was ever invoked.
+#' 2. In the `!hasArg(x) || is.na(...)` guards the same `logical(0)` makes the
+#'    `||` evaluate to `NA`, so `if (NA)` fails with "missing value where
+#'    TRUE/FALSE needed".
+#' 3. For a vector argument such as `packages`, `is.na()` returns a vector and
+#'    since R 4.3 `||` errors with "'length = 2' in coercion to 'logical(1)'",
+#'    making that documented argument impossible to supply.
+#'
+#' Treat `NULL`, zero-length and a length-one `NA` as "not supplied" -- the
+#' semantics the original guards were reaching for -- and everything else,
+#' including multi-element vectors, as supplied. Omitting an argument and
+#' passing it as `NULL` then mean the same thing.
+#'
+#' @param x The evaluated argument, or `NULL` when it was not passed.
+#' @return `TRUE` when the caller did not meaningfully supply a value.
+#' @keywords internal
+#' @noRd
+.pa_arg_missing <- function(x) {
+  if (is.null(x)) return(TRUE)
+  if (length(x) == 0L) return(TRUE)
+  if (length(x) == 1L && is.atomic(x) && is.na(x)) return(TRUE)
+  FALSE
+}
+
+
 ###############################################################################
 # R (https://r-project.org/) Numeric Methods for Optimization of Portfolios
 #

@@ -97,13 +97,24 @@ optimize.portfolio_v1 <- function(
   if(optimize_method=="DEoptim"){
     stopifnot("package:DEoptim" %in% search()  ||  requireNamespace("DEoptim",quietly = TRUE) )
     # DEoptim does 200 generations by default, so lets set the size of each generation to search_size/200)
-    if(hasArg(itermax) ){itermax <- eval.parent(match.call(expand.dots=TRUE)$itermax)
-                         itermax <- ifelse(is.na(itermax),yes = TRUE, no = itermax )
-    } else {itermax=N*50}
+    # An itermax passed explicitly as NULL used to arrive here as logical(0):
+    # hasArg() is TRUE for it, so the "supplied" branch ran and
+    # ifelse(is.na(NULL), ...) collapsed. NP then became numeric(0) and the
+    # guard below failed with "argument is of length zero", before DEoptim was
+    # ever called. NULL/NA now mean "not supplied" and fall back to the
+    # default, exactly as omitting the argument does.
+    # The old ifelse() also mapped an NA itermax to TRUE (i.e. 1), which would
+    # have made NP = search_size; that was never the intent.
+    .itermax_arg <- if (hasArg(itermax)) {
+      eval.parent(match.call(expand.dots = TRUE)$itermax)
+    } else NULL
+    itermax_supplied <- !.pa_arg_missing(.itermax_arg)
+    itermax <- if (itermax_supplied) .itermax_arg else N * 50
+
     NP = round(search_size/itermax)
     if(NP<(N*10)) NP <- N*10
     if(NP>2000) NP=2000
-    if(!hasArg(itermax) || is.na(itermax) ) {
+    if(!itermax_supplied) {
         itermax<-round(search_size/NP)
         if(itermax<50) itermax=50 #set minimum number of generations
     }
@@ -169,30 +180,49 @@ optimize.portfolio_v1 <- function(
     if(isTRUE(trace)) {
         #we can't pass trace=TRUE into constrained objective with DEoptim, because it expects a single numeric return
         tmptrace=trace
-		if(!hasArg(strategy) || is.na(eval.parent(match.call(expand.dots = TRUE)$strategy))) {
+    # Each control below is resolved ONCE through .pa_arg_missing(). The old
+    # `!hasArg(x) || is.na(eval.parent(...))` form evaluated the argument twice
+    # and broke on an explicit NULL: the `||` became NA, so `if (NA)` threw
+    # "missing value where TRUE/FALSE needed".
+		.strategy_arg <- if (hasArg(strategy)) {
+		  eval.parent(match.call(expand.dots = TRUE)$strategy)
+		} else NULL
+		if(.pa_arg_missing(.strategy_arg)) {
 		  # use DE/current-to-p-best/1
 		  strategy=6
       DEcformals$strategy=strategy
-      } else {DEcformals$strategy = eval.parent(match.call(expand.dots = TRUE)$strategy)}
-		if(!hasArg(reltol)|| is.na(eval.parent(match.call(expand.dots = TRUE)$reltol))) {
+      } else {DEcformals$strategy = .strategy_arg}
+		.reltol_arg <- if (hasArg(reltol)) {
+		  eval.parent(match.call(expand.dots = TRUE)$reltol)
+		} else NULL
+		if(.pa_arg_missing(.reltol_arg)) {
 		  # 1/1000 of 1% change in objective is significant
 		  reltol=.000001
       DEcformals$reltol=reltol
-      } else {DEcformals$reltol = eval.parent(match.call(expand.dots = TRUE)$reltol)}
-		if(!hasArg(steptol) || is.na(eval.parent(match.call(expand.dots = TRUE)$steptol))) {
+      } else {DEcformals$reltol = .reltol_arg}
+		.steptol_arg <- if (hasArg(steptol)) {
+		  eval.parent(match.call(expand.dots = TRUE)$steptol)
+		} else NULL
+		if(.pa_arg_missing(.steptol_arg)) {
 		  # number of assets times 1.5 tries to improve
 		  steptol=round(N*1.5)
       DEcformals$steptol=steptol
-      } else {DEcformals$steptol = eval.parent(match.call(expand.dots = TRUE)$steptol)}
-		if(!hasArg(c) || is.na(eval.parent(match.call(expand.dots = TRUE)$c))) {
+      } else {DEcformals$steptol = .steptol_arg}
+		.c_arg <- if (hasArg(c)) {
+		  eval.parent(match.call(expand.dots = TRUE)$c)
+		} else NULL
+		if(.pa_arg_missing(.c_arg)) {
 		  # JADE mutation parameter, this could maybe use some adjustment
 		  tmp.c=.4
       DEcformals$c=tmp.c
-      } else {DEcformals$c = eval.parent(match.call(expand.dots = TRUE)$c)}
-    if(!hasArg(storepopfrom) || is.na(eval.parent(match.call(expand.dots = TRUE)$storepopfrom))) {
+      } else {DEcformals$c = .c_arg}
+    .storepopfrom_arg <- if (hasArg(storepopfrom)) {
+      eval.parent(match.call(expand.dots = TRUE)$storepopfrom)
+    } else NULL
+    if(.pa_arg_missing(.storepopfrom_arg)) {
           storepopfrom=1
           DEcformals$storepopfrom=storepopfrom
-    } else {DEcformals$storepopfrom = eval.parent(match.call(expand.dots = TRUE)$storepopfrom)}
+    } else {DEcformals$storepopfrom = .storepopfrom_arg}
     # Local environment for trace accumulation (reentrant, no global state)
     storage_env <- new.env(parent = emptyenv())
     if(isTRUE(trace)) {
@@ -257,7 +287,15 @@ optimize.portfolio_v1 <- function(
 
           DEcformals$cluster <- rcl
         }}
-            if(!hasArg(packages) || is.na(eval.parent(match.call(expand.dots = TRUE)$packages))) {
+            # is.na() on a character vector returns a vector, and since R 4.3
+            # `||` errors with "'length = 2' in coercion to 'logical(1)'", so
+            # the old guard made `packages` impossible to supply at all.
+            .packages_arg <- if (hasArg(packages)) {
+              eval.parent(match.call(expand.dots = TRUE)$packages)
+            } else NULL
+            # No else branch, as before: when supplied, DEcformals$packages was
+            # already set by the dotargs pmatch above.
+            if(.pa_arg_missing(.packages_arg)) {
               #use all packages
               packages <- names(sessionInfo()$otherPkgs)
               DEcformals$packages <- packages
