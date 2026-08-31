@@ -40,7 +40,12 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
   DEcformals$steptol    <- if (!is.null(dots$steptol) && !is.na(dots$steptol)) dots$steptol else round(N * 1.5)
   DEcformals$c          <- if (!is.null(dots$c) && !is.na(dots$c)) dots$c else 0.4
   DEcformals$storepopfrom <- if (!is.null(dots$storepopfrom) && !is.na(dots$storepopfrom)) dots$storepopfrom else 1
-  DEcformals$packages   <- if (!is.null(dots$packages) && !is.na(dots$packages)) dots$packages else names(sessionInfo()$otherPkgs)
+  # `packages` is a character VECTOR, so is.na() returns a vector and since
+  # R 4.3 `&&` errors with "'length = 2' in coercion to 'logical(1)'" -- which
+  # made this documented argument impossible to supply with more than one
+  # package. Test emptiness rather than NA-ness; the scalar controls above are
+  # unaffected because their guards only ever see length-1 values.
+  DEcformals$packages   <- if (length(dots$packages)) dots$packages else names(sessionInfo()$otherPkgs)
 
   traceDE <- dots$traceDE
   if (is.null(traceDE) || is.na(traceDE)) traceDE <- TRUE

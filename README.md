@@ -72,6 +72,15 @@ Parallel execution for DEoptim has been redesigned to be safe and CRAN-compliant
 - **Self-contained cluster lifecycle** — When `parallel = TRUE`, `solve_deoptim()` creates a PSOCK cluster via base R's `parallel::makeCluster()`, registers it with `doSNOW`, and tears it down in `on.exit()` — guaranteeing cleanup even on error. Upstream uses `snow::makeSOCKcluster()` and only cleans up on the happy path.
 - **No global `foreach` side effects** — `random_portfolios()` no longer calls `registerDoSEQ()` or uses `%dopar%`. All random portfolio generation (simplex, grid, sample) runs sequentially. Users who need to parallelize large portfolio generation (`permutations > 50,000`) should register a `foreach` backend before calling `optimize.portfolio()`.
 - **Nested parallelism safe** — An outer user-level `foreach` cluster survives inner `solve_deoptim(parallel = TRUE)` calls. Each inner call creates and destroys its own cluster independently.
+- **Bounded cluster size (`MaxCores`)** — `optimize.portfolio()` takes a `MaxCores` argument (default `15`). The cluster is sized `min(parallel::detectCores(), MaxCores)`, replacing a hard-coded `ifelse(nC <= 15, nC, 15)`. The default reproduces the previous sizing at every core count; lower it to leave cores free for other work.
+- **Bounded nesting (`MaxSubCores`)** — `optimize.portfolio.rebalancing()` takes a `MaxSubCores` argument (default `1`). Rebalance periods are already distributed with `%dopar%`, so letting each worker build its own cluster oversubscribes the machine by *outer × inner* workers. Previously the inner `optimize.portfolio()` calls were hard-wired to `parallel = FALSE` — safe, but with no way to use spare cores when there are few rebalance periods and many assets. `MaxSubCores = 1` reproduces that behaviour exactly (`parallel = (1 > 1)` is `FALSE`); values above 1 opt into bounded nesting, capping each inner cluster. Choose it so that `outer_workers * MaxSubCores` stays within the core count.
+
+```r
+# Allow each rebalance-period worker up to 2 cores for its inner optimization
+optimize.portfolio.rebalancing(R, portfolio, optimize_method = "DEoptim",
+                               rebalance_on = "quarters", training_period = 36,
+                               MaxSubCores = 2)
+```
 
 **Known difference from upstream:** The DEoptim `strategy` parameter defaults to `2` (DE/rand/1/bin) in this fork, whereas upstream uses `6` (DE/current-to-p-best/1, JADE-style). Strategy 6 generally converges faster for portfolio problems. To match upstream behavior, pass `strategy = 6` explicitly:
 
@@ -101,6 +110,36 @@ if(hasArg(fev)) fev = match.call(expand.dots=TRUE)$fev else fev = 0:5
 # After (this fork)
 if(hasArg(fev)) fev = eval.parent(match.call(expand.dots=TRUE)$fev) else fev = 0:5
 ```
+
+### Bug Fix: Optional Solver Arguments Passed as `NULL` Crashed `optimize.portfolio_v1()`
+
+`hasArg()` is `TRUE` for an argument passed explicitly as `NULL`, so the legacy v1 DEoptim block took its "supplied" branch on a `NULL` and then failed in three different ways, each surfacing far from its cause (verified on R 4.6.0):
+
+| Argument | Guard shape | Result with `NULL` |
+|---|---|---|
+| `itermax` | `ifelse(is.na(x), TRUE, x)` | `logical(0)` → `NP` becomes `numeric(0)` → `"argument is of length zero"`, before DEoptim is ever invoked |
+| `strategy`, `reltol`, `steptol`, `c`, `storepopfrom`, `parallel` | `!hasArg(x) \|\| is.na(...)` | `FALSE \|\| logical(0)` is `NA` → `"missing value where TRUE/FALSE needed"` |
+| `packages` | same | `is.na()` on a character vector returns a vector; since R 4.3 `\|\|` errors with `"'length = 2' in coercion to 'logical(1)'"` — making that documented argument impossible to supply |
+
+Omitting an argument always worked; passing it as `NULL` was fatal. The two now mean the same thing.
+
+The fix adds an internal `.pa_arg_missing()` — `NULL`, zero-length and a length-one `NA` count as "not supplied", everything else (including multi-element vectors) as supplied — and applies it to all seven guards, each argument now resolved **once** instead of calling `eval.parent(match.call(...))` twice:
+
+```r
+# Before (upstream) — NULL takes the "supplied" branch and collapses
+if(hasArg(itermax)) { itermax <- eval.parent(match.call(expand.dots=TRUE)$itermax)
+                      itermax <- ifelse(is.na(itermax), yes = TRUE, no = itermax) }
+else { itermax = N*50 }
+
+# After (this fork) — NULL/NA mean "not supplied", as omitting it does
+.itermax_arg <- if (hasArg(itermax)) eval.parent(match.call(expand.dots = TRUE)$itermax) else NULL
+itermax_supplied <- !.pa_arg_missing(.itermax_arg)
+itermax <- if (itermax_supplied) .itermax_arg else N * 50
+```
+
+This also fixes a defect independent of `NULL`: the old `ifelse()` mapped an `NA` `itermax` to `TRUE` (i.e. `1`), which would have made `NP = search_size`.
+
+The modern v2 path (`solve_deoptim()`) was already `NULL`-safe, since `is.null(x) || is.na(x)` short-circuits — but it carried the same `packages` vector defect, now fixed by testing `length(dots$packages)` rather than `is.na()`.
 
 ### Bug Fix: `match.call()` Without `eval.parent()` in `constrained_objective.R` and `ac_ranking.R`
 

@@ -94,6 +94,22 @@ test_that("the new guard resolves all three cases", {
   }
 })
 
+test_that("solve_deoptim's packages guard accepts a character vector", {
+  # `packages` is documented as a character vector. The guard used to be
+  #     if (!is.null(dots$packages) && !is.na(dots$packages)) ...
+  # and is.na() on a vector makes `&&` error since R 4.3, so supplying more
+  # than one package was impossible. It now tests emptiness instead.
+  old_shape <- function(x, default) if (!is.null(x) && !is.na(x)) x else default
+  new_shape <- function(x, default) if (length(x)) x else default
+
+  expect_error(old_shape(c("xts", "zoo"), "dflt"), "length = 2")
+
+  expect_equal(new_shape(c("xts", "zoo"), "dflt"), c("xts", "zoo"))
+  expect_equal(new_shape("xts", "dflt"), "xts")
+  expect_equal(new_shape(NULL, "dflt"), "dflt")
+  expect_equal(new_shape(character(0), "dflt"), "dflt")
+})
+
 test_that("optimize.portfolio survives an explicit itermax = NULL", {
   skip_if_not_installed("DEoptim")
 
