@@ -268,8 +268,19 @@ optimize.portfolio_v1 <- function(
           }
           nC <- parallel::detectCores()
 
-          ## No performance improvement with more than 15 cores
-          rcl <- snow::makeSOCKcluster(ifelse(nC <= 15, nC, 15))
+          ## No performance improvement with more than 15 cores, so `MaxCores`
+          ## defaults to 15 and this line behaves exactly as the previous
+          ## hard-coded ifelse(nC <= 15, nC, 15) did. Making it a parameter lets
+          ## a caller bound the cluster explicitly -- which is what
+          ## optimize.portfolio.rebalancing()'s `MaxSubCores` uses to cap the
+          ## NESTED cluster each rebalance-period worker would otherwise build.
+          if (!is.numeric(MaxCores) || length(MaxCores) != 1L || is.na(MaxCores) ||
+              MaxCores < 1) {
+            stop("MaxCores must be a single number >= 1, but has value ",
+                 paste(deparse(MaxCores), collapse = ""), call. = FALSE)
+          }
+          MaxCores <- as.integer(MaxCores)
+          rcl <- snow::makeSOCKcluster(min(nC, MaxCores))
 
           ## load any necessary packages in the cluster
           snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
@@ -739,6 +750,14 @@ optimize.portfolio_v1 <- function(
 #'   (if named) the same asset names as \code{R}. Defaults to \code{NULL}
 #'   (no warm start). See also the \code{warm_start} argument of
 #'   \code{\link{optimize.portfolio.rebalancing}}.
+#' @param MaxCores upper bound on the number of cores used when
+#'   \code{parallelType = 2} builds a SOCK cluster. The cluster is sized
+#'   \code{min(parallel::detectCores(), MaxCores)}. Defaults to \code{15},
+#'   which reproduces the previous hard-coded limit (there is generally no
+#'   performance improvement beyond about 15 cores). Set it lower to leave
+#'   cores free, or to bound a nested cluster --
+#'   \code{\link{optimize.portfolio.rebalancing}} uses it that way via its
+#'   \code{MaxSubCores} argument.
 #'
 #' @return a list containing the following elements
 #' \describe{
@@ -805,7 +824,8 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
   message=FALSE,
   check_feasibility=TRUE,
   penalty="auto",
-  warm_start=NULL
+  warm_start=NULL,
+  MaxCores=15
 )
 {
   # browser()
@@ -1175,6 +1195,20 @@ optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("D
 #'   rebalancing window is seeded with the optimal weights from the previous
 #'   window. This forces sequential execution (overrides parallel) and can
 #'   significantly reduce convergence time for stochastic solvers.
+#' @param MaxSubCores integer, default \code{1}. Upper bound on cores used by
+#'   each \emph{nested} \code{\link{optimize.portfolio}} call. The rebalance
+#'   periods are already distributed with \code{\%dopar\%}, so allowing each
+#'   worker to build its own cluster oversubscribes the machine by
+#'   outer \eqn{\times} inner workers.
+#'
+#'   \code{MaxSubCores = 1} (the default) runs the inner optimisations
+#'   sequentially, which is exactly the previous behaviour. Values greater
+#'   than 1 opt into bounded nesting, capping each inner cluster at
+#'   \code{MaxSubCores} cores -- useful when there are few rebalance periods
+#'   but many assets, where the outer loop alone cannot saturate the machine.
+#'
+#'   Choose it so that \code{outer_workers * MaxSubCores} stays within the
+#'   core count.
 #' @return a list containing the following elements
 #' \describe{
 #'   \item{portfolio}{The portfolio object.}
@@ -1214,8 +1248,26 @@ optimize.portfolio.rebalancing_v1 <- function(R,constraints,optimize_method=c("D
 #' rolling_window=48)
 #' }
 #' @export
-optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, objectives=NULL, optimize_method=c("DEoptim","random","ROI"), search_size=20000, trace=FALSE, ..., rp=NULL, rebalance_on=NULL, training_period=NULL, rolling_window=NULL, warm_start=FALSE)
+optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, objectives=NULL, optimize_method=c("DEoptim","random","ROI"), search_size=20000, trace=FALSE, ..., rp=NULL, rebalance_on=NULL, training_period=NULL, rolling_window=NULL, warm_start=FALSE, MaxSubCores=1)
 {
+  # MaxSubCores bounds NESTED parallelism. The rebalance periods are already
+  # farmed out with %dopar%, so if each worker also builds its own cluster the
+  # machine is oversubscribed by outer x inner workers. Previously the inner
+  # optimize.portfolio() calls were hard-wired to parallel=FALSE, which is safe
+  # but gives the caller no way to use spare cores when there are few periods
+  # and many assets.
+  #
+  # MaxSubCores = 1 (the default) reproduces that old behaviour exactly:
+  # parallel = (1 > 1) = FALSE. Values > 1 opt into bounded nesting, capping
+  # each inner cluster at MaxSubCores cores.
+  if (!is.numeric(MaxSubCores) || length(MaxSubCores) != 1L ||
+      is.na(MaxSubCores) || MaxSubCores < 1) {
+    stop("MaxSubCores must be a single number >= 1, but has value ",
+         paste(deparse(MaxSubCores), collapse = ""), call. = FALSE)
+  }
+  MaxSubCores <- as.integer(MaxSubCores)
+  .sub_parallel <- MaxSubCores > 1L
+
   stopifnot("package:foreach" %in% search() || requireNamespace("foreach",quietly=TRUE))
   stopifnot("package:iterators" %in% search() || requireNamespace("iterators",quietly=TRUE))
 
@@ -1387,11 +1439,11 @@ optimize.portfolio.rebalancing <- function(R, portfolio=NULL, constraints=NULL, 
     if (is.null(rolling_window)){
       ep <- ep.i[1]
       out_list<-foreach::foreach(ep=iterators::iter(ep.i), .errorhandling='pass', .packages='PortfolioAnalytics') %dopar% {
-        optimize.portfolio(R[1:ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=FALSE, ...=...)
+        optimize.portfolio(R[1:ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=.sub_parallel, MaxCores=MaxSubCores, ...=...)
       }
     } else {
       out_list<-foreach::foreach(ep=iterators::iter(ep.i), .errorhandling='pass', .packages='PortfolioAnalytics') %dopar% {
-        optimize.portfolio(R[(ifelse(ep-rolling_window>=1,ep-rolling_window,1)):ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=FALSE, ...=...)
+        optimize.portfolio(R[(ifelse(ep-rolling_window>=1,ep-rolling_window,1)):ep,], portfolio=portfolio, optimize_method=optimize_method, search_size=search_size, trace=trace, rp=rp, parallel=.sub_parallel, MaxCores=MaxSubCores, ...=...)
       }
     }
   }
