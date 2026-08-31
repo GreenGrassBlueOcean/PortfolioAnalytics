@@ -32,7 +32,8 @@ optimize.portfolio(
   message = FALSE,
   check_feasibility = TRUE,
   penalty = "auto",
-  warm_start = NULL
+  warm_start = NULL,
+  MaxCores = 15
 )
 }
 \arguments{
@@ -73,6 +74,15 @@ stochastic solvers (DEoptim, GenSA, pso). Must have the same length and
 (if named) the same asset names as \code{R}. Defaults to \code{NULL}
 (no warm start). See also the \code{warm_start} argument of
 \code{\link{optimize.portfolio.rebalancing}}.}
+
+\item{MaxCores}{upper bound on the number of cores used when
+\code{parallelType = 2} builds a SOCK cluster. The cluster is sized
+\code{min(parallel::detectCores(), MaxCores)}. Defaults to \code{15},
+which reproduces the previous hard-coded limit (there is generally no
+performance improvement beyond about 15 cores). Set it lower to leave
+cores free, or to bound a nested cluster --
+\code{\link{optimize.portfolio.rebalancing}} uses it that way via its
+\code{MaxSubCores} argument.}
 }
 \value{
 a list containing the following elements

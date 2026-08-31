@@ -31,7 +31,8 @@ optimize.portfolio.rebalancing(
   rebalance_on = NULL,
   training_period = NULL,
   rolling_window = NULL,
-  warm_start = FALSE
+  warm_start = FALSE,
+  MaxSubCores = 1
 )
 }
 \arguments{
@@ -69,6 +70,21 @@ and objectives for the optimization}
 rebalancing window is seeded with the optimal weights from the previous
 window. This forces sequential execution (overrides parallel) and can
 significantly reduce convergence time for stochastic solvers.}
+
+\item{MaxSubCores}{integer, default \code{1}. Upper bound on cores used by
+each \emph{nested} \code{\link{optimize.portfolio}} call. The rebalance
+periods are already distributed with \code{\%dopar\%}, so allowing each
+worker to build its own cluster oversubscribes the machine by
+outer \eqn{\times} inner workers.
+
+\code{MaxSubCores = 1} (the default) runs the inner optimisations
+sequentially, which is exactly the previous behaviour. Values greater
+than 1 opt into bounded nesting, capping each inner cluster at
+\code{MaxSubCores} cores -- useful when there are few rebalance periods
+but many assets, where the outer loop alone cannot saturate the machine.
+
+Choose it so that \code{outer_workers * MaxSubCores} stays within the
+core count.}
 }
 \value{
 a list containing the following elements
