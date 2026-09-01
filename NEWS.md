@@ -1,3 +1,15 @@
+# PortfolioAnalytics 2.1.1.9004
+
+## Bug Fixes
+
+* Fixed `MaxCores` being silently ignored by `optimize.portfolio()`. It was declared as a formal but never read, and because it is a formal it was also absent from `...`, so it never reached the solver: `solve_deoptim()` built `parallel::makeCluster(min(nC, 15))` regardless of what the caller asked for. A caller requesting `MaxCores = 12` still got 15 workers per concurrent optimisation. `optimize.portfolio_v1()` honours `MaxCores` correctly, which is why this went unnoticed — the legacy path worked and the `_v2` path silently did not.
+* Fixed `MaxSubCores` being inert as a consequence of the above. `optimize.portfolio.rebalancing()` forwards it as `MaxCores` to the inner `optimize.portfolio()` calls precisely to bound the nested cluster each rebalance-period worker builds; since that value was discarded, nesting was unbounded and the machine could be oversubscribed by *outer × 15* workers.
+
+## Enhancements
+
+* `solve_deoptim()` reports the realised cluster size under `message = TRUE`: `DEoptim parallel cluster: N worker(s) (detectCores=..., MaxCores=...)`. Previously nothing was logged, so a cluster of the wrong size left no trace.
+* `solve_deoptim()` warns when `parallel = TRUE` but `foreach` is not attached. That combination runs the whole optimisation sequentially and previously said nothing at all, so the only symptom was a run taking many times longer for no visible reason.
+
 # PortfolioAnalytics 2.1.1.9001
 
 ## Bug Fixes
