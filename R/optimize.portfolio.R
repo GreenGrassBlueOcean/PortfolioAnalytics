@@ -1029,12 +1029,18 @@ optimize.portfolio <- optimize.portfolio_v2 <- function(
          paste(names(.solver_dispatch), collapse = ", "))
   }
 
+  # MaxCores is a formal here, so it is NOT part of `...` and has to be
+  # forwarded explicitly. Without this it was accepted, never read, and
+  # silently dropped: every DEoptim run built min(detectCores(), 15) workers
+  # regardless of what the caller asked for, and the MaxSubCores nesting guard
+  # in optimize.portfolio.rebalancing() -- which arrives here as MaxCores --
+  # was inert. Solvers that do not use it absorb it via their own `...`.
   out <- solver_fn(
     R = R, portfolio = portfolio, constraints = constraints,
     moments = dotargs, penalty = penalty, N = N,
     call = call, trace = trace, search_size = search_size,
     rp = rp, message = message, optimize_method = optimize_method,
-    warm_start = warm_start, ...
+    warm_start = warm_start, MaxCores = MaxCores, ...
   )
 
   # If the solver returned early with an optimization_failure, propagate it

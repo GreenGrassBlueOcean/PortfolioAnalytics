@@ -5,7 +5,7 @@
 #' @keywords internal
 solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
                           N, call, trace, search_size, rp,
-                          message = FALSE, ...) {
+                          message = FALSE, MaxCores = 15, ...) {
   stopifnot("package:DEoptim" %in% search() || requireNamespace("DEoptim", quietly = TRUE))
 
   dots <- list(...)
@@ -70,6 +70,16 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
   }
 
   rcl <- NULL
+  # A silent fall-back to sequential is the expensive failure mode here: the
+  # run still completes, just N times slower, with nothing in the log saying
+  # so. `parallel=TRUE` only takes effect when foreach is ATTACHED (not merely
+  # imported), so say plainly when that is not the case.
+  if (isTRUE(parallel) && !("package:foreach" %in% search())) {
+    warning("parallel=TRUE but package 'foreach' is not attached, so DEoptim ",
+            "will run SEQUENTIALLY. Attach it (library(foreach), or any ",
+            "package that Depends on it) before calling optimize.portfolio().",
+            call. = FALSE)
+  }
   if (isTRUE(parallel) && "package:foreach" %in% search()) {
     parallelType <- if (!is.null(dots$parallelType)) dots$parallelType else "foreach"
     DEcformals$parallelType <- parallelType
@@ -80,7 +90,22 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
              call. = FALSE)
       } # nocov end
       nC <- parallel::detectCores()
-      rcl <- parallel::makeCluster(min(nC, 15), type = "PSOCK")
+      # `MaxCores` used to be hard-coded to 15 here, which silently discarded
+      # whatever the caller asked for -- including the `MaxSubCores` value that
+      # optimize.portfolio.rebalancing() forwards as MaxCores specifically to
+      # bound NESTED clusters. Honour it, and validate it the same way
+      # optimize.portfolio_v1() does.
+      if (!is.numeric(MaxCores) || length(MaxCores) != 1L || is.na(MaxCores) ||
+          MaxCores < 1) {
+        stop("MaxCores must be a single number >= 1, but has value ",
+             paste(deparse(MaxCores), collapse = ""), call. = FALSE)
+      }
+      n_workers <- min(nC, as.integer(MaxCores))
+      if (isTRUE(message)) {
+        message("DEoptim parallel cluster: ", n_workers, " worker(s) ",
+                "(detectCores=", nC, ", MaxCores=", as.integer(MaxCores), ")")
+      }
+      rcl <- parallel::makeCluster(n_workers, type = "PSOCK")
       on.exit({
         if (!is.null(rcl)) parallel::stopCluster(rcl)
         # Reset to sequential so we never leave a dead cluster registered
