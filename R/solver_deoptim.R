@@ -137,13 +137,32 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
   }
 
   # --- Solve ---
+  # `normalize` was hard-wired to FALSE here while constrained_objective()'s
+  # own default is TRUE. The difference is not cosmetic: with normalize = TRUE
+  # a candidate that misses the leverage band is RESCALED onto it before being
+  # scored; with FALSE it is PENALISED instead. On a narrow band (e.g. the
+  # 0.98-1.02 used in production) almost every DE/rand/1/bin mutation of a
+  # 60-weight vector lands outside, so nearly every trial loses to its parent
+  # and the population stops moving after a handful of generations.
+  #
+  # Kept FALSE by default so existing results are bit-identical; expose it so
+  # the alternative can be measured on real data without patching an install.
+  normalize_obj <- dots$normalize
+  if (is.null(normalize_obj) || !is.logical(normalize_obj) ||
+      length(normalize_obj) != 1L || is.na(normalize_obj)) {
+    normalize_obj <- FALSE
+  }
+  if (isTRUE(message)) {
+    message("DEoptim constrained_objective: normalize = ", normalize_obj)
+  }
+
   controlDE <- do.call(DEoptim::DEoptim.control, DEcformals)
   minw <- DEoptim::DEoptim(
     constrained_objective,
     lower = lower[1:N], upper = upper[1:N],
     control = controlDE,
     R = R, portfolio = portfolio, env = moments,
-    normalize = FALSE, penalty = penalty,
+    normalize = normalize_obj, penalty = penalty,
     storage_env = storage_env,
     fnMap = function(x) fn_map(x, portfolio = portfolio)$weights
   )
@@ -170,8 +189,10 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
   # --- Extract results ---
   weights <- as.vector(minw$optim$bestmem)
   names(weights) <- colnames(R)
+  # Score the winner the same way it was searched, or the reported objective
+  # measures would not correspond to the value DEoptim actually minimised.
   obj_vals <- constrained_objective(w = weights, R = R, portfolio, trace = TRUE,
-                                    normalize = FALSE, env = moments,
+                                    normalize = normalize_obj, env = moments,
                                     penalty = penalty)$objective_measures
   out <- list(weights = weights, objective_measures = obj_vals,
               opt_values = obj_vals, out = minw$optim$bestval, call = call)
