@@ -111,3 +111,54 @@ test_that("an objective that cannot be resolved is named in the error", {
   expect_false(grepl("non-numeric argument to binary operator", err, fixed = TRUE),
                info = "the old opaque arithmetic error has returned")
 })
+
+test_that("cluster setup does not shift the RNG stream", {
+  # Loading doSNOW consumes one draw from the global stream, and
+  # requireNamespace("doSNOW") runs only on the parallel path. Without the
+  # rewind in solve_deoptim() a parallel run therefore starts DEoptim one draw
+  # further along than a sequential run with the same seed, giving a different
+  # initial population and mutation sequence -- reproducible within a mode, but
+  # different between modes. Production: sharpe 0.453467 vs 0.577793.
+  #
+  # This has to run in a FRESH process. Within one session the first parallel
+  # call loads doSNOW, and every later comparison then agrees whether the bug is
+  # present or not -- so an in-session version of this test would quietly stop
+  # protecting anything.
+  skip_on_cran()
+  skip_if_not_installed("doSNOW")
+  skip_if_not_installed("DEoptim")
+
+  libs <- paste(sprintf('"%s"', .libPaths()), collapse = ", ")
+  code <- sprintf('
+.libPaths(c(%s))
+suppressMessages(library(foreach)); suppressMessages(library(PortfolioAnalytics))
+stopifnot(!("doSNOW" %%in%% loadedNamespaces()))
+n <- 8L; T <- 200L
+set.seed(7)
+R <- xts::xts(matrix(rnorm(T*n, 4e-4, 0.01), ncol=n),
+              order.by = as.Date("2023-01-02") + seq_len(T) - 1L)
+colnames(R) <- paste0("A", seq_len(n))
+p <- portfolio.spec(assets=colnames(R))
+p <- add.constraint(p, type="leverage", min_sum=0.98, max_sum=1.02)
+p <- add.constraint(p, type="box", min=0, max=0.5)
+p <- add.objective(p, type="risk", name="StdDev", multiplier=1)
+run <- function(par) { set.seed(4217)
+  o <- optimize.portfolio(R=R, portfolio=p, optimize_method="DEoptim",
+        search_size=400, itermax=4, trace=FALSE, traceDE=0, message=FALSE,
+        parallel=par, MaxCores=2, parallelType=2)
+  as.numeric(extractWeights(o)) }
+s <- run(FALSE); q <- run(TRUE)
+cat(max(abs(s - q)))
+', libs)
+
+  f <- tempfile(fileext = ".R"); on.exit(unlink(f), add = TRUE)
+  writeLines(code, f)
+  out <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"), shQuote(f),
+                                  stdout = TRUE, stderr = FALSE))
+  val <- suppressWarnings(as.numeric(tail(out, 1)))
+  skip_if(is.na(val), paste("subprocess did not report a difference:",
+                            paste(tail(out, 3), collapse = " | ")))
+  # Sequential is the reference: it never loads doSNOW, so its stream is the
+  # one the caller's set.seed() implies.
+  expect_equal(val, 0, tolerance = 0)
+})

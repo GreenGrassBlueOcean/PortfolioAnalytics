@@ -70,6 +70,25 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
   }
 
   rcl <- NULL
+
+  # Preserve the RNG stream across cluster setup.
+  #
+  # Loading doSNOW consumes exactly one draw from the global stream, and
+  # requireNamespace("doSNOW") below runs ONLY on the parallel path. So a
+  # parallel run and a sequential run start DEoptim from different positions in
+  # the same seeded stream: different initial population, different mutation
+  # sequence, different optimum, from identical inputs. Measured on a 9-fold
+  # walk-forward: sharpe 0.453467 parallel vs 0.577793 sequential, with one
+  # weight differing by 0.287.
+  #
+  # It is reproducible WITHIN a mode (two parallel runs are bit-identical),
+  # which is exactly what made this look like a scoring bug rather than an RNG
+  # one. Snapshot the stream here and restore it once the cluster is up, so the
+  # setup cost is unwound and DEoptim starts from the same place either way.
+  .pa_seed_before <- if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+    get(".Random.seed", envir = globalenv())
+  } else NULL
+
   # A silent fall-back to sequential is the expensive failure mode here: the
   # run still completes, just N times slower, with nothing in the log saying
   # so. `parallel=TRUE` only takes effect when foreach is ATTACHED (not merely
@@ -137,6 +156,16 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
       doSNOW::registerDoSNOW(rcl)
       DEcformals$cluster <- rcl
     }
+  }
+
+  # Rewind whatever cluster setup consumed, so the search below draws from the
+  # same position as a sequential run. See the note above `.pa_seed_before`.
+  if (is.null(.pa_seed_before)) {
+    if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+      rm(".Random.seed", envir = globalenv())
+    }
+  } else {
+    assign(".Random.seed", .pa_seed_before, envir = globalenv())
   }
 
   # --- Initial population ---
