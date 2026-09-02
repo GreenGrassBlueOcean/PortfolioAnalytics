@@ -259,6 +259,16 @@ optimize.portfolio_v1 <- function(
         parallelType = eval.parent(match.call(expand.dots = TRUE)$parallelType)
         DEcformals$parallelType = parallelType
       }
+        # Preserve the RNG stream across cluster setup -- see the matching note
+        # in solve_deoptim(). Loading snow/doSNOW consumes a draw from the
+        # global stream, and it happens only on the parallel path, so without
+        # this a parallel run starts the search one draw further along than a
+        # sequential run with the same seed and returns a different optimum.
+        # (Measured: snow and doSNOW shift the stream; foreach, iterators,
+        # doParallel and DEoptim do not.)
+        .pa_seed_before <- if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+          get(".Random.seed", envir = globalenv())
+        } else NULL
         if(parallelType == 2){
           if (!requireNamespace("snow", quietly = TRUE) ||
               !requireNamespace("doSNOW", quietly = TRUE)) {
@@ -282,9 +292,22 @@ optimize.portfolio_v1 <- function(
           MaxCores <- as.integer(MaxCores)
           rcl <- snow::makeSOCKcluster(min(nC, MaxCores))
 
-          ## load any necessary packages in the cluster
-          snow::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs)
-                                         , require, character.only = TRUE))
+          ## Attach on the workers the packages attached HERE.
+          ## This was clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs), ...)),
+          ## which did nothing at all: clusterEvalQ evaluates ON THE WORKER, where
+          ## nothing is attached, so otherPkgs was NULL there. The list has to be
+          ## computed in the master and shipped as data. See solve_deoptim().
+          .pa_worker_pkgs <- names(utils::sessionInfo()$otherPkgs)
+          if (length(.pa_worker_pkgs)) {
+            snow::clusterCall(rcl, function(pkgs) {
+              for (pk in pkgs) {
+                suppressWarnings(suppressMessages(
+                  requireNamespace(pk, quietly = TRUE) &&
+                    require(pk, character.only = TRUE, quietly = TRUE)))
+              }
+              invisible(NULL)
+            }, pkgs = .pa_worker_pkgs)
+          }
 
           ## copy any necessary objects
           snow::clusterExport(rcl
@@ -297,7 +320,17 @@ optimize.portfolio_v1 <- function(
           doSNOW::registerDoSNOW(rcl)
 
           DEcformals$cluster <- rcl
-        }}
+        }
+        # Rewind whatever cluster setup consumed, so the search below draws from
+        # the same position as a sequential run.
+        if (is.null(.pa_seed_before)) {
+          if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+            rm(".Random.seed", envir = globalenv())
+          }
+        } else {
+          assign(".Random.seed", .pa_seed_before, envir = globalenv())
+        }
+        }
             # is.na() on a character vector returns a vector, and since R 4.3
             # `||` errors with "'length = 2' in coercion to 'logical(1)'", so
             # the old guard made `packages` impossible to supply at all.

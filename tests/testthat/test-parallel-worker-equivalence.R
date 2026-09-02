@@ -162,3 +162,46 @@ cat(max(abs(s - q)))
   # one the caller's set.seed() implies.
   expect_equal(val, 0, tolerance = 0)
 })
+
+test_that("optimize.portfolio_v1 cluster setup also leaves the RNG stream alone", {
+  # Same defect as solve_deoptim(), in the legacy function. Nothing in the
+  # current code path calls _v1, but it is exported, and the v1/v2 split has
+  # already hidden three separate bugs in this package (MaxCores forwarded but
+  # unread, constrained_objective's swallowed try-error, this). Closing the
+  # class rather than the instance.
+  #
+  # Fresh subprocess for the same reason as the test above: once snow/doSNOW are
+  # loaded in a session the shift cannot recur.
+  skip_on_cran()
+  skip_if_not_installed("doSNOW")
+  skip_if_not_installed("snow")
+
+  libs <- paste(sprintf('"%s"', .libPaths()), collapse = ", ")
+  code <- sprintf('
+.libPaths(c(%s))
+suppressMessages(library(foreach)); suppressMessages(library(PortfolioAnalytics))
+stopifnot(!("snow" %%in%% loadedNamespaces()), !("doSNOW" %%in%% loadedNamespaces()))
+# Measure the invariant directly: cluster setup must not move the RNG position.
+set.seed(4217); before <- .Random.seed
+invisible(requireNamespace("snow", quietly = TRUE))
+invisible(requireNamespace("doSNOW", quietly = TRUE))
+after_load <- .Random.seed
+# This is the hazard the fix exists for; if upstream ever stops shifting, the
+# guard is simply redundant rather than wrong.
+cat(if (identical(before, after_load)) "noshift" else "shift", "\n")
+', libs)
+  f <- tempfile(fileext = ".R"); on.exit(unlink(f), add = TRUE)
+  writeLines(code, f)
+  out <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"), shQuote(f),
+                                  stdout = TRUE, stderr = FALSE))
+  hazard <- any(grepl("shift", out, fixed = TRUE)) && !any(grepl("noshift", out, fixed = TRUE))
+  skip_if(!hazard, "snow/doSNOW no longer shift the RNG stream; the guard is redundant here")
+
+  # The hazard is real, so assert _v1 guards against it: its parallel block must
+  # snapshot and restore .Random.seed.
+  src <- paste(deparse(optimize.portfolio_v1), collapse = "\n")
+  expect_true(grepl(".pa_seed_before", src, fixed = TRUE),
+              info = "optimize.portfolio_v1 does not snapshot the RNG around cluster setup")
+  expect_true(grepl('assign(".Random.seed", .pa_seed_before', src, fixed = TRUE),
+              info = "optimize.portfolio_v1 snapshots the RNG but never restores it")
+})

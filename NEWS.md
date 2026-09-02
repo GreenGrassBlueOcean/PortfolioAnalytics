@@ -1,3 +1,32 @@
+# PortfolioAnalytics 2.1.1.9008
+
+## Bug Fixes
+
+* Applied the 2.1.1.9007 RNG guard and the 2.1.1.9006 worker-attachment fix to `optimize.portfolio_v1()`, which carried both defects unchanged. Nothing in the current dispatch path reaches `_v1`, but it is exported, and the `v1`/`v2` split had by then hidden three separate bugs in this package (`MaxCores` forwarded but unread, `constrained_objective()`'s swallowed `try-error`, and this).
+
+## Testing
+
+* `test-parallel-worker-equivalence.R` gains a `_v1` case. The RNG tests run in a fresh subprocess deliberately: once `snow`/`doSNOW` are loaded in a session the shift cannot recur, so an in-session test would silently stop protecting anything. Each test was validated by disabling its fix and confirming it fails.
+
+# PortfolioAnalytics 2.1.1.9007
+
+## Bug Fixes
+
+* Fixed parallel and sequential runs returning different optima from the same seed. Loading `doSNOW` consumes one draw from the global RNG stream, and `requireNamespace("doSNOW")` runs only on the parallel path, so a parallel run started DEoptim one draw further along than a sequential one: different initial population, different mutation sequence, different result from identical inputs. It was reproducible *within* a mode (two parallel runs bit-identical), which disguised an RNG-position problem as a scoring problem. `solve_deoptim()` now snapshots `.Random.seed` before cluster setup and restores it afterwards. Measured on a 9-fold walk-forward before the fix: Sharpe 0.4535 parallel vs 0.5778 sequential, one weight differing by 0.287. (`snow` and `doSNOW` shift the stream; `foreach`, `iterators`, `doParallel` and `DEoptim` do not.)
+
+# PortfolioAnalytics 2.1.1.9006
+
+## Bug Fixes
+
+* Fixed worker package attachment. `clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs), require, ...))` evaluates on the *worker*, where nothing is attached, so `otherPkgs` was `NULL` there and it loaded nothing at all. `constrained_objective()` special-cases a few measures by symbol (`StdDev`, `VaR`, `ES`, `mean`, `median`, `turnover`) but resolves everything else — `CRRA` included — with `match.fun(objective$name)`, a string lookup against the caller's frame, which on a bare worker cannot reach this namespace. The package list is now computed in the master and shipped with `clusterCall()`.
+* `constrained_objective()` now raises when an objective cannot be evaluated, naming it. Previously the `try-error` was reported with `message()` and then used in arithmetic anyway, so the only visible symptom was `non-numeric argument to binary operator` several lines later. This changes no result: every branch multiplies the measure, so a `try-error` already killed the run one line on. Fixed in both `_v1` and `_v2`.
+
+# PortfolioAnalytics 2.1.1.9005
+
+## Enhancements
+
+* `normalize` is now settable through `...` on the DEoptim path (default `FALSE`, so existing results are unchanged). It controls whether a candidate that misses the leverage band is rescaled onto it or penalised, which materially changes how the search behaves on a narrow band.
+
 # PortfolioAnalytics 2.1.1.9004
 
 ## Bug Fixes
