@@ -111,8 +111,29 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
         # Reset to sequential so we never leave a dead cluster registered
         foreach::registerDoSEQ()
       }, add = TRUE)
-      parallel::clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs),
-                                         require, character.only = TRUE))
+      # Attach on the workers the packages that are attached HERE.
+      #
+      # This used to be
+      #   clusterEvalQ(rcl, lapply(names(sessionInfo()$otherPkgs), require, ...))
+      # which silently did nothing: clusterEvalQ evaluates its expression ON THE
+      # WORKER, and a fresh PSOCK worker has no packages attached, so
+      # sessionInfo()$otherPkgs was NULL there and lapply(NULL, ...) loaded
+      # nothing at all. The objective could then hit a worker where the S3
+      # methods it relies on were never registered, failing with errors as
+      # opaque as "non-numeric argument to binary operator".
+      #
+      # The package list has to be computed in the MASTER and shipped as data.
+      .pa_worker_pkgs <- names(utils::sessionInfo()$otherPkgs)
+      if (length(.pa_worker_pkgs)) {
+        parallel::clusterCall(rcl, function(pkgs) {
+          for (pk in pkgs) {
+            suppressWarnings(suppressMessages(
+              requireNamespace(pk, quietly = TRUE) &&
+                require(pk, character.only = TRUE, quietly = TRUE)))
+          }
+          invisible(NULL)
+        }, pkgs = .pa_worker_pkgs)
+      }
       doSNOW::registerDoSNOW(rcl)
       DEcformals$cluster <- rcl
     }

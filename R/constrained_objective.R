@@ -183,7 +183,30 @@ constrained_objective_v1 <- function(w, R, constraints, ..., trace=FALSE, normal
           }
 
           if(inherits(tmp_measure,"try-error")) {
-              message(paste("objective name",objective$name,"generated an error or warning:",tmp_measure))
+              # This used to message() and fall through -- but every branch
+              # below multiplies tmp_measure, and arithmetic on a try-error
+              # throws unconditionally. So the old code could only ever produce
+              # "non-numeric argument to binary operator" from a line far from
+              # the cause, with the real reason buried in a message() that
+              # nothing captured. Raising it here changes no result (the run
+              # already died at the next line); it only makes the failure
+              # readable.
+              #
+              # The usual cause is a PARALLEL worker: objectives are resolved by
+              # name via match.fun(), and names like ETL/StdDev live in
+              # PerformanceAnalytics, which is a Depends of this package. A
+              # Depends is attached only when this package is itself ATTACHED --
+              # on a worker it is merely loaded, so the name is not on the
+              # search path and match.fun() fails.
+              stop("objective '", objective$name, "' could not be evaluated: ",
+                   sub("[\r\n]+$", "", as.character(tmp_measure)),
+                   if (!length(names(utils::sessionInfo()$otherPkgs))) {
+                     paste0("\n  Nothing is attached in this session, which is what a parallel ",
+                            "worker looks like. Objectives are resolved by name with match.fun(), ",
+                            "so the package providing '", objective$name,
+                            "' has to be ATTACHED here, not merely loaded.")
+                   } else "",
+                   call. = FALSE)
           }
 
           # now set the new value of the objective output
@@ -731,7 +754,22 @@ constrained_objective <- constrained_objective_v2 <- function(w, R, portfolio, .
         }
 
         if(inherits(tmp_measure, "try-error")) {
-          message(paste("objective name", objective$name, "generated an error or warning:", tmp_measure))
+          # See the matching block in constrained_objective_v1(). Every branch
+          # below multiplies tmp_measure, and arithmetic on a try-error throws
+          # unconditionally -- so message()-and-continue could only ever surface
+          # as "non-numeric argument to binary operator" from a line far away,
+          # with the real reason in a message() nothing captured. Raising here
+          # changes no result (the run already died on the next line); it only
+          # makes the failure readable.
+          stop("objective '", objective$name, "' could not be evaluated: ",
+               sub("[\r\n]+$", "", as.character(tmp_measure)),
+               if (!length(names(utils::sessionInfo()$otherPkgs))) {
+                 paste0("\n  Nothing is attached in this session, which is what a parallel ",
+                        "worker looks like. Objectives are resolved by name with match.fun(), ",
+                        "so the package providing '", objective$name,
+                        "' has to be ATTACHED here, not merely loaded.")
+               } else "",
+               call. = FALSE)
         }
 
         # now set the new value of the objective output
