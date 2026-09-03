@@ -206,16 +206,56 @@ solve_deoptim <- function(R, portfolio, constraints, moments, penalty,
     message("DEoptim constrained_objective: normalize = ", normalize_obj)
   }
 
+  # --- Moment transport -------------------------------------------------
+  # Passing `env = moments` through DEoptim's `...` re-serializes the whole
+  # moment list to every worker on every generation, because the cluster path
+  # is `parApply(cl, pop, 1, fn, ...)`. For CRRA at 60 assets the m4 tensor
+  # alone is 103.7 MB. Ship it once instead and hand DEoptim a wrapper that
+  # reads the worker-local cache. See R/moments_transport.R for the numbers and
+  # for why the wrapper cannot be defined in this frame.
+  #
+  # `moments_cache = FALSE` restores the old transport unchanged. That exists
+  # so the two paths can be compared directly, which is what
+  # test-moments-transport.R does; it must keep producing identical optima.
+  use_moment_cache <- !is.null(rcl) && !identical(dots$moments_cache, FALSE)
+  if (use_moment_cache) {
+    # A worker resolves namespace closures against ITS OWN installed
+    # PortfolioAnalytics. If a stale build sits earlier on that worker's
+    # .libPaths() it will not have the cache helpers, and every node would
+    # error. Probe before committing to it: a version skew should cost
+    # throughput, not the run.
+    ready <- isTRUE(tryCatch(
+      all(vapply(parallel::clusterCall(rcl, .pa_moments_cache_ready),
+                 isTRUE, logical(1))),
+      error = function(e) FALSE))
+    if (!ready) {
+      warning("the cluster workers are running a PortfolioAnalytics build ",
+              "without moment-cache support, so the moment list will be sent ",
+              "on every generation as before. Align the version installed on ",
+              "the workers to avoid the transport cost.", call. = FALSE)
+      use_moment_cache <- FALSE
+    }
+  }
+  if (use_moment_cache) {
+    parallel::clusterCall(rcl, .pa_set_moments_cache, m = moments)
+    # The master evaluates nothing while a cluster is attached, but populate it
+    # too so a master-side call could never silently score differently.
+    .pa_set_moments_cache(moments)
+    on.exit(.pa_clear_moments_cache(), add = TRUE)
+  }
+
   controlDE <- do.call(DEoptim::DEoptim.control, DEcformals)
-  minw <- DEoptim::DEoptim(
-    constrained_objective,
+  de_args <- list(
+    if (use_moment_cache) .pa_cached_objective else constrained_objective,
     lower = lower[1:N], upper = upper[1:N],
     control = controlDE,
-    R = R, portfolio = portfolio, env = moments,
+    R = R, portfolio = portfolio,
     normalize = normalize_obj, penalty = penalty,
     storage_env = storage_env,
     fnMap = function(x) fn_map(x, portfolio = portfolio)$weights
   )
+  if (!use_moment_cache) de_args$env <- moments
+  minw <- do.call(DEoptim::DEoptim, de_args)
 
   # nocov start — DEoptim almost never throws; would require mocking to test
 

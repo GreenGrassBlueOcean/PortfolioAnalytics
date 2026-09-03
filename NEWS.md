@@ -1,3 +1,13 @@
+# PortfolioAnalytics 2.1.1.9009
+
+## Enhancements
+
+* `solve_deoptim()` now ships the moment list to its workers once instead of on every generation. DEoptim's cluster path evaluates a generation with `parApply(cl, pop, 1, fn, ...)`, which re-serializes `FUN` and every `...` argument to every worker each time it is called, and `env = moments` was passed that way. For CRRA the moment list carries the `m4` co-moment tensor, `N x N^3`: at 60 assets that is 103.7 MB by itself, so an 18-worker cluster moved ~1.87 GB per generation and ~370 GB over a 200-generation run, for a value that never changes after `momentFUN` runs once. Measured on 4 local workers with a 98.9 MB payload the cost was 0.60-0.75 s **per generation** and linear in `itermax`, confirming transport rather than a setup cost. The moments now go across in a single `clusterCall` and the objective reads them from a namespace-level cache. Results are unchanged; `moments_cache = FALSE` restores the previous transport for comparison.
+
+## Testing
+
+* `test-moments-transport.R` runs three arms on one seed — parallel with the new transport, parallel with the old one (`moments_cache = FALSE`), and single-core — and requires all three to agree bit-identically (`tolerance = 0`). The first pair is the before/after check on the transport itself; the second pair re-asserts the parallel/sequential agreement won in 2.1.1.9007, which a change to how the objective reaches the workers is exactly the sort of thing to break again. There is a guard that fails the test if no cluster was actually built — otherwise both arms take the same branch and the comparison is vacuous. It also pins the environment and serialized size of the cached objective: this optimisation is undone silently if that wrapper is ever moved inside `solve_deoptim()`, because its closure would then capture the frame holding `moments` and every generation would ship the tensor again with no change to any result.
+
 # PortfolioAnalytics 2.1.1.9008
 
 ## Bug Fixes
