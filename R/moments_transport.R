@@ -36,12 +36,18 @@
 # wrapper defined inside `solve_deoptim()` would close over that frame -- which
 # holds `moments` -- and R would serialize the whole 103.7 MB along with the
 # function anyway, silently undoing the entire optimisation. Nothing would
-# error; the run would simply stay slow. `test-moments-transport.R` pins both
-# the environment identity and the serialized size for exactly this reason.
+# error; the run would simply stay slow. `test-moments-transport.R` pins the
+# wrapper's environment identity for exactly this reason -- a closure whose
+# environment IS the namespace cannot have captured a local `moments`, because
+# a namespace is not a call frame.
 #
-# A closure whose environment is a namespace serializes as a REFERENCE to that
-# namespace, which is what makes this cheap, and what makes the worker load
-# PortfolioAnalytics on unserialize without any help from us.
+# A closure whose environment is a namespace serializes as a reference to that
+# namespace, which is what makes the worker load PortfolioAnalytics on
+# unserialize without any help from us. Do not read that as "serializes to a
+# pointer": the measured size varies a lot by platform and R version (~30 KB on
+# Windows/R 4.5.2, ~867 KB on macOS/R 4.6.1). Either way it is under 1% of the
+# 103.7 MB it replaces, and the same cost was already being paid to ship
+# `constrained_objective` itself before this change.
 
 # Home for the cached moment list, on whichever process is asking.
 #

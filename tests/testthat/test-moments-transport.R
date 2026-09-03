@@ -18,8 +18,12 @@
 #   environment becomes that frame -- which holds `moments` -- and R serializes
 #   the whole tensor along with the function, exactly as before. The results
 #   stay identical and the run just goes back to being slow. So the closure
-#   hygiene test below pins the environment and the serialized size, and it is
-#   the one that actually protects the fix.
+#   hygiene test below pins the wrapper's environment, and it is the one that
+#   actually protects the fix.
+#
+#   Note that the two cluster tests carry skip_on_cran(), so under R CMD check
+#   only the hygiene test runs. Regressions in the transport itself are caught
+#   locally with NOT_CRAN=true, not by CI.
 
 test_that("the cached objective carries no data", {
   # If this fails, the transport optimisation has been silently undone even
@@ -28,20 +32,19 @@ test_that("the cached objective carries no data", {
   expect_true(isNamespace(env))
   expect_identical(environmentName(env), "PortfolioAnalytics")
 
-  # A closure whose environment is a namespace serializes as a REFERENCE to
-  # that namespace. One built inside a frame that holds the moments drags them
-  # along instead. Assert the contrast directly rather than guessing at an
-  # absolute byte budget: `wrong` is exactly what this wrapper would become if
-  # it were moved back inside solve_deoptim().
-  wrong <- local({
-    moments <- list(m4 = numeric(2e5))   # stand-in for the real tensor
-    function(w, ...) constrained_objective(w = w, env = moments, ...)
-  })
-  right_size <- length(serialize(.pa_cached_objective, connection = NULL))
-  wrong_size <- length(serialize(wrong, connection = NULL))
-
-  expect_gt(wrong_size, 10L * right_size)
-  expect_lt(right_size, 100000L)
+  # The two assertions above are the whole guard, and they are sufficient: a
+  # closure whose environment IS the namespace cannot have captured a local
+  # `moments`, because the namespace is not a call frame. Moving this wrapper
+  # inside solve_deoptim() makes environment() a frame holding the moment list,
+  # and isNamespace() goes FALSE.
+  #
+  # An earlier version also compared serialized sizes against a deliberately
+  # data-carrying closure. That was dropped: the serialized size of a namespace
+  # closure is not portable -- the same function measured ~30 KB on
+  # Windows/R 4.5.2 and 867 KB on macOS/R 4.6.1 under R CMD check -- so the
+  # comparison failed on CI while the fix was perfectly intact. It added no
+  # detection power either; breaking the fix fails the environment assertions
+  # above on its own.
 })
 
 test_that("the moment cache round-trips through a real cluster", {
