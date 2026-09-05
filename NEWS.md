@@ -1,3 +1,9 @@
+# PortfolioAnalytics 2.1.2.9000
+
+## Packaging
+
+* Renumbered from `2.1.1.9009` to `2.1.2.9000`. No code change; this is purely about version ordering. CRAN published PortfolioAnalytics **2.1.2**, and R compares versions component-wise, so `2.1.2 > 2.1.1.9009` — CRAN's build outranked this fork. Every `update.packages()` then offered to replace it, and one already did: on 2026-09-05 an `update.packages()` run removed the installed fork before failing to build the CRAN replacement (`Rsymphony` could not configure without the SYMPHONY system libraries), leaving the machine with no PortfolioAnalytics in the user library at all and a stale `10.1.0.9012` in site-library silently taking over. Numbering above the CRAN release means the fork wins on version order rather than relying on library search order.
+
 # PortfolioAnalytics 2.1.1.9009
 
 ## Enhancements
